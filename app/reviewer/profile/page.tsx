@@ -184,7 +184,7 @@ export default function ReviewerProfile() {
             <div className="flex justify-center mb-4">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src="/placeholder.svg?height=96&width=96" alt="Profile" />
+                  <AvatarImage src={profileData.image} alt="Profile" />
                   <AvatarFallback className="text-lg">
                     {getInitials(profileData.firstName, profileData.lastName)}
                   </AvatarFallback>
@@ -210,7 +210,7 @@ export default function ReviewerProfile() {
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <MapPin className="h-4 w-4 mr-2" />
-              {profileData.location}
+              {profileData.location||"Unknown"}
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Calendar className="h-4 w-4 mr-2" />

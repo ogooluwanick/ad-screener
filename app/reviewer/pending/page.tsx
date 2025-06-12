@@ -1,324 +1,180 @@
 "use client"
 
-import { useState } from "react"
-import { CheckCircle, Clock, Eye, Search, XCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from "@/hooks/use-toast"
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, CheckCircle, Eye, ExternalLink, Info, XCircle } from "lucide-react";
+import { PendingAdListItem } from "@/app/api/reviewer/ads/pending/route"; // Import the interface
+import { useNotifications } from "@/hooks/use-notifications";
+import { Badge } from "@/components/ui/badge"; // For status, if needed, though all are 'pending'
 
-// Mock data
-const mockAds = [
-  {
-    id: "1",
-    title: "Holiday Special",
-    description: "Special offers for the holiday season with amazing discounts.",
-    targetUrl: "https://example.com/holiday",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "john@example.com",
-    submissionDate: "2023-06-15",
-    status: "pending",
-  },
-  {
-    id: "2",
-    title: "Flash Sale",
-    description: "24-hour flash sale with incredible discounts on all items.",
-    targetUrl: "https://example.com/flash-sale",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "jane@example.com",
-    submissionDate: "2023-06-14",
-    status: "pending",
-  },
-  {
-    id: "3",
-    title: "New Product Launch",
-    description: "Introducing our new product line with special features.",
-    targetUrl: "https://example.com/new-product",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "mike@example.com",
-    submissionDate: "2023-06-13",
-    status: "pending",
-  },
-  {
-    id: "4",
-    title: "Back to School",
-    description: "Discounts on school supplies and equipment for students.",
-    targetUrl: "https://example.com/back-to-school",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "sarah@example.com",
-    submissionDate: "2023-06-12",
-    status: "pending",
-  },
-]
+export default function PendingAdsPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const [pendingAds, setPendingAds] = useState<PendingAdListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedAdForReview, setSelectedAdForReview] = useState<PendingAdListItem | null>(null); // For a modal/detail view
 
-export default function PendingReviews() {
-  const [ads, setAds] = useState(mockAds)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedAd, setSelectedAd] = useState<(typeof mockAds)[0] | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null)
-  const [rejectionReason, setRejectionReason] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-
-  const filteredAds = ads.filter(
-    (ad) =>
-      ad.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.submitter.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const handleViewAd = (ad: (typeof mockAds)[0]) => {
-    setSelectedAd(ad)
-    setIsDialogOpen(true)
-    setReviewAction(null)
-    setRejectionReason("")
-  }
-
-  const handleReviewAction = (action: "approve" | "reject") => {
-    setReviewAction(action)
-  }
-
-  const handleSubmitReview = () => {
-    if (!selectedAd || !reviewAction) return
-
-    if (reviewAction === "reject" && !rejectionReason.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a reason for rejection",
-        variant: "destructive",
-      })
-      return
+  const fetchPendingAds = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/reviewer/ads/pending');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error: ${response.status}`);
+      }
+      const data: PendingAdListItem[] = await response.json();
+      setPendingAds(data);
+    } catch (err) {
+      console.error("Failed to fetch pending ads:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    setIsProcessing(true)
+  // WebSocket notifications
+  const messageCallbacks = {
+    DASHBOARD_REFRESH_REQUESTED: useCallback(() => { // Re-using dashboard refresh for pending list for now
+      console.log('Pending ads list refresh triggered by WebSocket.');
+      fetchPendingAds();
+    }, [fetchPendingAds]),
+  };
 
-    // Mock API call
-    setTimeout(() => {
-      // Update the ad status
-      setAds((prev) =>
-        prev.map((ad) =>
-          ad.id === selectedAd.id
-            ? {
-                ...ad,
-                status: reviewAction,
-                rejectionReason: reviewAction === "reject" ? rejectionReason : undefined,
-              }
-            : ad,
-        ),
-      )
+  useNotifications(session?.user?.id, session?.user?.role as string, messageCallbacks);
 
-      // Remove from pending list
-      setAds((prev) => prev.filter((ad) => ad.id !== selectedAd.id))
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
+      fetchPendingAds();
+    } else if (sessionStatus === "unauthenticated") {
+      setError("Access Denied. Please log in as a reviewer.");
+      setIsLoading(false);
+    } else if (sessionStatus === "authenticated" && session?.user?.role !== 'reviewer') {
+      setError("Access Denied. You do not have permission to view this page.");
+      setIsLoading(false);
+    }
+  }, [session, sessionStatus, fetchPendingAds]);
 
-      toast({
-        title: "Success",
-        description: `Ad ${reviewAction === "approve" ? "approved" : "rejected"} successfully`,
-      })
+  // Modal/dialog functions for ad review (simplified for now)
+  const handleReviewAd = (ad: PendingAdListItem) => {
+    // This would typically open a modal or navigate to a detailed review page
+    // For now, we'll just log it or set it for a simple display.
+    // Router.push(`/reviewer/review/${ad.id}`) // Example navigation
+    setSelectedAdForReview(ad);
+    // For a real review UI, you'd likely have a modal here.
+    // For simplicity, we'll just use an alert or log.
+    alert(`Reviewing Ad: ${ad.title}\nID: ${ad.id}\n\n(Full review UI would open here)`);
+    // TODO: Implement actual review modal/page and PUT request to /api/reviewer/ads/[adId]
+  };
 
-      setIsProcessing(false)
-      setIsDialogOpen(false)
-      setSelectedAd(null)
-      setReviewAction(null)
-      setRejectionReason("")
-    }, 1500)
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-4 md:p-6">
+        <Skeleton className="h-8 w-1/3" />
+        <Card>
+          <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+          <CardContent>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4 p-2 border-b">
+                <Skeleton className="h-10 w-1/4" />
+                <Skeleton className="h-10 w-1/4" />
+                <Skeleton className="h-10 w-1/4" />
+                <Skeleton className="h-10 w-1/4" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-4 md:p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Error Loading Pending Ads</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Button onClick={fetchPendingAds} variant="outline">
+          <Info className="mr-2 h-4 w-4" /> Try Again
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Pending Reviews</h1>
-        <div className="mt-2 sm:mt-0 text-sm text-gray-600">{filteredAds.length} ads awaiting review</div>
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Pending Ad Reviews</h1>
+        <Button onClick={fetchPendingAds} variant="outline" size="sm">
+          Refresh List
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ad Submissions for Review</CardTitle>
-          <CardDescription>Review and approve or reject submitted advertisements</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search by title or submitter..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-md border">
+      {pendingAds.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <p className="text-lg font-medium">No ads currently pending review.</p>
+            <p className="text-muted-foreground">Great job, or perhaps it's a quiet day!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ads Awaiting Review</CardTitle>
+            <CardDescription>
+              The following ads are pending your review. Please assess them according to the guidelines.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
-                  <TableHead className="hidden md:table-cell">Submitter</TableHead>
-                  <TableHead className="hidden md:table-cell">Submission Date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Submitter</TableHead>
+                  <TableHead>Submitted On</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAds.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      {searchTerm ? "No ads found matching your search" : "No pending ads to review"}
+                {pendingAds.map((ad) => (
+                  <TableRow key={ad.id}>
+                    <TableCell className="font-medium">{ad.title}</TableCell>
+                    <TableCell>{ad.submitterEmail}</TableCell>
+                    <TableCell>{new Date(ad.submissionDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                       <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(ad.contentUrl, '_blank')}
+                        title="View Ad Content"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => handleReviewAd(ad)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        title="Review Ad Details"
+                      >
+                        <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Review</span>
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredAds.map((ad) => (
-                    <TableRow key={ad.id}>
-                      <TableCell className="font-medium">{ad.title}</TableCell>
-                      <TableCell className="hidden md:table-cell">{ad.submitter}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {new Date(ad.submissionDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 text-amber-600 mr-2" />
-                          <span className="text-amber-600 capitalize">Pending</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewAd(ad)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Review
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedAd?.title}</DialogTitle>
-            <DialogDescription>
-              Submitted by {selectedAd?.submitter} on{" "}
-              {selectedAd && new Date(selectedAd.submissionDate).toLocaleDateString()}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="aspect-video overflow-hidden rounded-md border">
-              <img
-                src={selectedAd?.imageUrl || "/placeholder.svg"}
-                alt={selectedAd?.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold">Description</h3>
-                <p className="text-sm text-gray-600">{selectedAd?.description}</p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold">Target URL</h3>
-                <p className="text-sm text-blue-600 break-all">
-                  <a href={selectedAd?.targetUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    {selectedAd?.targetUrl}
-                  </a>
-                </p>
-              </div>
-            </div>
-
-            {!reviewAction && (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={() => handleReviewAction("approve")}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve
-                </Button>
-                <Button onClick={() => handleReviewAction("reject")} variant="destructive" className="flex-1">
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Reject
-                </Button>
-              </div>
-            )}
-
-            {reviewAction === "approve" && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                <div className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                  <span className="font-medium text-green-800">Ready to approve this ad</span>
-                </div>
-                <p className="text-sm text-green-700 mt-1">
-                  This ad meets our guidelines and will be approved for publication.
-                </p>
-              </div>
-            )}
-
-            {reviewAction === "reject" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex items-center">
-                    <XCircle className="h-5 w-5 text-red-600 mr-2" />
-                    <span className="font-medium text-red-800">Rejecting this ad</span>
-                  </div>
-                  <p className="text-sm text-red-700 mt-1">
-                    Please provide a clear reason for rejection to help the submitter improve.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="rejectionReason">Reason for Rejection *</Label>
-                  <Textarea
-                    id="rejectionReason"
-                    placeholder="Please explain why this ad is being rejected..."
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsDialogOpen(false)
-                setReviewAction(null)
-                setRejectionReason("")
-              }}
-              disabled={isProcessing}
-            >
-              Cancel
-            </Button>
-            {reviewAction && (
-              <Button
-                onClick={handleSubmitReview}
-                disabled={isProcessing}
-                className={reviewAction === "approve" ? "bg-green-600 hover:bg-green-700" : ""}
-                variant={reviewAction === "reject" ? "destructive" : "default"}
-              >
-                {isProcessing ? "Processing..." : `Confirm ${reviewAction === "approve" ? "Approval" : "Rejection"}`}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
-  )
+  );
 }

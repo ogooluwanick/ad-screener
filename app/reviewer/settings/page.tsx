@@ -13,12 +13,13 @@ import { Slider } from "@/components/ui/slider"
 import { toast } from "@/hooks/use-toast"
 
 export default function ReviewerSettings() {
-  const [userEmail, setUserEmail] = useState("")
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // To show loading state
 
+  // Default states, will be overwritten by fetched data
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     pushNotifications: true,
@@ -46,10 +47,36 @@ export default function ReviewerSettings() {
     sessionTimeout: "4",
   })
 
+  // Fetch settings on component mount
   useEffect(() => {
-    const email = localStorage.getItem("userEmail") || ""
-    setUserEmail(email)
-  }, [])
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/reviewer/settings");
+        if (!response.ok) {
+          throw new Error("Failed to fetch settings");
+        }
+        const data = await response.json();
+        if (data.notifications) {
+          setNotifications(data.notifications);
+        }
+        if (data.reviewPreferences) {
+          setReviewPreferences(data.reviewPreferences);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+        toast({
+          title: "Error",
+          description: "Could not load your settings. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications((prev) => ({ ...prev, [key]: value }))
@@ -63,18 +90,37 @@ export default function ReviewerSettings() {
     setSecurity((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleSaveSettings = () => {
-    setIsSaving(true)
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/reviewer/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notifications, reviewPreferences }),
+      });
 
-    // Mock save operation
-    setTimeout(() => {
-      setIsSaving(false)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save settings");
+      }
+
       toast({
         title: "Settings Saved",
         description: "Your settings have been successfully updated.",
-      })
-    }, 1000)
-  }
+      });
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Could not save your settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleChangePassword = () => {
     if (security.newPassword !== security.confirmPassword) {
@@ -114,6 +160,14 @@ export default function ReviewerSettings() {
       title: "Data Export Started",
       description: "Your review data export will be emailed to you within 24 hours.",
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>Loading settings...</p> {/* Replace with a proper spinner/skeleton loader if available */}
+      </div>
+    );
   }
 
   return (

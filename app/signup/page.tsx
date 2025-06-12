@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react" // Added useEffect
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react" // Added useSession
 import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast"
 export default function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { data: session, status } = useSession() // Get session data and status
   const defaultRole = searchParams.get("role") || "submitter"
 
   const [formData, setFormData] = useState({
@@ -29,6 +30,21 @@ export default function SignupPage() {
   })
 
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (status === "authenticated" && session?.user?.role) {
+      const userRole = session.user.role;
+      if (userRole === "submitter") {
+        router.push("/submitter/dashboard");
+      } else if (userRole === "reviewer") {
+        router.push("/reviewer/dashboard");
+      } else {
+        // Fallback or error handling if role is not defined or unexpected
+        router.push("/"); // Or a generic dashboard
+      }
+    }
+  }, [session, status, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -138,6 +154,27 @@ export default function SignupPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show loading or null while checking session to prevent flash of content
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <p>Loading...</p> {/* Or a spinner component */}
+      </div>
+    );
+  }
+  
+  // If user is authenticated and redirection is in progress (or just happened),
+  // you might want to return null or a loading indicator as well,
+  // though the useEffect should handle the redirect.
+  // This check is more for if you want to avoid rendering the form at all if already logged in.
+  if (status === "authenticated") {
+     return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <p>Redirecting...</p> {/* Or a spinner component */}
+      </div>
+    );
   }
 
   return (

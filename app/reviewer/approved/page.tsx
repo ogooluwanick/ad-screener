@@ -1,212 +1,160 @@
 "use client"
 
-import { useState } from "react"
-import { CheckCircle, Eye, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, ExternalLink, Info, ListChecks } from "lucide-react";
+import { ApprovedAdListItem } from "@/app/api/reviewer/ads/approved/route";
+import { useNotifications } from "@/hooks/use-notifications";
 
-// Mock data for approved ads
-const mockApprovedAds = [
-  {
-    id: "1",
-    title: "Summer Sale Campaign",
-    description: "Promote our summer sale with 50% off on all products.",
-    targetUrl: "https://example.com/summer-sale",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "john@example.com",
-    submissionDate: "2023-06-10",
-    approvalDate: "2023-06-11",
-    status: "approved",
-  },
-  {
-    id: "2",
-    title: "Back to School",
-    description: "Discounts on school supplies and equipment for students.",
-    targetUrl: "https://example.com/back-to-school",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "sarah@example.com",
-    submissionDate: "2023-06-08",
-    approvalDate: "2023-06-09",
-    status: "approved",
-  },
-  {
-    id: "3",
-    title: "Weekend Special",
-    description: "Special weekend offers with great discounts.",
-    targetUrl: "https://example.com/weekend-special",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "mike@example.com",
-    submissionDate: "2023-06-05",
-    approvalDate: "2023-06-06",
-    status: "approved",
-  },
-  {
-    id: "4",
-    title: "Tech Sale",
-    description: "Amazing deals on the latest technology products.",
-    targetUrl: "https://example.com/tech-sale",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submitter: "jane@example.com",
-    submissionDate: "2023-06-01",
-    approvalDate: "2023-06-02",
-    status: "approved",
-  },
-]
+export default function ApprovedAdsPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const [approvedAds, setApprovedAds] = useState<ApprovedAdListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function ApprovedAds() {
-  const [ads, setAds] = useState(mockApprovedAds)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedAd, setSelectedAd] = useState<(typeof mockApprovedAds)[0] | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const fetchApprovedAds = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/reviewer/ads/approved');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error: ${response.status}`);
+      }
+      const data: ApprovedAdListItem[] = await response.json();
+      setApprovedAds(data);
+    } catch (err) {
+      console.error("Failed to fetch approved ads:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const filteredAds = ads.filter(
-    (ad) =>
-      ad.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.submitter.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const messageCallbacks = {
+    DASHBOARD_REFRESH_REQUESTED: useCallback(() => {
+      console.log('Approved ads list refresh triggered by WebSocket (DASHBOARD_REFRESH_REQUESTED).');
+      fetchApprovedAds();
+    }, [fetchApprovedAds]),
+  };
 
-  const handleViewAd = (ad: (typeof mockApprovedAds)[0]) => {
-    setSelectedAd(ad)
-    setIsDialogOpen(true)
+  useNotifications(session?.user?.id, session?.user?.role as string, messageCallbacks);
+
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
+      fetchApprovedAds();
+    } else if (sessionStatus === "unauthenticated") {
+      setError("Access Denied. Please log in as a reviewer.");
+      setIsLoading(false);
+    } else if (sessionStatus === "authenticated" && session?.user?.role !== 'reviewer') {
+      setError("Access Denied. You do not have permission to view this page.");
+      setIsLoading(false);
+    }
+  }, [session, sessionStatus, fetchApprovedAds]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2 mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            {[...Array(3)].map((_, i) => (
+              <TableRow key={i} className="flex items-center space-x-4 p-2 border-b">
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-28" /></TableCell>
+              </TableRow>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 md:p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Error Loading Approved Ads</h2>
+        <p className="text-muted-foreground mb-4">{error}</p>
+        <Button onClick={fetchApprovedAds} variant="outline">
+          <Info className="mr-2 h-4 w-4" /> Try Again
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Approved Ads</h1>
-        <div className="mt-2 sm:mt-0 text-sm text-gray-600">{filteredAds.length} approved ads</div>
+        <Button onClick={fetchApprovedAds} variant="outline" size="sm">
+          Refresh List
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Approved Advertisements</CardTitle>
-          <CardDescription>View all approved ads that are ready for publication</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search by title or submitter..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-md border">
+      {approvedAds.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <ListChecks className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium">No ads have been approved yet.</p>
+            <p className="text-muted-foreground">Once ads are reviewed and approved, they will appear here.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reviewed and Approved Ads</CardTitle>
+            <CardDescription>
+              The following ads have been approved.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
-                  <TableHead className="hidden md:table-cell">Submitter</TableHead>
-                  <TableHead className="hidden md:table-cell">Approval Date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Submitter</TableHead>
+                  <TableHead>Approved On</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAds.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      {searchTerm ? "No approved ads found matching your search" : "No approved ads yet"}
+                {approvedAds.map((ad) => (
+                  <TableRow key={ad.id}>
+                    <TableCell className="font-medium">{ad.title}</TableCell>
+                    <TableCell>{ad.submitterEmail}</TableCell>
+                    <TableCell>{new Date(ad.approvalDate).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(ad.contentUrl, '_blank')}
+                        title="View Ad Content"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">View Content</span>
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredAds.map((ad) => (
-                    <TableRow key={ad.id}>
-                      <TableCell className="font-medium">{ad.title}</TableCell>
-                      <TableCell className="hidden md:table-cell">{ad.submitter}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {new Date(ad.approvalDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                          <span className="text-green-600 capitalize">Approved</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewAd(ad)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedAd?.title}</DialogTitle>
-            <DialogDescription>
-              Approved on {selectedAd && new Date(selectedAd.approvalDate).toLocaleDateString()} • Submitted by{" "}
-              {selectedAd?.submitter}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="aspect-video overflow-hidden rounded-md border">
-              <img
-                src={selectedAd?.imageUrl || "/placeholder.svg"}
-                alt={selectedAd?.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold">Description</h3>
-                <p className="text-sm text-gray-600">{selectedAd?.description}</p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold">Target URL</h3>
-                <p className="text-sm text-blue-600 break-all">
-                  <a href={selectedAd?.targetUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    {selectedAd?.targetUrl}
-                  </a>
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Submission Date</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedAd && new Date(selectedAd.submissionDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Approval Date</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedAd && new Date(selectedAd.approvalDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                <span className="font-medium text-green-800">This ad has been approved</span>
-              </div>
-              <p className="text-sm text-green-700 mt-1">
-                This advertisement meets all guidelines and is ready for publication.
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
     </div>
-  )
+  );
 }

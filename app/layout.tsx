@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers" // Import the new Providers component
+import { Toaster } from "@/components/ui/sonner" // Assuming this is the correct path for sonner's Toaster
+import { NotificationDisplay } from "@/components/notification-display" // Import NotificationDisplay
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,6 +24,8 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
+          <Toaster richColors position="top-right" /> {/* Or your preferred position and options */}
+          <NotificationDisplay />
         </Providers>
       </body>
     </html>

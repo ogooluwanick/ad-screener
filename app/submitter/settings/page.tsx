@@ -13,12 +13,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "@/hooks/use-toast"
 
 export default function SubmitterSettings() {
-  const [userEmail, setUserEmail] = useState("")
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // To show loading state
 
+  // Default states, will be overwritten by fetched data
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     pushNotifications: false,
@@ -27,6 +28,11 @@ export default function SubmitterSettings() {
     paymentConfirmation: true,
     weeklyDigest: false,
     marketingEmails: false,
+    // Matching API fields for consistency, though not all are on this page's UI
+    submissionStatus: true, 
+    feedbackReceived: true,
+    systemUpdates: true,
+    promotionalEmails: false,
   })
 
   const [privacy, setPrivacy] = useState({
@@ -35,6 +41,14 @@ export default function SubmitterSettings() {
     showPhone: false,
     dataCollection: true,
   })
+  
+  // Preferences state, matching API structure, though not fully managed by this page's UI yet
+  const [preferences, setPreferences] = useState({
+    defaultCampaignDuration: 30,
+    autoSaveDrafts: true,
+    preferredAdFormats: ["banner", "video"],
+  });
+
 
   const [security, setSecurity] = useState({
     currentPassword: "",
@@ -43,10 +57,40 @@ export default function SubmitterSettings() {
     twoFactorEnabled: false,
   })
 
+  // Fetch settings on component mount
   useEffect(() => {
-    const email = localStorage.getItem("userEmail") || ""
-    setUserEmail(email)
-  }, [])
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/submitter/settings");
+        if (!response.ok) {
+          throw new Error("Failed to fetch settings");
+        }
+        const data = await response.json();
+        if (data.notifications) {
+          // Merge with existing to ensure all keys are present, even if not in API response
+          setNotifications(prev => ({...prev, ...data.notifications}));
+        }
+        if (data.privacy) {
+          setPrivacy(data.privacy);
+        }
+        if (data.preferences) { // Load preferences if available
+          setPreferences(data.preferences);
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+        toast({
+          title: "Error",
+          description: "Could not load your settings. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications((prev) => ({ ...prev, [key]: value }))
@@ -55,23 +99,53 @@ export default function SubmitterSettings() {
   const handlePrivacyChange = (key: string, value: string | boolean) => {
     setPrivacy((prev) => ({ ...prev, [key]: value }))
   }
+  
+  // Handler for preferences if UI elements are added later
+  // const handlePreferenceChange = (key: string, value: any) => {
+  //   setPreferences((prev) => ({ ...prev, [key]: value }));
+  // };
 
   const handleSecurityChange = (key: string, value: string | boolean) => {
     setSecurity((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleSaveSettings = () => {
-    setIsSaving(true)
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      // We send notifications and privacy. Preferences are included if they were loaded.
+      const settingsToSave = {
+        notifications,
+        privacy,
+        preferences 
+      };
+      const response = await fetch("/api/submitter/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settingsToSave),
+      });
 
-    // Mock save operation
-    setTimeout(() => {
-      setIsSaving(false)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save settings");
+      }
+
       toast({
         title: "Settings Saved",
         description: "Your settings have been successfully updated.",
-      })
-    }, 1000)
-  }
+      });
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Could not save your settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleChangePassword = () => {
     if (security.newPassword !== security.confirmPassword) {
@@ -119,6 +193,14 @@ export default function SubmitterSettings() {
       description: "Please contact support to delete your account.",
       variant: "destructive",
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>Loading settings...</p> {/* Replace with a proper spinner/skeleton loader if available */}
+      </div>
+    );
   }
 
   return (
