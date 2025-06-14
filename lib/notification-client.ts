@@ -78,7 +78,24 @@ export async function triggerSubmitterDashboardUpdate(submitterId: string) {
   }
 }
 
-// Note: The broadcastNotification function is removed as it's less common to trigger
-// a full broadcast from an API route directly. If needed, a similar HTTP trigger
-// could be added to server.ts and called from here.
-// For now, specific user notifications and targeted reviewer updates are prioritized.
+export async function broadcastNotification(messageData: UserNotificationData) {
+  const endpoint = `${INTERNAL_HTTP_SERVER_URL}/internal/broadcast-notification`;
+  console.log(`[NotificationClient] Attempting to broadcast notification via ${endpoint}:`, messageData);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageData }), // server.ts will expect { messageData }
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[NotificationClient] Failed to trigger broadcast notification via HTTP. Status: ${response.status}, Body: ${errorText}`);
+      return false;
+    }
+    console.log('[NotificationClient] Successfully triggered broadcast notification.');
+    return true;
+  } catch (error) {
+    console.error('[NotificationClient] Error calling internal HTTP server for broadcast notification:', error);
+    return false;
+  }
+}

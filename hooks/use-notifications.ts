@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Extended NotificationMessage to better suit the panel's needs
 export interface NotificationMessage {
+  data: any;
   id: string; // WebSocket messages will get a client-side generated ID
   title: string;
   message: string; // Main content from server's message.data
@@ -66,6 +67,7 @@ export function useNotifications(
             read: false,
             originalServerType: serverMessage.type,
             rawData: serverMessage.data,
+            data: undefined
           };
 
           setNotifications((prevNotifications) =>

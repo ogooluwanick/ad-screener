@@ -128,10 +128,10 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/${role}/profile`}>Profile</Link>
+                  <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`/${role}/settings`}>Settings</Link>
+                  <Link href="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href={`/${role}/guidelines`}>Guidelines</Link>
@@ -170,10 +170,10 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
                         {item.name}
                       </Link>
                     ))}
-                    <Link href={`/${role}/profile`} className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium py-2 px-3 rounded-md">
+                    <Link href="/profile" className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium py-2 px-3 rounded-md">
                       Profile
                     </Link>
-                    <Link href={`/${role}/settings`} className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium py-2 px-3 rounded-md">
+                    <Link href="/settings" className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium py-2 px-3 rounded-md">
                       Settings
                     </Link>
                     <Link href={`/${role}/guidelines`} className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium py-2 px-3 rounded-md">

@@ -322,7 +322,7 @@ export default function SubmitterDashboard() {
           <Link href="/submitter/submit">
             <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Submit New Ad</Button>
           </Link>
-          <Link href="#">
+          <Link href="/submitter/guidelines">
             <Button variant="outline" className="w-full sm:w-auto">
               View Guidelines
             </Button>

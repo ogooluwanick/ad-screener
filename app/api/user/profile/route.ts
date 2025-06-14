@@ -36,7 +36,8 @@ export async function GET() {
       bio: user.bio || "", // Assuming 'bio' might be added
       website: user.website || "", // Assuming 'website' might be added
       // joinDate could be user.createdAt
-      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "", 
+      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
+      profileImageUrl: user.profileImageUrl || null, // Add this
     };
 
     return NextResponse.json(profileData, { status: 200 });
@@ -63,7 +64,8 @@ export async function PUT(req: Request) {
     const userId = new ObjectId(session.user.id);
 
     const body = await req.json();
-    const { firstName, lastName, phone, company, location, bio, website } = body;
+    // Destructure profileImageUrl as well
+    const { firstName, lastName, phone, company, location, bio, website, profileImageUrl } = body;
 
     // Basic validation (can be expanded)
     if (!firstName || !lastName) {
@@ -85,6 +87,11 @@ export async function PUT(req: Request) {
     if (location !== undefined) updateData.location = location;
     if (bio !== undefined) updateData.bio = bio;
     if (website !== undefined) updateData.website = website;
+    if (profileImageUrl !== undefined) { // Check if profileImageUrl is part of the payload
+      // If an empty string or null is passed, it means remove the image.
+      // If a valid URL is passed, update it.
+      updateData.profileImageUrl = profileImageUrl; 
+    }
     // Note: Email updates are typically handled separately due to verification needs.
     // If you want to allow email changes here, add validation and consider implications.
 
@@ -116,6 +123,7 @@ export async function PUT(req: Request) {
         bio: updatedUser?.bio,
         website: updatedUser?.website,
         joinDate: updatedUser?.createdAt ? new Date(updatedUser.createdAt).toISOString().split('T')[0] : "",
+        profileImageUrl: updatedUser?.profileImageUrl, // Add this
       } },
       { status: 200 }
     );

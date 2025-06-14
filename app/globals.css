@@ -104,3 +104,9 @@
 .animate-slide-in-right {
   animation: slideInRight 0.3s ease-out;
 }
+
+/* Paystack iframe specific styles */
+iframe[src*="checkout.paystack.com"] {
+  pointer-events: auto !important;
+  visibility: visible !important;
+}

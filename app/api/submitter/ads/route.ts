@@ -1,29 +1,33 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path as needed
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { sendNotificationToUser, triggerReviewerDashboardUpdate } from '@/lib/notification-client';
-// import { broadcastNotification } from '@/lib/notification-client'; // If reviewers are notified via broadcast or specific group
+import fs from 'fs/promises';
+import path from 'path';
+import { ObjectId } from 'mongodb'; // Import ObjectId
 
-// Define a basic Ad interface (you'll likely have a more detailed model)
-interface AdPayload {
+// AdDocument defines the structure in the database
+interface AdDocument {
+  _id: ObjectId; // Use ObjectId type for MongoDB
+  submitterId: string;
+  submitterEmail: string;
   title: string;
   description: string;
-  contentUrl: string;
-  // Add other ad properties here
-}
-
-interface AdDocument extends AdPayload {
-  _id: string; // Or ObjectId if using mongodb directly
-  submitterId: string; // ID of the user who submitted the ad
-  submitterEmail: string; // Email of the submitter for notifications
+  contentUrl: string; // URL the ad links to
+  imageUrl?: string; // Path to the uploaded ad creative image
+  paymentReference: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
   reviewedAt?: Date;
   reviewerId?: string;
   rejectionReason?: string;
-  assignedReviewerIds: string[]; // New field for reviewer assignments
+  assignedReviewerIds: string[];
 }
+
+// Type for the data to be inserted (excluding _id as it's auto-generated)
+type AdInsertData = Omit<AdDocument, '_id'>;
+
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -33,66 +37,82 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body: AdPayload = await request.json();
+    const formData = await request.formData();
 
-    if (!body.title || !body.description || !body.contentUrl) {
-      return NextResponse.json({ message: 'Missing required ad fields (title, description, contentUrl)' }, { status: 400 });
+    const title = formData.get('title') as string | null;
+    const description = formData.get('description') as string | null;
+    const contentUrl = formData.get('contentUrl') as string | null;
+    const paymentReference = formData.get('paymentReference') as string | null;
+    const imageFile = formData.get('image') as File | null;
+    // const clientSubmitterId = formData.get('submitterId') as string | null; // Not used for security, session.user.id is authoritative
+
+    if (!title || !description || !contentUrl || !paymentReference || !imageFile) {
+      return NextResponse.json({ message: 'Missing required fields: title, description, contentUrl, paymentReference, or image.' }, { status: 400 });
     }
 
-    const client = await clientPromise;
-    const db = client.db(); // Use your default DB or specify one: client.db("yourDbName")
-    const adsCollection = db.collection<Omit<AdDocument, '_id'>>('ads');
+    // Validate image type and size
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(imageFile.type)) {
+        return NextResponse.json({ message: "Invalid image file type. Please upload JPEG, PNG, GIF, or WebP." }, { status: 400 });
+    }
+    if (imageFile.size > 5 * 1024 * 1024) { // 5MB
+        return NextResponse.json({ message: "Image file size exceeds 5MB." }, { status: 400 });
+    }
 
-    const newAdData = {
-      ...body,
-      submitterId: session.user.id,
-      submitterEmail: session.user.email || '', // Ensure email is available
+    // File handling
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'ads');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const sanitizedFilename = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
+    const uniqueFilename = `${Date.now()}-${sanitizedFilename}`;
+    const imageDiskPath = path.join(uploadDir, uniqueFilename);
+    const publicImageUrl = `/uploads/ads/${uniqueFilename}`;
+
+    const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+    await fs.writeFile(imageDiskPath, imageBuffer);
+
+    const client = await clientPromise;
+    const db = client.db();
+    const adsCollection = db.collection<AdInsertData>('ads'); // Use AdInsertData for insertion
+
+    const newAdData: AdInsertData = {
+      title,
+      description,
+      contentUrl,
+      imageUrl: publicImageUrl,
+      paymentReference,
+      submitterId: session.user.id, // Authoritative ID from session
+      submitterEmail: session.user.email || '',
       status: 'pending' as 'pending',
       submittedAt: new Date(),
-      assignedReviewerIds: [], // Initialize as empty array
+      assignedReviewerIds: [],
+      // reviewedAt, reviewerId, rejectionReason will be undefined initially
     };
 
     const result = await adsCollection.insertOne(newAdData);
 
     if (!result.insertedId) {
-      return NextResponse.json({ message: 'Failed to submit ad' }, { status: 500 });
+      try { await fs.unlink(imageDiskPath); } catch (cleanupError) { console.error("Failed to cleanup uploaded file:", cleanupError); }
+      return NextResponse.json({ message: 'Failed to submit ad to database' }, { status: 500 });
     }
 
     const createdAdId = result.insertedId.toString();
 
-    // --- Send Notification to Submitter ---
     if (session.user.email) {
       await sendNotificationToUser(session.user.email, {
         title: 'Ad Submitted Successfully!',
-        message: `Your ad "${body.title}" has been submitted and is pending review. Ad ID: ${createdAdId}`,
-        level: 'success', // For styling in NotificationPanel
-        // deepLink: `/submitter/ads/${createdAdId}` // Optional: link to view the ad
+        message: `Your ad "${title}" has been submitted and is pending review. Ad ID: ${createdAdId}`,
+        level: 'success',
       });
     }
 
-    // --- Send Notification to Reviewers ---
-    // This part needs a strategy:
-    // 1. Get all reviewer emails from DB.
-    // 2. Send individual notifications to each.
-    // OR 3. Broadcast to a 'reviewers' group if your WebSocket server supports groups (current one doesn't directly).
-    // For now, let's assume we'd fetch reviewer emails and loop.
-    // Example (conceptual, needs implementation of getReviewerEmails):
-    // const reviewerEmails = await getReviewerEmailsFromDB();
-    // for (const email of reviewerEmails) {
-    //   await sendNotificationToUser(email, {
-    //     title: 'New Ad for Review',
-    //     message: `A new ad "${body.title}" (ID: ${createdAdId}) by ${session.user.email} is awaiting your review.`,
-    //     level: 'info',
-    //     // deepLink: `/reviewer/pending/${createdAdId}` // Optional: link to review the ad
-    //   });
-    // }
-    // As a simpler placeholder for now, we could broadcast if that's acceptable,
-    // or just log that reviewers should be notified.
-    // console.log(`Ad ${createdAdId} submitted. Reviewers should be notified.`); // Replaced by direct trigger
     await triggerReviewerDashboardUpdate();
 
-
-    return NextResponse.json({ message: 'Ad submitted successfully, reviewer dashboards refreshing.', adId: createdAdId, ad: newAdData }, { status: 201 });
+    return NextResponse.json({ 
+      message: 'Ad submitted successfully, image uploaded, and reviewer dashboards refreshing.', 
+      adId: createdAdId, 
+      ad: { ...newAdData, _id: result.insertedId } // Return the created ad data with its new _id
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Error submitting ad:', error);
@@ -101,12 +121,22 @@ export async function POST(request: Request) {
   }
 }
 
-// Placeholder for GET /api/submitter/ads (to list ads for the submitter)
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id || session.user.role !== 'submitter') {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-  // TODO: Implement logic to fetch and return ads submitted by this user
-  return NextResponse.json({ message: 'GET /api/submitter/ads not yet implemented.' });
+  
+  const client = await clientPromise;
+  const db = client.db();
+  const adsCollection = db.collection<AdDocument>('ads'); // Use AdDocument for fetching
+
+  try {
+    const userAds = await adsCollection.find({ submitterId: session.user.id }).sort({ submittedAt: -1 }).toArray();
+    return NextResponse.json(userAds, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching submitter ads:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ message: 'Failed to fetch ads', error: errorMessage }, { status: 500 });
+  }
 }
