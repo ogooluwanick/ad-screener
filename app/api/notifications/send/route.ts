@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendNotificationToUser, broadcastNotification } from '@/lib/notification-client';
+import { sendNotificationToUser } from '@/lib/notification-client'; // Removed broadcastNotification
 
 // Ensure this route is only accessible by authorized users or services
 // Add authentication and authorization checks as needed
@@ -21,7 +21,10 @@ export async function POST(request: Request) {
       }
       success = await sendNotificationToUser(userId, message);
     } else if (type === 'broadcast') {
-      success = await broadcastNotification(message);
+      // Broadcast functionality via the old client is deprecated.
+      // A new implementation would be needed if broadcast is required.
+      console.warn('[API /notifications/send] Attempted to use deprecated broadcast functionality.');
+      return NextResponse.json({ error: 'Broadcast functionality is currently not available.' }, { status: 501 }); // 501 Not Implemented
     } else {
       return NextResponse.json({ error: 'Invalid notification type specified' }, { status: 400 });
     }
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
 
 // Example GET handler for testing (optional, remove in production)
 export async function GET() {
-  // You could use this to test broadcasting or sending to a test user
-  // For example: await broadcastNotification({ info: "Test broadcast from GET handler" });
+  // You could use this to test sending to a test user via sendNotificationToUser if needed.
+  // Broadcast functionality is currently not available.
   return NextResponse.json({ message: 'Notification API is active. Use POST to send notifications.' });
 }
