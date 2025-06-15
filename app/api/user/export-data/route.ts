@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
+import { sendNotificationToUser } from "@/lib/notification-client"; // Added for notifications
 
 // Define a basic Ad interface, adjust according to your actual Ad schema
 interface Ad extends WithId<Document> {
@@ -23,6 +24,24 @@ export async function GET() {
   if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+
+  const userIdForNotification = session.user.id;
+
+  // Send in-app notification that the request is being processed
+  // This is sent before the actual data processing begins.
+  // In a true async setup, this would be more meaningful.
+  sendNotificationToUser(userIdForNotification, {
+    title: "Data Export Requested",
+    message: "We've received your data export request and are processing it. You'll be notified when it's ready.",
+    level: "info",
+  }).then(() => console.log(`Data export requested notification sent to user ${userIdForNotification}`))
+    .catch(err => console.error(`Failed to send data export requested notification to user ${userIdForNotification}:`, err));
+  
+  // Note: For a true async process where export takes time:
+  // 1. This endpoint might just acknowledge the request and queue a job.
+  // 2. The "You'll be notified when it's ready" would be accurate.
+  // 3. A separate process/worker would generate the data and then trigger an email with a download link.
+  // Since this is currently synchronous, the "ready" part is immediate.
 
   try {
     const client = await clientPromise(); // Call the function
@@ -56,11 +75,11 @@ export async function GET() {
       // Fetch ads where this user is listed as the reviewerId (string).
       // The "reviews.reviewerId" part is removed as the current schema in reviewer/ads/[adId]/route.ts
       // updates a top-level reviewerId (string) and doesn't populate a 'reviews' array with ObjectIds.
-      adsData = await db.collection("ads").find({ reviewerId: sessionUserIdString }).toArray();
+      adsData = await db.collection("ads").find({ reviewerId: sessionUserIdString }).toArray() as Ad[];
 
     } else if (user.role === "submitter") {
       // Query using the string submitterId
-      adsData = await db.collection("ads").find({ submitterId: sessionUserIdString }).toArray();
+      adsData = await db.collection("ads").find({ submitterId: sessionUserIdString }).toArray() as Ad[];
     }
 
     const dataToExport = {

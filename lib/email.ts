@@ -42,7 +42,7 @@ const getDefaultEmailTemplate = (customerName: string, message: string): string 
       <p>Hi ${customerName},</p>
       <p>${message}</p>
       <p>Thank you,</p>
-      <p>Softelife's Haven</p>
+      <p>AdScreener's </p>
     </body>
     </html>
   `;
@@ -85,8 +85,8 @@ export const sendSignupEmail = async (customerEmail: string, Cname: string) => {
     console.error("Nodemailer 'from' email is not configured. Signup email not sent.");
     return;
   }
-  const subject = `Softelife's Haven SIGNUP! 🎉`;
-  const text = `Hi ${capitalize(Cname.split(" ")[0])}, \nThank you for signing up with us at Softelife's Haven. Enjoy a beautiful shopping experience.`;
+  const subject = `AdScreener's  SIGNUP! 🎉`;
+  const text = `Hi ${capitalize(Cname.split(" ")[0])}, \nThank you for signing up with us at AdScreener's . Enjoy a beautiful shopping experience.`;
   
   // Assuming you have a specific HTML template for signups
   // For now, using a modified version of the default template or you can provide your specific 'template' variable
@@ -94,14 +94,14 @@ export const sendSignupEmail = async (customerEmail: string, Cname: string) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Welcome to Softelife's Haven!</title>
+      <title>Welcome to AdScreener's !</title>
     </head>
     <body>
       <h1>Welcome, ${capitalize(Cname.split(" ")[0])}!</h1>
-      <p>Thank you for signing up with us at Softelife's Haven.</p>
+      <p>Thank you for signing up with us at AdScreener's .</p>
       <p>We're thrilled to have you. Enjoy a beautiful shopping experience!</p>
       <p>Best regards,</p>
-      <p>The Softelife's Haven Team</p>
+      <p>The AdScreener's  Team</p>
     </body>
     </html>
   `;

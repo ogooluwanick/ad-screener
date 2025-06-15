@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { sendNotificationToUser, triggerReviewerDashboardUpdate } from '@/lib/notification-client';
+import { sendEmail } from '@/lib/email'; // Added for sending email
 import fs from 'fs/promises';
 import path from 'path';
 import { ObjectId } from 'mongodb'; // Import ObjectId
@@ -177,20 +178,46 @@ export async function POST(request: Request) {
     const createdAdIdString = createdAdObjectId.toString();
     console.log('[API /submitter/ads] Starting notification process for ad:', createdAdIdString);
 
-    // Fire-and-forget notification and dashboard update to prevent hanging the API response
-    if (session.user.id) { // Changed from session.user.email to session.user.id
-      console.log(`[API /submitter/ads] Attempting to send notification to user ID ${session.user.id} for ad ${createdAdIdString}`);
-      sendNotificationToUser(session.user.id, { // Changed from session.user.email to session.user.id
+    // --- Start Notifications ---
+    const submitterUserId = session.user.id;
+    const submitterUserEmail = session.user.email;
+
+    // 1. In-App Notification to Submitter
+    if (submitterUserId) {
+      console.log(`[API /submitter/ads] Attempting to send in-app notification to user ID ${submitterUserId} for ad ${createdAdIdString}`);
+      sendNotificationToUser(submitterUserId, {
         title: 'Ad Submitted Successfully!',
         message: `Your ad "${title}" has been submitted and is pending review. Ad ID: ${createdAdIdString}`,
         level: 'success',
+        deepLink: `/submitter/ads?adId=${createdAdIdString}` // Example deep link
       }).then(() => {
-        console.log(`[API /submitter/ads] Notification successfully queued for user ID ${session.user.id} for ad ${createdAdIdString}`);
-      }).catch(err => console.error(`[API /submitter/ads] Failed to send notification to user ID ${session.user.id} for ad ${createdAdIdString}:`, err));
+        console.log(`[API /submitter/ads] In-app notification successfully queued for user ID ${submitterUserId} for ad ${createdAdIdString}`);
+      }).catch(err => console.error(`[API /submitter/ads] Failed to send in-app notification to user ID ${submitterUserId} for ad ${createdAdIdString}:`, err));
     } else {
-      console.warn(`[API /submitter/ads] No user ID in session to send notification for ad ${createdAdIdString}`);
+      console.warn(`[API /submitter/ads] No user ID in session to send in-app notification for ad ${createdAdIdString}`);
     }
 
+    // 2. Email Notification to Submitter
+    if (submitterUserEmail && title) {
+      console.log(`[API /submitter/ads] Attempting to send email confirmation to ${submitterUserEmail} for ad ${createdAdIdString}`);
+      sendEmail({
+        to: submitterUserEmail,
+        subject: `Ad Submission Confirmation: "${title}"`,
+        text: `Hi ${session.user.name || 'Submitter'},\n\nYour ad titled "${title}" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.\n\nYou can view your ad status in your dashboard.\n\nThank you for advertising with AdScreener!`,
+        htmlContent: `
+          <p>Hi ${session.user.name || 'Submitter'},</p>
+          <p>Your ad titled "<strong>${title}</strong>" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.</p>
+          <p>You can view your ad status in your dashboard.</p>
+          <p>Thank you for advertising with AdScreener!</p>
+        `
+      }).then(() => {
+        console.log(`[API /submitter/ads] Email confirmation successfully sent to ${submitterUserEmail} for ad ${createdAdIdString}`);
+      }).catch(err => console.error(`[API /submitter/ads] Failed to send email confirmation to ${submitterUserEmail} for ad ${createdAdIdString}:`, err));
+    } else {
+      console.warn(`[API /submitter/ads] No submitter email or title available, cannot send email confirmation for ad ${createdAdIdString}`);
+    }
+
+    // 3. Trigger Reviewer Dashboard Update
     console.log(`[API /submitter/ads] Attempting to trigger reviewer dashboard update for ad ${createdAdIdString}`);
     triggerReviewerDashboardUpdate()
       .then(() => {

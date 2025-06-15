@@ -4,6 +4,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
+import { sendEmail } from "@/lib/email";
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -58,6 +60,46 @@ export async function POST(request: Request) {
       if (updateResult.matchedCount === 0) {
         return NextResponse.json({ message: "User not found during update" }, { status: 404 });
       }
+    }
+
+    // Send notifications
+    const userEmail = user.email; // Assuming user object has email
+    const userIdString = session.user.id; // Already a string from session
+
+    // 1. Send In-App Notification
+    try {
+      await sendNotificationToUser(userIdString, {
+        title: "Password Changed",
+        message: "Your password has been successfully updated.",
+        level: "success",
+      });
+      console.log(`In-app notification for password change sent to user ${userIdString}`);
+    } catch (notificationError) {
+      console.error(`Failed to send in-app notification for password change to user ${userIdString}:`, notificationError);
+    }
+
+    // 2. Send Email Notification
+    if (userEmail) {
+      try {
+        await sendEmail({
+          to: userEmail,
+          subject: "Security Alert: Your Password Has Been Changed",
+          text: `Hi ${user.name || 'User'},\n\nYour password for your AdScreener account was recently changed.\n\nIf you made this change, you can safely ignore this email.\n\nIf you did not make this change, please secure your account immediately and contact support.\n\nThank you,\nThe AdScreener Team`,
+          // Consider a more detailed HTML template for this critical alert
+          htmlContent: `
+            <p>Hi ${user.name || 'User'},</p>
+            <p>Your password for your AdScreener account was recently changed.</p>
+            <p>If you made this change, you can safely ignore this email.</p>
+            <p><strong>If you did not make this change, please secure your account immediately and contact support.</strong></p>
+            <p>Thank you,<br/>The AdScreener Team</p>
+          `
+        });
+        console.log(`Password change email alert sent to ${userEmail}`);
+      } catch (emailError) {
+        console.error(`Failed to send password change email alert to ${userEmail}:`, emailError);
+      }
+    } else {
+      console.warn(`User email not found for user ${userIdString}, cannot send password change email alert.`);
     }
 
     return NextResponse.json({ message: "Password updated successfully" }, { status: 200 });

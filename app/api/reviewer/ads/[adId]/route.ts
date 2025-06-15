@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 import { sendNotificationToUser, triggerReviewerDashboardUpdate, triggerSubmitterDashboardUpdate } from '@/lib/notification-client'; // Added triggerSubmitterDashboardUpdate
+import { sendEmail } from '@/lib/email'; // Added for email notifications
 
 // Define a basic Ad interface (consistent with submitter route)
 interface AdDocument {
@@ -101,31 +102,76 @@ export async function PUT(
       return NextResponse.json({ message: 'Ad status was not changed (already in the target state or no change made).' }, { status: 200 });
     }
 
-    // --- Send Notification to Submitter ---
-    let notificationSentToSubmitter = false;
-    if (adToUpdate.submitterEmail) {
-      let notificationTitle = '';
-      let notificationMessage = '';
-      let notificationLevel: 'success' | 'error' = 'success';
+    // --- Start Notifications ---
+    const submitterId = adToUpdate.submitterId;
+    const submitterEmail = adToUpdate.submitterEmail;
+    const adTitle = adToUpdate.title;
+    const currentReviewerId = session.user.id;
+    const currentReviewerName = session.user.name || 'A reviewer'; // Fallback name
 
-      if (body.status === 'approved') {
-        notificationTitle = 'Your Ad Has Been Approved!';
-        notificationMessage = `Congratulations! Your ad "${adToUpdate.title}" (ID: ${adId}) has been approved.`;
-        notificationLevel = 'success';
-      } else { // 'rejected'
-        notificationTitle = 'Your Ad Has Been Rejected';
-        notificationMessage = `Unfortunately, your ad "${adToUpdate.title}" (ID: ${adId}) has been rejected. Reason: ${body.rejectionReason}`;
-        notificationLevel = 'error';
-      }
+    let submitterNotificationTitle = '';
+    let submitterNotificationMessage = '';
+    let submitterNotificationLevel: 'success' | 'error' = 'success';
+    let emailSubject = '';
+    let emailText = '';
+    let emailHtmlContent = '';
 
-      await sendNotificationToUser(adToUpdate.submitterEmail, {
-        title: notificationTitle,
-        message: notificationMessage,
-        level: notificationLevel,
-        // deepLink: `/submitter/ads/${adId}` // Optional
-      });
-      notificationSentToSubmitter = true;
+    if (body.status === 'approved') {
+      submitterNotificationTitle = 'Your Ad Has Been Approved!';
+      submitterNotificationMessage = `Congratulations! Your ad "${adTitle}" (ID: ${adId}) has been approved.`;
+      submitterNotificationLevel = 'success';
+
+      emailSubject = `Ad Approved: "${adTitle}"`;
+      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nGood news! Your ad titled "${adTitle}" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.\n\nThank you for using AdScreener.`;
+      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>Good news! Your ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.</p><p>Thank you for using AdScreener.</p>`;
+
+    } else { // 'rejected'
+      submitterNotificationTitle = 'Your Ad Has Been Rejected';
+      submitterNotificationMessage = `Unfortunately, your ad "${adTitle}" (ID: ${adId}) has been rejected. Reason: ${body.rejectionReason}`;
+      submitterNotificationLevel = 'error';
+
+      emailSubject = `Ad Rejected: "${adTitle}"`;
+      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nWe regret to inform you that your ad titled "${adTitle}" (ID: ${adId}) has been rejected.\nReason: ${body.rejectionReason}\n\nPlease review the feedback and make necessary changes if you wish to resubmit.\n\nRegards,\nThe AdScreener Team`;
+      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>We regret to inform you that your ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been rejected.</p><p><strong>Reason:</strong> ${body.rejectionReason}</p><p>Please review the feedback and make necessary changes if you wish to resubmit.</p><p>Regards,<br/>The AdScreener Team</p>`;
     }
+
+    // 1. In-App Notification to Submitter
+    if (submitterId) {
+      sendNotificationToUser(submitterId, {
+        title: submitterNotificationTitle,
+        message: submitterNotificationMessage,
+        level: submitterNotificationLevel,
+        deepLink: `/submitter/ads?adId=${adId}` // Example deep link
+      }).then(() => console.log(`In-app notification sent to submitter ${submitterId} for ad ${adId} status ${body.status}`))
+        .catch(err => console.error(`Failed to send in-app notification to submitter ${submitterId} for ad ${adId}:`, err));
+    } else {
+      console.warn(`No submitterId found for ad ${adId}, cannot send in-app notification.`);
+    }
+
+    // 2. Email Notification to Submitter
+    if (submitterEmail) {
+      sendEmail({
+        to: submitterEmail,
+        subject: emailSubject,
+        text: emailText,
+        htmlContent: emailHtmlContent
+      }).then(() => console.log(`Email notification sent to submitter ${submitterEmail} for ad ${adId} status ${body.status}`))
+        .catch(err => console.error(`Failed to send email to submitter ${submitterEmail} for ad ${adId}:`, err));
+    } else {
+      console.warn(`No submitterEmail found for ad ${adId}, cannot send email notification.`);
+    }
+    
+    // 3. In-App Notification to Reviewer (who performed the action)
+    if (currentReviewerId) {
+        sendNotificationToUser(currentReviewerId, {
+            title: `Ad Review Complete: ${adTitle}`,
+            message: `You have successfully ${body.status} the ad "${adTitle}" (ID: ${adId}).`,
+            level: 'info', // Or 'success'
+            // deepLink: `/reviewer/ads/${adId}` // Or to the list of reviewed ads
+        }).then(() => console.log(`In-app notification sent to reviewer ${currentReviewerId} for action on ad ${adId}`))
+          .catch(err => console.error(`Failed to send in-app notification to reviewer ${currentReviewerId} for ad ${adId}:`, err));
+    }
+
 
     // --- Trigger Dashboard Update for Reviewers ---
     // This should be called regardless of whether the submitter notification was sent,
@@ -139,7 +185,7 @@ export async function PUT(
     }
 
     return NextResponse.json({
-      message: `Ad ${adId} status updated to ${body.status}. ${notificationSentToSubmitter ? 'Submitter notified.' : 'Submitter not notified (no email or error).'} Relevant dashboards refreshing.`,
+      message: `Ad ${adId} status updated to ${body.status}. Notifications initiated. Relevant dashboards refreshing.`,
     }, { status: 200 });
 
   } catch (error) {

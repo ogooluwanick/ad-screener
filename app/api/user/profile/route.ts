@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path as necessary
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { sendNotificationToUser } from "@/lib/notification-client"; // Added for notifications
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -126,6 +127,17 @@ export async function PUT(req: Request) {
     
     // Fetch the updated user to return it
     const updatedUser = await usersCollection.findOne({ _id: userId });
+
+    // Send in-app notification
+    if (session.user.id && result.modifiedCount > 0) { // Only send if something actually changed
+      sendNotificationToUser(session.user.id, {
+        title: "Profile Updated",
+        message: "Your profile information has been successfully updated.",
+        level: "success",
+      }).then(() => console.log(`Profile update notification sent to user ${session.user.id}`))
+        .catch(err => console.error(`Failed to send profile update notification to user ${session.user.id}:`, err));
+    }
+
 
     return NextResponse.json(
       { message: "Profile updated successfully", user: {

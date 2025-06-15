@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
+import { sendSignupEmail } from "@/lib/email"; // Added import for email sending
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,6 +77,16 @@ export async function POST(req: NextRequest) {
         name: newUser.name,
         role: newUser.role,
     };
+
+    // Send signup email
+    try {
+      await sendSignupEmail(newUser.email, newUser.name);
+      console.log(`Signup email sent to ${newUser.email}`);
+    } catch (emailError) {
+      console.error(`Failed to send signup email to ${newUser.email}:`, emailError);
+      // Optionally, decide if this failure should affect the overall response.
+      // For now, registration is successful even if email fails, but it's logged.
+    }
 
     return NextResponse.json(
       { message: "User created successfully", user: createdUser },
