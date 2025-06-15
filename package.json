@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 6999",
-    "ws:dev": "tsx watch server.ts",
-    "dev:all": "concurrently --kill-others-on-fail --names \"NEXT,WS\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev\" \"npm run ws:dev\"",
+    "dev:all": "npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -71,7 +70,6 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
-    "ws": "^8.18.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -80,7 +78,6 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^10.0.0",
-    "@types/ws": "^8.18.1",
     "concurrently": "^8.2.2",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { sendNotificationToUser, triggerReviewerDashboardUpdate } from '@/lib/notification-client';
+import { sendNotificationToUser } from '@/lib/notification-client'; // Removed triggerReviewerDashboardUpdate
 import { sendEmail } from '@/lib/email'; // Added for sending email
 import fs from 'fs/promises';
 import path from 'path';
@@ -217,13 +217,13 @@ export async function POST(request: Request) {
       console.warn(`[API /submitter/ads] No submitter email or title available, cannot send email confirmation for ad ${createdAdIdString}`);
     }
 
-    // 3. Trigger Reviewer Dashboard Update
-    console.log(`[API /submitter/ads] Attempting to trigger reviewer dashboard update for ad ${createdAdIdString}`);
-    triggerReviewerDashboardUpdate()
-      .then(() => {
-        console.log(`[API /submitter/ads] Reviewer dashboard update successfully triggered for ad ${createdAdIdString}`);
-      })
-      .catch(err => console.error(`[API /submitter/ads] Failed to trigger reviewer dashboard update for ad ${createdAdIdString}:`, err));
+    // 3. Trigger Reviewer Dashboard Update (This is now handled by client-side polling)
+    // console.log(`[API /submitter/ads] Attempting to trigger reviewer dashboard update for ad ${createdAdIdString}`);
+    // triggerReviewerDashboardUpdate()
+    //   .then(() => {
+    //     console.log(`[API /submitter/ads] Reviewer dashboard update successfully triggered for ad ${createdAdIdString}`);
+    //   })
+    //   .catch(err => console.error(`[API /submitter/ads] Failed to trigger reviewer dashboard update for ad ${createdAdIdString}:`, err));
 
     console.log('[API /submitter/ads] Successfully processed ad submission. Returning 201.');
     return NextResponse.json({ 

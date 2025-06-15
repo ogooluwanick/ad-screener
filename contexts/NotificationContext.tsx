@@ -7,9 +7,10 @@ import { useUserProfile } from '@/hooks/use-user-profile'; // To get userId and 
 interface NotificationContextType {
   notifications: UINotification[];
   isLoading: boolean;
-  isConnected: boolean;
+  // isConnected: boolean; // Removed, no longer part of useNotifications
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  refetchNotifications: () => void; // Added refetch function
   clearNotifications: () => void;
   clearReadNotifications: () => void;
   unreadNotificationCount: number; // Add unread count here
@@ -22,11 +23,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const userId = userProfile?._id || userProfile?.id;
   const role = userProfile?.role;
 
-  // Memoize onMessageCallbacks to prevent unnecessary re-renders/effect runs in useNotifications
-  const onMessageCallbacks = useMemo(() => ({}), []); 
-
-  // Pass an empty onMessageCallbacks object or define specific ones if needed globally
-  const notificationState = useNotifications(userId, role, onMessageCallbacks); 
+  // useNotifications hook no longer takes role or onMessageCallbacks
+  const notificationState = useNotifications(userId); 
 
   // Log the state from useNotifications as seen by the Provider
   console.log('[NotificationProvider] notificationState from useNotifications:', notificationState);

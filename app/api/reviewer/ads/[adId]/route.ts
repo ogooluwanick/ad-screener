@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path as needed
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
-import { sendNotificationToUser, triggerReviewerDashboardUpdate, triggerSubmitterDashboardUpdate } from '@/lib/notification-client'; // Added triggerSubmitterDashboardUpdate
+import { sendNotificationToUser } from '@/lib/notification-client'; // Removed triggerReviewerDashboardUpdate and triggerSubmitterDashboardUpdate
 import { sendEmail } from '@/lib/email'; // Added for email notifications
 
 // Define a basic Ad interface (consistent with submitter route)
@@ -173,16 +173,13 @@ export async function PUT(
     }
 
 
-    // --- Trigger Dashboard Update for Reviewers ---
-    // This should be called regardless of whether the submitter notification was sent,
-    // as long as the ad status was successfully updated.
-    if (result.modifiedCount > 0) {
-      await triggerReviewerDashboardUpdate();
-      // Also trigger an update for the specific submitter's dashboard
-      if (adToUpdate.submitterId) {
-        await triggerSubmitterDashboardUpdate(adToUpdate.submitterId);
-      }
-    }
+    // --- Trigger Dashboard Update for Reviewers --- (This is now handled by client-side polling)
+    // if (result.modifiedCount > 0) {
+    //   // await triggerReviewerDashboardUpdate(); // Deprecated
+    //   // if (adToUpdate.submitterId) {
+    //   //   await triggerSubmitterDashboardUpdate(adToUpdate.submitterId); // Deprecated
+    //   // }
+    // }
 
     return NextResponse.json({
       message: `Ad ${adId} status updated to ${body.status}. Notifications initiated. Relevant dashboards refreshing.`,

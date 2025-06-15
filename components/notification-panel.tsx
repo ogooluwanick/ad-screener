@@ -35,7 +35,16 @@ export default function NotificationPanel({
     clearNotifications,
     clearReadNotifications,
     unreadNotificationCount, // Use the count from context
+    refetchNotifications, // Get the refetch function
   } = useNotificationContext();
+
+  // Refetch notifications when the panel is opened
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[NotificationPanel] Panel opened, refetching notifications.");
+      refetchNotifications();
+    }
+  }, [isOpen, refetchNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -128,8 +137,9 @@ export default function NotificationPanel({
                 notification.level === 'warning' ? 'text-yellow-500' :
                 'text-blue-500';
 
-              const notificationKey = notification._id || notification.clientGeneratedId || String(Date.now() + Math.random());
-              const notificationIdForMarkRead = notification._id || notification.clientGeneratedId;
+              // Notifications from the server will always have an _id
+              const notificationKey = notification._id; 
+              const notificationIdForMarkRead = notification._id;
 
               const content = (
                 <div
