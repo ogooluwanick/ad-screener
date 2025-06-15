@@ -359,7 +359,7 @@ export default function ReviewerDashboard() {
         <CardContent>
           <div className="text-sm">
             <p className="mb-4">
-              Hello {session?.user?.email || 'Reviewer'}, welcome to your reviewer dashboard. As a reviewer, you play a crucial role in
+              Hello <span className="capitalize">{session?.user?.firstName || 'Reviewer'}</span>, welcome to your reviewer dashboard. As a reviewer, you play a crucial role in
               maintaining the quality and standards of advertisements on our platform.
             </p>
             <p>

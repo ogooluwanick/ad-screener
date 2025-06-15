@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client: MongoClient = await clientPromise;
+    const client: MongoClient = await clientPromise(); // Call the function
     const db = client.db();
     const usersCollection = db.collection("users");
 

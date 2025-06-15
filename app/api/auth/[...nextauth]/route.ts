@@ -5,8 +5,10 @@ import clientPromise from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 import { MongoClient } from "mongodb"
 
+// clientPromise is now a function that returns Promise<MongoClient>
+// We need to call it to get the promise for the adapter.
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise()), 
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -19,32 +21,47 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing email or password");
         }
 
-        const client: MongoClient = await clientPromise;
+        // Call clientPromise() to get the Promise<MongoClient>, then await it.
+        const client: MongoClient = await clientPromise(); 
         const usersCollection = client.db().collection("users");
-        const user = await usersCollection.findOne({ email: credentials.email });
+        const dbUser = await usersCollection.findOne({ email: credentials.email });
 
-        if (!user) {
+        if (!dbUser) {
           throw new Error("No user found with this email");
         }
 
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password as string);
+        const isValidPassword = await bcrypt.compare(credentials.password, dbUser.password as string);
 
         if (!isValidPassword) {
           throw new Error("Incorrect password");
         }
 
+        let sessionTimeoutInHours = 4; // Default session timeout
+        if (dbUser.role === "reviewer" && dbUser.reviewerSettings?.security?.sessionTimeout) {
+          sessionTimeoutInHours = parseInt(dbUser.reviewerSettings.security.sessionTimeout, 10);
+        } else if (dbUser.role === "submitter" && dbUser.submitterSettings?.security?.sessionTimeout) {
+          sessionTimeoutInHours = parseInt(dbUser.submitterSettings.security.sessionTimeout, 10);
+        }
+
         // Return user object without password
         return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role, // Add role here
+          id: dbUser._id.toString(),
+          name: dbUser.name, 
+          email: dbUser.email,
+          role: dbUser.role,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          profileImageUrl: dbUser.profileImageUrl,
+          sessionTimeoutInHours: sessionTimeoutInHours 
         };
       }
     })
   ],
   session: {
     strategy: "jwt",
+    // maxAge can be set to the longest possible session timeout (e.g., 7 days in seconds)
+    // The JWT's own 'exp' claim will enforce the user-specific shorter timeout.
+    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
   },
   pages: {
     signIn: '/login',
@@ -58,7 +75,15 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role; // Add role to token
+        token.role = (user as any).role;
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
+        token.profileImageUrl = (user as any).profileImageUrl;
+        
+        // Set JWT expiration based on user's sessionTimeout setting
+        const sessionTimeoutInHours = (user as any).sessionTimeoutInHours || 4; // Default to 4 hours if not set
+        const sessionTimeoutInSeconds = sessionTimeoutInHours * 60 * 60;
+        token.exp = Math.floor(Date.now() / 1000) + sessionTimeoutInSeconds;
       }
       return token;
     },
@@ -66,6 +91,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string; // Add role to session
+        session.user.firstName = token.firstName as string;
+        session.user.lastName = token.lastName as string;
+        session.user.profileImageUrl = token.profileImageUrl as string;
       }
       return session;
     },

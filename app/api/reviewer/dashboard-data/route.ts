@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const adsCollection = db.collection<AdDocument>('ads');
     const currentReviewerId = session.user.id;

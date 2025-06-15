@@ -77,7 +77,7 @@ export default function UnifiedSettingsPage() {
     newPassword: "",
     confirmPassword: "",
     twoFactorEnabled: false, // Default, can be fetched if API supports
-    sessionTimeout: "4", // Reviewer had this, can be common or conditional
+    sessionTimeout: "4", // Default session timeout, will be fetched
   })
 
   useEffect(() => {
@@ -111,10 +111,12 @@ export default function UnifiedSettingsPage() {
             setSubmitterPreferences(data.preferences);
           }
         }
-        // Potentially fetch common security settings if an endpoint exists
-        // For now, sessionTimeout is reviewer-specific in UI but could be common
-        if (userRole === "reviewer" && data.security?.sessionTimeout) {
+        // Fetch common security settings, including sessionTimeout
+        if (data.security?.sessionTimeout) {
             setSecurity(prev => ({...prev, sessionTimeout: data.security.sessionTimeout}));
+        } else if (userRole === "reviewer" && data.reviewPreferences?.sessionTimeout) { 
+            // Backwards compatibility for old structure if needed, though API should be primary
+            setSecurity(prev => ({...prev, sessionTimeout: data.reviewPreferences.sessionTimeout}));
         }
 
 
@@ -157,12 +159,13 @@ export default function UnifiedSettingsPage() {
     if (!userRole) return;
     setIsSaving(true)
     const apiUrl = userRole === "reviewer" ? "/api/reviewer/settings" : "/api/submitter/settings"
-    let payload: any = { notifications }
+    let payload: any = { 
+      notifications,
+      security: { sessionTimeout: security.sessionTimeout } // Include session timeout for all roles
+    }
 
     if (userRole === "reviewer") {
       payload.reviewPreferences = reviewPreferences
-      // Include sessionTimeout if it's managed for reviewers
-      // payload.security = { sessionTimeout: security.sessionTimeout }; 
     } else if (userRole === "submitter") {
       payload.privacy = privacy
       payload.preferences = submitterPreferences;
@@ -488,25 +491,25 @@ export default function UnifiedSettingsPage() {
             </div>
             <Button onClick={handleChangePassword} variant="outline" disabled={isSaving && !!security.currentPassword}>{isSaving && !!security.currentPassword ? "Changing..." : "Change Password"}</Button>
             
-            {/* Session Timeout - originally reviewer specific, can be made common if API supports */}
-            {userRole === "reviewer" && (
-              <>
+            {/* Session Timeout - Common for all roles */}
+            <>
               <Separator />
               <div className="space-y-2">
                 <Label htmlFor="sessionTimeout">Session Timeout</Label>
                 <Select value={security.sessionTimeout} onValueChange={(v) => handleSecurityChange("sessionTimeout", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select timeout duration" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">1 hour</SelectItem>
                     <SelectItem value="2">2 hours</SelectItem>
                     <SelectItem value="4">4 hours</SelectItem>
                     <SelectItem value="8">8 hours</SelectItem>
-                    <SelectItem value="24">24 hours</SelectItem>
+                    <SelectItem value="24">24 hours (1 day)</SelectItem>
+                    <SelectItem value="168">168 hours (7 days)</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-gray-500">Automatically log out after a period of inactivity.</p>
               </div>
-              </>
-            )}
+            </>
           </div>
         </CardContent>
       </Card>

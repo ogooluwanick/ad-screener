@@ -7,17 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, CheckCircle, Eye, ExternalLink, Info, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, Eye, ExternalLink, Info, Send, ThumbsDown, ThumbsUp, XCircle } from "lucide-react"; // Added Send, ThumbsUp, ThumbsDown
 import { PendingAdListItem } from "@/app/api/reviewer/ads/pending/route"; // Import the interface
 import { useNotifications } from "@/hooks/use-notifications";
-import { Badge } from "@/components/ui/badge"; // For status, if needed, though all are 'pending'
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"; // Added Dialog components
+import { Textarea } from "@/components/ui/textarea"; // Added Textarea
+import { Label } from "@/components/ui/label"; // Added Label
+import { toast } from "@/components/ui/use-toast"; // For notifications
 
 export default function PendingAdsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const [pendingAds, setPendingAds] = useState<PendingAdListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAdForReview, setSelectedAdForReview] = useState<PendingAdListItem | null>(null); // For a modal/detail view
+  const [selectedAdForReview, setSelectedAdForReview] = useState<PendingAdListItem | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const fetchPendingAds = useCallback(async () => {
     setIsLoading(true);
@@ -60,16 +67,62 @@ export default function PendingAdsPage() {
     }
   }, [session, sessionStatus, fetchPendingAds]);
 
-  // Modal/dialog functions for ad review (simplified for now)
-  const handleReviewAd = (ad: PendingAdListItem) => {
-    // This would typically open a modal or navigate to a detailed review page
-    // For now, we'll just log it or set it for a simple display.
-    // Router.push(`/reviewer/review/${ad.id}`) // Example navigation
+  const handleOpenReviewModal = (ad: PendingAdListItem) => {
     setSelectedAdForReview(ad);
-    // For a real review UI, you'd likely have a modal here.
-    // For simplicity, we'll just use an alert or log.
-    alert(`Reviewing Ad: ${ad.title}\nID: ${ad.id}\n\n(Full review UI would open here)`);
-    // TODO: Implement actual review modal/page and PUT request to /api/reviewer/ads/[adId]
+    setRejectionReason(""); // Reset reason
+    setIsReviewModalOpen(true);
+  };
+
+  const handleCloseReviewModal = () => {
+    setSelectedAdForReview(null);
+    setIsReviewModalOpen(false);
+    setRejectionReason("");
+  };
+
+  const submitReview = async (adId: string, status: 'approved' | 'rejected', reason?: string) => {
+    if (!session?.user?.id) {
+      toast({ title: "Error", description: "You must be logged in to review ads.", variant: "destructive" });
+      return;
+    }
+    if (status === 'rejected' && !reason?.trim()) {
+      toast({ title: "Validation Error", description: "Rejection reason is required.", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const response = await fetch(`/api/reviewer/ads/${adId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          rejectionReason: status === 'rejected' ? reason : undefined,
+          reviewerId: session.user.id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to submit review: ${response.statusText}`);
+      }
+
+      toast({
+        title: "Review Submitted",
+        description: `Ad has been ${status}.`,
+        variant: "default",
+      });
+      setPendingAds(prevAds => prevAds.filter(ad => ad.id !== adId)); // Remove from list
+      handleCloseReviewModal();
+    } catch (err) {
+      console.error("Failed to submit review:", err);
+      toast({
+        title: "Review Submission Failed",
+        description: err instanceof Error ? err.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
 
@@ -138,7 +191,8 @@ export default function PendingAdsPage() {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Submitter</TableHead>
-                  <TableHead>Submitted On</TableHead>
+                  <TableHead className="hidden md:table-cell">Email</TableHead>
+                  <TableHead>Submitted</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -146,7 +200,24 @@ export default function PendingAdsPage() {
                 {pendingAds.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.title}</TableCell>
-                    <TableCell>{ad.submitterEmail}</TableCell>
+                    <TableCell>
+                      {ad.submitterId ? (
+                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
+                          {ad.submitterName || ad.submitterEmail}
+                        </Link>
+                      ) : (
+                        ad.submitterName || ad.submitterEmail
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {ad.submitterId ? (
+                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
+                          {ad.submitterEmail}
+                        </Link>
+                      ) : (
+                        ad.submitterEmail
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(ad.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
                        <Button
@@ -160,7 +231,7 @@ export default function PendingAdsPage() {
                       <Button 
                         variant="default" 
                         size="sm" 
-                        onClick={() => handleReviewAd(ad)}
+                        onClick={() => handleOpenReviewModal(ad)}
                         className="bg-blue-600 hover:bg-blue-700"
                         title="Review Ad Details"
                       >
@@ -175,6 +246,97 @@ export default function PendingAdsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Review Modal */}
+      <Dialog open={isReviewModalOpen} onOpenChange={(isOpen: boolean) => { if (!isOpen) handleCloseReviewModal(); else setIsReviewModalOpen(true); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review Ad: {selectedAdForReview?.title}</DialogTitle>
+            <DialogDescription>
+              Carefully review the ad details and content before making a decision.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAdForReview && (
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto !px-2">
+              <div>
+                <h3 className="font-semibold mb-1">Ad Title:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForReview.title}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Ad Description:</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForReview.description}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Target URL:</h3>
+                <a 
+                  href={selectedAdForReview.contentUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline break-all"
+                >
+                  {selectedAdForReview.contentUrl} <ExternalLink className="inline h-3 w-3 ml-1" />
+                </a>
+              </div>
+              {selectedAdForReview.imageUrl && (
+                <div>
+                  <h3 className="font-semibold mb-1">Ad Creative:</h3>
+                  <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
+                    <img 
+                      src={selectedAdForReview.imageUrl} 
+                      alt={`Ad creative for ${selectedAdForReview.title}`} 
+                      className="w-full h-auto object-contain" 
+                    />
+                  </div>
+                </div>
+              )}
+              <div>
+                <h3 className="font-semibold mb-1">Submitted By:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForReview.submitterName || selectedAdForReview.submitterEmail} ({selectedAdForReview.submitterEmail})</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Submitted On:</h3>
+                <p className="text-sm text-muted-foreground">{new Date(selectedAdForReview.submissionDate).toLocaleString()}</p>
+              </div>
+
+              <hr className="my-4" />
+
+              <div>
+                <Label htmlFor="rejectionReason" className="font-semibold">Rejection Reason (if rejecting):</Label>
+                <Textarea
+                  id="rejectionReason"
+                  placeholder="Provide a clear reason if rejecting the ad..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isSubmittingReview}>Cancel</Button>
+            </DialogClose>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedAdForReview && submitReview(selectedAdForReview.id, 'rejected', rejectionReason)}
+              disabled={isSubmittingReview || (!!selectedAdForReview && !rejectionReason.trim())}
+            >
+              <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => selectedAdForReview && submitReview(selectedAdForReview.id, 'approved')}
+              disabled={isSubmittingReview}
+            >
+              <ThumbsUp className="mr-2 h-4 w-4" /> Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

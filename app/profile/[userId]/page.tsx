@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield } from "lucide-react";
+import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield, CheckCircle, XCircle } from "lucide-react"; // Added CheckCircle, XCircle
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,8 +28,14 @@ const initialDisplayProfileData: DisplayProfileData = {
   website: "",
   department: "",
   reviewerLevel: "",
-  expertise: [], // Added for reviewers
-  profileVisibility: "public", // Default to public
+  expertise: [], 
+  accuracy: 0, // Added for reviewers
+  totalAds: 0, // Added for submitters
+  approvedAds: 0, // Added for submitters
+  pendingAds: 0, // Added for submitters
+  rejectedAds: 0, // Added for submitters
+  email: "", // Added email
+  profileVisibility: "public", 
 };
 
 export default function UserProfilePage() {
@@ -56,8 +62,14 @@ export default function UserProfilePage() {
         website: fetchedProfileData.website || "",
         department: fetchedProfileData.department || "",
         reviewerLevel: fetchedProfileData.reviewerLevel || "",
-        expertise: (fetchedProfileData as any).expertise || [], // Cast to any if expertise is not in PublicProfileViewData by default
-        profileVisibility: fetchedProfileData.profileVisibility || "public", // Set profile visibility
+        expertise: fetchedProfileData.expertise || [],
+        accuracy: fetchedProfileData.accuracy || 0,
+        totalAds: fetchedProfileData.totalAds || 0,
+        approvedAds: fetchedProfileData.approvedAds || 0,
+        pendingAds: fetchedProfileData.pendingAds || 0,
+        rejectedAds: fetchedProfileData.rejectedAds || 0,
+        email: fetchedProfileData.email || "",
+        profileVisibility: fetchedProfileData.profileVisibility || "public",
       });
     }
   }, [fetchedProfileData]);
@@ -160,8 +172,10 @@ export default function UserProfilePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {profileData.email && <div className="flex items-center text-sm text-gray-600"><Mail className="h-4 w-4 mr-2" />{profileData.email}</div>}
             {profileData.location && <div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />{profileData.location}</div>}
-            {profileData.joinDate && <div className="flex items-center text-sm text-gray-600"><Calendar className="h-4 w-4 mr-2" />Joined {new Date(profileData.joinDate).toLocaleDateString()}</div>}
+            <div className="flex items-center text-sm text-gray-600"><Calendar className="h-4 w-4 mr-2" />Joined {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString() : "N/A"}</div>
+            {userRole === 'reviewer' && profileData.accuracy !== undefined && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />{profileData.accuracy}% Accuracy Rate</div>)}
             {userRole === 'submitter' && profileData.company && (
               <div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />{profileData.company}</div>
             )}
@@ -197,8 +211,108 @@ export default function UserProfilePage() {
                 </div>
               </div>
             )}
+             {userRole === 'reviewer' && (!profileData.expertise || profileData.expertise.length === 0) && !profileData.bio && (
+                <p className="text-sm text-gray-500">No additional information provided.</p>
+            )}
           </CardContent>
         </Card>
+
+        {/* Reviewer Specific Sections - Mock Data */}
+        {userRole === 'reviewer' && (
+          <>
+            <Card className="md:col-span-3">
+              <CardHeader>
+                <CardTitle>Review Performance</CardTitle>
+                <CardDescription>Reviewing statistics and performance metrics (mock data for public view).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">120</div> {/* Mock */}
+                    <div className="text-sm text-gray-600">Total Reviews</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">100</div> {/* Mock */}
+                    <div className="text-sm text-gray-600">Approved</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">20</div> {/* Mock */}
+                    <div className="text-sm text-gray-600">Rejected</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">15m</div> {/* Mock */}
+                    <div className="text-sm text-gray-600">Avg Review Time</div>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-lg">
+                    <div className="text-2xl font-bold text-amber-600">{profileData.accuracy || 0}%</div>
+                    <div className="text-sm text-gray-600">Accuracy Rate</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="md:col-span-3">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Latest review activities (mock data for public view).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+                      <div><p className="font-medium">Approved "Example Ad A" ad</p><p className="text-sm text-gray-500">3 hours ago</p></div>
+                    </div>
+                    <Badge variant="outline" className="text-green-600 border-green-600">Approved</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div className="flex items-center">
+                      <XCircle className="h-5 w-5 text-red-600 mr-3" />
+                      <div><p className="font-medium">Rejected "Example Ad B" ad</p><p className="text-sm text-gray-500">2 days ago</p></div>
+                    </div>
+                    <Badge variant="outline" className="text-red-600 border-red-600">Rejected</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Submitter Specific Section - Using Fetched Stats */}
+        {userRole === 'submitter' && (
+          <Card className="md:col-span-3">
+            <CardHeader>
+              <CardTitle>Account Statistics</CardTitle>
+              <CardDescription>Overview of ad submissions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(profileData.totalAds === undefined) && !error && !isLoading && ( // Check if stats are undefined (not just 0)
+                 <div className="text-center p-8 text-gray-500">
+                    <p>Statistics are not available for this user.</p>
+                 </div>
+              )}
+              {profileData.totalAds !== undefined && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{profileData.totalAds || 0}</div>
+                    <div className="text-sm text-gray-600">Total Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{profileData.approvedAds || 0}</div>
+                    <div className="text-sm text-gray-600">Approved Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-lg">
+                    <div className="text-2xl font-bold text-amber-600">{profileData.pendingAds || 0}</div>
+                    <div className="text-sm text-gray-600">Pending Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">{profileData.rejectedAds || 0}</div>
+                    <div className="text-sm text-gray-600">Rejected Ads</div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -3,8 +3,9 @@
 import React from "react"
 import { SessionProvider } from "next-auth/react"
 import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from "next-themes"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query" // Import React Query components
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Toaster } from "@/components/ui/toaster"
+import { NotificationProvider } from "@/contexts/NotificationContext"; // Import NotificationProvider
 
 // Create a single QueryClient instance
 // It's often good to instantiate it outside the component or memoize it
@@ -44,10 +45,12 @@ export function Providers({ children, ...props }: ThemeProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <NextThemesProvider {...props}>
-          {children}
-          <Toaster />
-        </NextThemesProvider>
+        <NotificationProvider> {/* Wrap with NotificationProvider */}
+          <NextThemesProvider {...props}>
+            {children}
+            <Toaster />
+          </NextThemesProvider>
+        </NotificationProvider>
       </SessionProvider>
     </QueryClientProvider>
   )

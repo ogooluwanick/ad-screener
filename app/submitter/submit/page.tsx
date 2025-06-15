@@ -19,7 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
-import Paystack from "@/components/Paystack"
+import Paystack from "@/components/Paystack" // This is the new PaystackButton-based component
+// import axios from "axios"; // Not strictly needed if using fetch for FormData
 
 const AD_SUBMISSION_FEE_USD = 50;
 
@@ -37,8 +38,8 @@ export default function SubmitAd() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false) // For the ad data submission step
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false) // For Paystack UI interaction
   const [isSubmissionComplete, setIsSubmissionComplete] = useState(false)
 
   const [currentNgnRate, setCurrentNgnRate] = useState<number | null>(null)
@@ -148,51 +149,103 @@ export default function SubmitAd() {
     setIsPaymentModalOpen(true)
   }
 
+  // Called by Paystack.jsx when the visible button is clicked, before Paystack modal opens
   const handlePaystackInitiate = () => {
-    setIsPaymentProcessing(true);
+    console.log("[SubmitAdPage] handlePaystackInitiate called. Setting isPaymentProcessing to true.");
+    setIsPaymentProcessing(true); // This will show "Processing Payment..." on the Paystack.jsx button
   };
 
-  const handlePaymentSuccess = async (paymentReference: { reference: string }) => {
-    setIsSubmitting(true) 
-    const adUploadData = new FormData()
-    adUploadData.append("title", formData.title)
-    adUploadData.append("description", formData.description)
-    adUploadData.append("contentUrl", formData.targetUrl)
-    if (imageFile) adUploadData.append("image", imageFile)
-    adUploadData.append("paymentReference", paymentReference.reference)
-    if (session?.user?.id) adUploadData.append("submitterId", session.user.id)
+  // This is the 'onSuccess' callback from the PaystackButton component
+  const handlePaymentSuccess = async (paymentResult: { reference: string }) => {
+    console.log("[SubmitAdPage] handlePaymentSuccess (Paystack callback) called. Result:", paymentResult);
+    // At this point, isPaymentProcessing is likely true from onInitiate.
+    // We now set isSubmitting to true for the ad data upload phase.
+    console.log("[SubmitAdPage] Setting isSubmitting to true for ad data submission.");
+    setIsSubmitting(true); 
 
     try {
-      const response = await fetch("/api/submitter/ads", { method: "POST", body: adUploadData })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.message || "Ad submission failed")
+      const adUploadData = new FormData();
+      adUploadData.append("title", formData.title);
+      adUploadData.append("description", formData.description);
+      adUploadData.append("contentUrl", formData.targetUrl);
+      if (imageFile) {
+        adUploadData.append("image", imageFile);
+      }
       
-      toast({ title: "Success!", description: "Your ad has been submitted for review." })
-      setIsSubmissionComplete(true)
-      setIsPaymentModalOpen(false)
+      if (!paymentResult || typeof paymentResult.reference !== 'string') {
+        console.error("[SubmitAdPage] Invalid payment reference object from Paystack:", paymentResult);
+        throw new Error("Invalid payment reference received from Paystack.");
+      }
+      adUploadData.append("paymentReference", paymentResult.reference);
+
+      // submitterId is handled by the backend using the session.
+      if (!session?.user?.id) {
+        console.error("[SubmitAdPage] User session not found, cannot submit ad.");
+        throw new Error("User session not found, cannot submit ad.");
+      }
+
+      if (calculatedFeeInKobo !== null) {
+        adUploadData.append("amountInKobo", calculatedFeeInKobo.toString());
+      } else {
+        console.error("[SubmitAdPage] Critical error: calculatedFeeInKobo is null.");
+        throw new Error("Fee amount was not available for submission. Please contact support.");
+      }
+
+      console.log("[SubmitAdPage] Attempting to POST ad data to /api/submitter/ads. FormData prepared.");
+      const response = await fetch("/api/submitter/ads", {
+        method: "POST",
+        body: adUploadData,
+      });
+      const resultData = await response.json();
+      console.log("[SubmitAdPage] API response status:", response.status, "Result:", resultData);
+
+      if (!response.ok) {
+        throw new Error(resultData.message || "Ad submission failed after payment.");
+      }
+      
+      toast({ title: "Success!", description: "Your ad has been submitted for review." });
+      console.log("[SubmitAdPage] Ad submission successful. Setting isSubmissionComplete to true.");
+      setIsSubmissionComplete(true); 
+      
+      // No need to manually set isSubmitting/isPaymentProcessing to false here before closing modal,
+      // as the finally block handles it. The modal should close.
+      setIsPaymentModalOpen(false); 
+      
       setTimeout(() => {
-        router.push("/submitter/dashboard")
-      }, 2000)
-    } catch (error: any) {
-      console.error("Ad submission error:", error)
-      toast({ title: "Submission Failed", description: error.message || "An error occurred while submitting your ad.", variant: "destructive" })
-    } finally {
-      setIsSubmitting(false)
-      setIsPaymentProcessing(false)
+        console.log("[SubmitAdPage] Navigating to dashboard.");
+        router.push("/submitter/dashboard");
+      }, 2000);
+
+    } catch (error: any) { 
+      console.error("[SubmitAdPage] Error during ad submission process:", error);
+      toast({ 
+        title: "Ad Submission Failed", 
+        description: `Your payment was successful, but an error occurred while submitting your ad: ${error.message}. Please contact support with your payment reference: ${paymentResult?.reference || 'N/A'}.`, 
+        variant: "destructive",
+        duration: 10000 
+      });
+      // isSubmitting and isPaymentProcessing will be reset in the finally block.
+      // The modal might remain open if setIsPaymentModalOpen(false) wasn't reached or if an error occurred before.
+      // If it's open, the user can manually close it or retry.
+    } finally { 
+      console.log("[SubmitAdPage] Finally block in handlePaymentSuccess. Resetting isSubmitting and isPaymentProcessing.");
+      setIsSubmitting(false); // Reset for the main form button
+      setIsPaymentProcessing(false); // Reset for the Paystack button in the modal
     }
   }
 
+  // This is the 'onClose' callback from the PaystackButton component
   const handlePaymentClose = () => {
-    setIsPaymentModalOpen(false)
-    setIsPaymentProcessing(false) 
-    if (!isSubmissionComplete) {
-        toast({ title: "Payment Cancelled", description: "The payment process was cancelled.", variant: "default" })
+    console.log("[SubmitAdPage] handlePaymentClose (Paystack callback) called. isSubmissionComplete:", isSubmissionComplete);
+    // Only show "Payment Cancelled" if submission hasn't happened and modal is still open
+    if (!isSubmissionComplete && isPaymentModalOpen) {
+        toast({ title: "Payment Cancelled", description: "The payment process was cancelled.", variant: "default" });
     }
-  }
-
-  const handlePaymentError = (error: Error) => {
-    setIsPaymentProcessing(false) 
-    toast({ title: "Payment Error", description: error.message || "An unexpected error occurred with the payment.", variant: "destructive" })
+    // Don't close the modal here if submission is complete, as it's handled by handlePaymentSuccess
+    // If not complete, the user might be closing the Paystack popup, but our dialog might still be open.
+    // The dialog's onOpenChange will handle setting isPaymentModalOpen to false.
+    console.log("[SubmitAdPage] Resetting isPaymentProcessing due to Paystack modal close.");
+    setIsPaymentProcessing(false); // Reset loading state for the Paystack button
   }
 
   if (isSubmissionComplete) {
@@ -235,8 +288,8 @@ export default function SubmitAd() {
         </AlertDescription>
       </Alert>
       {exchangeRateError && !isFetchingRate && (
-         <Alert variant="default"> {/* Changed from warning to default */}
-            <AlertCircle className="h-4 w-4 text-yellow-600" /> {/* Using a yellow icon for default warning-like message */}
+         <Alert variant="default">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertTitle className="text-yellow-800">Exchange Rate Issue</AlertTitle>
             <AlertDescription className="text-yellow-700">{exchangeRateError} A default rate will be used for payment if possible.</AlertDescription>
         </Alert>
@@ -289,15 +342,24 @@ export default function SubmitAd() {
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
           <Button type="submit" form="ad-submission-form" className="bg-blue-600 hover:bg-blue-700" 
             disabled={isSubmitting || isPaymentProcessing || isFetchingRate || !calculatedFeeInKobo}>
-            {isFetchingRate ? "Loading Rate..." : (isSubmitting ? "Submitting Ad..." : "Pay Fee & Submit")}
+            {isFetchingRate ? "Loading Rate..." : (isSubmitting ? "Submitting Ad..." : (isPaymentProcessing ? "Processing Payment..." : "Pay Fee & Submit"))}
           </Button>
         </CardFooter>
       </Card>
 
       <Dialog open={isPaymentModalOpen} onOpenChange={(isOpen) => {
-        if (!isOpen && (isPaymentProcessing || isSubmitting)) return; 
+        console.log(`[SubmitAdPage] Dialog onOpenChange triggered. New isOpen: ${isOpen}. Current states: isPaymentProcessing: ${isPaymentProcessing}, isSubmitting: ${isSubmitting}`);
+        // Prevent closing dialog if payment/submission is actively in progress
+        if (!isOpen && (isPaymentProcessing || isSubmitting) && !isSubmissionComplete) {
+          console.log("[SubmitAdPage] Dialog onOpenChange: Prevented closing because payment/submission is in progress and not yet complete.");
+          return; 
+        }
         setIsPaymentModalOpen(isOpen);
-        if (!isOpen) setIsPaymentProcessing(false); 
+        // If dialog is closed by user (and not due to submission complete), reset payment processing state
+        if (!isOpen && !isSubmissionComplete) {
+          console.log("[SubmitAdPage] Dialog onOpenChange: Dialog is closing by user action (not submission complete), resetting isPaymentProcessing.");
+          setIsPaymentProcessing(false); 
+        }
       }}>
         <DialogContent>
           <DialogHeader>
@@ -330,19 +392,20 @@ export default function SubmitAd() {
             
             {session?.user?.email && calculatedFeeInKobo ? (
               <Paystack
-                email={session.user.email}
                 amountInKobo={calculatedFeeInKobo}
-                metadata={{ adTitle: formData.title, submitterId: session.user.id }}
-                onSuccess={handlePaymentSuccess}
-                onClose={handlePaymentClose} 
-                onError={handlePaymentError}
+                metadata={{ 
+                  adTitle: formData.title, 
+                  clientSubmitterId: session.user.id 
+                }}
+                onSuccess={handlePaymentSuccess} 
+                onClose={handlePaymentClose}   
                 onInitiate={handlePaystackInitiate} 
                 isLoading={isPaymentProcessing} 
-                loadingText={"Processing Payment..."}
-                className="w-full" 
+                loadingText={"Processing Payment..."} 
+                className="w-full"
               />
             ) : (
-              <Alert variant={(!calculatedFeeInKobo && !isFetchingRate && exchangeRateError) ? "default" : "destructive"}> {/* Changed warning to default */}
+              <Alert variant={(!calculatedFeeInKobo && !isFetchingRate && exchangeRateError) ? "default" : "destructive"}>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>{!session?.user?.email ? "User Email Missing" : "Payment Unavailable"}</AlertTitle>
                 <AlertDescription>
@@ -356,9 +419,10 @@ export default function SubmitAd() {
           </div>
            <div className="mt-4 flex justify-end">
              <Button variant="outline" onClick={() => {
+                // Manually closing the dialog should also reset payment processing state
                 setIsPaymentModalOpen(false);
                 setIsPaymentProcessing(false); 
-             }} disabled={isPaymentProcessing || isSubmitting}>
+             }} disabled={isSubmitting || isPaymentProcessing /* Allow cancel if only payment processing, not full submitting */}>
                 Cancel
              </Button>
            </div>

@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   const submitterId = session.user.id;
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const adsCollection = db.collection<AdDocument>('ads');
 

@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react"; // Import signOut
+import { signOut } from "next-auth/react"; 
 import { Bell, LogOut, Menu, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import NotificationPanel from "@/components/notification-panel"; // Import NotificationPanel
-import { useNotifications } from "@/hooks/use-notifications"; // Import useNotifications
-import { useUserProfile } from "@/hooks/use-user-profile"; // To get userId for notifications hook
+import NotificationPanel from "@/components/notification-panel";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { useNotificationContext } from "@/contexts/NotificationContext"; // Import the context hook
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { toast } from "@/hooks/use-toast"; // Assuming this is your toast hook
+import { toast } from "@/hooks/use-toast"; 
 
 interface DashboardHeaderProps {
   role: "submitter" | "reviewer";
-  // notificationCount and onNotificationsClick props are no longer needed
 }
 
 export default function DashboardHeader({ role }: DashboardHeaderProps) {
@@ -31,33 +30,26 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
 
   const { data: userProfile } = useUserProfile();
-  const userIdForNotifications = userProfile?.email;
-
-  const { notifications } = useNotifications(userIdForNotifications);
-  const unreadNotificationCount = notifications.filter(n => !n.read).length;
+  // Get notification data from context
+  const { unreadNotificationCount } = useNotificationContext(); 
 
   useEffect(() => {
-    // Get user email from localStorage for display purposes
     const email = localStorage.getItem("userEmail") || "";
     setUserEmailForDisplay(email);
   }, []);
 
   const handleLogout = async () => {
-    // Clear local storage items if they are not managed by NextAuth session
-    // If NextAuth handles all session aspects, these might not be strictly necessary
-    // but it's safer to clear them if they were set manually outside of NextAuth.
     localStorage.removeItem("userRole"); 
     localStorage.removeItem("userEmail");
-    // isLoggedIn is typically managed by NextAuth's session status
-
-    await signOut({ redirect: false }); // Prevent NextAuth default redirect, handle manually
+    
+    await signOut({ redirect: false }); 
 
     toast({
       title: "Logged out",
       description: "You have been logged out successfully",
     });
 
-    router.push("/"); // Manually redirect after signOut
+    router.push("/"); 
   };
 
   const navItems =
@@ -70,6 +62,7 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
       : [
           { name: "Dashboard", href: "/reviewer/dashboard" },
           { name: "Pending Reviews", href: "/reviewer/pending" },
+          { name: "Rejected Ads", href: "/reviewer/rejected" },
           { name: "Approved Ads", href: "/reviewer/approved" },
         ];
 
@@ -86,7 +79,6 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
               <span className="font-bold text-xl hidden sm:inline text-gray-800 dark:text-gray-100">AdScreener</span>
             </Link>
 
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex ml-8 space-x-6">
               {navItems.map((item) => (
                 <Link key={item.name} href={item.href} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
@@ -97,7 +89,6 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
           </div>
 
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Notifications */}
             <Button
               variant="ghost"
               size="icon"
@@ -112,7 +103,6 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
               )}
             </Button>
 
-            {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
@@ -144,7 +134,6 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden rounded-full h-9 w-9">
@@ -198,7 +187,6 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
           </div>
         </div>
       </div>
-      {/* Render NotificationPanel conditionally */}
       <NotificationPanel
         isOpen={isNotificationPanelOpen}
         onClose={() => setIsNotificationPanelOpen(false)}

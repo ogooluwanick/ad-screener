@@ -21,8 +21,19 @@ interface PublicProfileData {
   // Reviewer-specific public fields
   department?: string; 
   reviewerLevel?: string;
-  // Probably exclude stats like accuracy, totalReviews for public view unless intended
+  expertise?: string[];
+  accuracy?: number; // For reviewer's accuracy rate
+  // Probably exclude stats like totalReviews for public view unless intended
   profileVisibility?: "public" | "private" | "reviewers-only";
+
+  // Submitter-specific stats
+  totalAds?: number;
+  approvedAds?: number;
+  pendingAds?: number;
+  rejectedAds?: number;
+
+  // Common fields
+  email?: string; // Added email
 }
 
 export async function GET(
@@ -36,7 +47,7 @@ export async function GET(
       return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db(); // Use your default DB or specify one if needed
 
     const user = await db.collection('users').findOne(
@@ -49,15 +60,23 @@ export async function GET(
           role: 1,
           location: 1,
           bio: 1,
-          joinDate: 1, // Make sure this is in a suitable format or transform it
+          createdAt: 1, // Use createdAt for joinDate consistency
           profileImageUrl: 1, // Assuming image URL is stored as profileImageUrl
           company: 1, // For submitters
           website: 1, // For submitters
           department: 1, // For reviewers
           reviewerLevel: 1, // For reviewers
+          expertise: 1, // For reviewers
+          accuracy: 1, // For reviewers
           // For submitters, profile visibility is nested in settings
           "settings.privacy.profileVisibility": 1, 
-          // Do NOT project email, phone, or detailed stats unless explicitly intended for public view
+          // Submitter stats
+          totalAds: 1,
+          approvedAds: 1,
+          pendingAds: 1,
+          rejectedAds: 1,
+          // Added email
+          email: 1,
         },
       }
     );
@@ -73,14 +92,23 @@ export async function GET(
       role: user.role,
       location: user.location,
       bio: user.bio,
-      joinDate: user.joinDate ? new Date(user.joinDate).toISOString() : undefined,
+      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "", // Use createdAt
       image: user.profileImageUrl, 
       company: user.company,
       website: user.website,
       department: user.department,
       reviewerLevel: user.reviewerLevel,
+      expertise: user.expertise,
+      accuracy: user.accuracy,
       // Profile visibility: from submitter settings, or default to 'public' if not set (e.g., for reviewers)
       profileVisibility: user.settings?.privacy?.profileVisibility || "public",
+      // Submitter stats
+      totalAds: user.totalAds,
+      approvedAds: user.approvedAds,
+      pendingAds: user.pendingAds,
+      rejectedAds: user.rejectedAds,
+      // Added email
+      email: user.email,
     };
 
     return NextResponse.json(publicProfile, { status: 200 });

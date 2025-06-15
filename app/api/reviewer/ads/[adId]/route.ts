@@ -18,6 +18,7 @@ interface AdDocument {
   reviewedAt?: Date;
   reviewerId?: string;
   rejectionReason?: string;
+  imageUrl?: string; // Added for consistency
   assignedReviewerIds?: string[]; // Optional for existing docs, but new ones will have it
 }
 
@@ -52,7 +53,7 @@ export async function PUT(
     }
 
 
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const adsCollection = db.collection<AdDocument>('ads');
 

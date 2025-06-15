@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ExternalLink, Info, ListChecks } from "lucide-react";
+import Link from "next/link"; // Import Link
 import { ApprovedAdListItem } from "@/app/api/reviewer/ads/approved/route";
 import { useNotifications } from "@/hooks/use-notifications";
 
@@ -135,7 +136,15 @@ export default function ApprovedAdsPage() {
                 {approvedAds.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.title}</TableCell>
-                    <TableCell>{ad.submitterEmail}</TableCell>
+                    <TableCell>
+                      {ad.submitterId ? (
+                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
+                          {ad.submitterEmail}
+                        </Link>
+                      ) : (
+                        ad.submitterEmail
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(ad.approvalDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button

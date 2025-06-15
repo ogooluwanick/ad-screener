@@ -22,8 +22,10 @@ interface ReviewerSettings {
     bulkActions?: boolean;
     advancedFilters?: boolean;
   };
-  // Security settings will be handled in a separate endpoint for password changes
-  // Data export will also be handled separately
+  security?: {
+    sessionTimeout?: string; // in hours
+  };
+  // Password changes and data export are handled in separate endpoints
 }
 
 // GET handler to fetch reviewer settings
@@ -39,13 +41,13 @@ export async function GET() {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
 
     const user = await db.collection("users").findOne(
       { _id: userId },
-      { projection: { reviewerSettings: 1 } }
+      { projection: { "reviewerSettings.notifications": 1, "reviewerSettings.reviewPreferences": 1, "reviewerSettings.security": 1 } }
     );
 
     if (!user) {
@@ -70,10 +72,19 @@ export async function GET() {
         bulkActions: true,
         advancedFilters: true,
       },
+      security: {
+        sessionTimeout: "4", // Default to 4 hours
+      },
     };
 
-    const settings = user.reviewerSettings || defaultSettings;
-
+    // Merge fetched settings with defaults to ensure all fields are present
+    const fetchedSettings = user.reviewerSettings || {};
+    const settings: ReviewerSettings = {
+      notifications: { ...defaultSettings.notifications, ...fetchedSettings.notifications },
+      reviewPreferences: { ...defaultSettings.reviewPreferences, ...fetchedSettings.reviewPreferences },
+      security: { ...defaultSettings.security, ...fetchedSettings.security },
+    };
+    
     return NextResponse.json(settings, { status: 200 });
   } catch (error) {
     console.error("Error fetching reviewer settings:", error);
@@ -94,28 +105,47 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
     const body: ReviewerSettings = await request.json();
 
     // Validate incoming data (basic validation)
-    if (!body.notifications || !body.reviewPreferences) {
-      return NextResponse.json({ message: "Invalid settings format" }, { status: 400 });
+    if (!body.notifications || !body.reviewPreferences || !body.security) {
+      return NextResponse.json({ message: "Invalid settings format: notifications, reviewPreferences, and security are required." }, { status: 400 });
     }
     
     // Ensure maxDailyReviews is an array of numbers if present
-    if (body.reviewPreferences.maxDailyReviews && !Array.isArray(body.reviewPreferences.maxDailyReviews)) {
-        return NextResponse.json({ message: "maxDailyReviews must be an array" }, { status: 400 });
-    }
-    if (body.reviewPreferences.maxDailyReviews && body.reviewPreferences.maxDailyReviews.some(isNaN)) {
-        return NextResponse.json({ message: "maxDailyReviews must contain numbers" }, { status: 400 });
+    if (body.reviewPreferences.maxDailyReviews && 
+        (!Array.isArray(body.reviewPreferences.maxDailyReviews) || body.reviewPreferences.maxDailyReviews.some(isNaN))) {
+        return NextResponse.json({ message: "maxDailyReviews must be an array of numbers" }, { status: 400 });
     }
 
+    // Validate sessionTimeout if present
+    if (body.security.sessionTimeout && typeof body.security.sessionTimeout !== 'string') {
+        return NextResponse.json({ message: "sessionTimeout must be a string" }, { status: 400 });
+    }
+
+    // Construct the update object carefully to only include provided sections
+    const settingsToUpdate: { $set: { [key: string]: any } } = { $set: {} };
+
+    if (body.notifications) {
+        settingsToUpdate.$set["reviewerSettings.notifications"] = body.notifications;
+    }
+    if (body.reviewPreferences) {
+        settingsToUpdate.$set["reviewerSettings.reviewPreferences"] = body.reviewPreferences;
+    }
+    if (body.security) {
+        settingsToUpdate.$set["reviewerSettings.security"] = body.security;
+    }
+    
+    if (Object.keys(settingsToUpdate.$set).length === 0) {
+        return NextResponse.json({ message: "No settings data provided to update." }, { status: 400 });
+    }
 
     const updateResult = await db.collection("users").updateOne(
       { _id: userId },
-      { $set: { reviewerSettings: body } }
+      settingsToUpdate 
     );
 
     if (updateResult.matchedCount === 0) {

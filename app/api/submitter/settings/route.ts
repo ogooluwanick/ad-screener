@@ -24,8 +24,10 @@ interface SubmitterSettings {
     showPhone?: boolean;
     dataCollection?: boolean;
   };
-  // Security settings will be handled in a separate endpoint for password changes
-  // Data export will also be handled separately
+  security?: {
+    sessionTimeout?: string; // in hours
+  };
+  // Password changes and data export are handled in separate endpoints
 }
 
 // GET handler to fetch submitter settings
@@ -41,13 +43,13 @@ export async function GET() {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
 
     const user = await db.collection("users").findOne(
       { _id: userId },
-      { projection: { submitterSettings: 1 } }
+      { projection: { "submitterSettings.notifications": 1, "submitterSettings.preferences": 1, "submitterSettings.privacy": 1, "submitterSettings.security": 1 } }
     );
 
     if (!user) {
@@ -73,15 +75,19 @@ export async function GET() {
         showEmail: false,
         showPhone: false,
         dataCollection: true,
+      },
+      security: {
+        sessionTimeout: "4", // Default to 4 hours
       }
     };
 
     // Merge fetched settings with defaults to ensure all fields are present
     const fetchedSettings = user.submitterSettings || {};
-    const settings = {
+    const settings: SubmitterSettings = {
         notifications: { ...defaultSettings.notifications, ...fetchedSettings.notifications },
         preferences: { ...defaultSettings.preferences, ...fetchedSettings.preferences },
         privacy: { ...defaultSettings.privacy, ...fetchedSettings.privacy },
+        security: { ...defaultSettings.security, ...fetchedSettings.security },
     };
 
     return NextResponse.json(settings, { status: 200 });
@@ -104,15 +110,14 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
     const body: SubmitterSettings = await request.json();
 
     // Validate incoming data (basic validation)
-    // We expect notifications and privacy from the current frontend page. Preferences might be optional or for future use.
-    if (!body.notifications || !body.privacy) {
-      return NextResponse.json({ message: "Invalid settings format: notifications and privacy are required." }, { status: 400 });
+    if (!body.notifications || !body.privacy || !body.security) {
+      return NextResponse.json({ message: "Invalid settings format: notifications, privacy, and security are required." }, { status: 400 });
     }
     if (body.preferences && body.preferences.defaultCampaignDuration && typeof body.preferences.defaultCampaignDuration !== 'number') {
         return NextResponse.json({ message: "defaultCampaignDuration must be a number" }, { status: 400 });
@@ -120,26 +125,34 @@ export async function PUT(request: Request) {
     if (body.preferences && body.preferences.preferredAdFormats && !Array.isArray(body.preferences.preferredAdFormats)) {
         return NextResponse.json({ message: "preferredAdFormats must be an array" }, { status: 400 });
     }
+    // Validate sessionTimeout if present
+    if (body.security.sessionTimeout && typeof body.security.sessionTimeout !== 'string') {
+        return NextResponse.json({ message: "sessionTimeout must be a string" }, { status: 400 });
+    }
     
     // Construct the update object carefully to only include provided sections
-    const settingsToUpdate: Partial<SubmitterSettings> = {};
+    const settingsToUpdate: { $set: { [key: string]: any } } = { $set: {} };
+
     if (body.notifications) {
-        settingsToUpdate.notifications = body.notifications;
+        settingsToUpdate.$set["submitterSettings.notifications"] = body.notifications;
     }
     if (body.privacy) {
-        settingsToUpdate.privacy = body.privacy;
+        settingsToUpdate.$set["submitterSettings.privacy"] = body.privacy;
     }
-    if (body.preferences) { // If preferences are sent, include them
-        settingsToUpdate.preferences = body.preferences;
+    if (body.preferences) { 
+        settingsToUpdate.$set["submitterSettings.preferences"] = body.preferences;
+    }
+    if (body.security) {
+        settingsToUpdate.$set["submitterSettings.security"] = body.security;
     }
 
-    if (Object.keys(settingsToUpdate).length === 0) {
+    if (Object.keys(settingsToUpdate.$set).length === 0) {
         return NextResponse.json({ message: "No settings data provided to update." }, { status: 400 });
     }
 
     const updateResult = await db.collection("users").updateOne(
       { _id: userId },
-      { $set: { submitterSettings: settingsToUpdate } } // Update with the structured object
+      settingsToUpdate 
     );
 
     if (updateResult.matchedCount === 0) {

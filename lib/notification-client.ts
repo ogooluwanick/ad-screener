@@ -3,7 +3,9 @@
 // This client sends HTTP requests to the internal HTTP server (part of server.ts)
 // which then triggers WebSocket messages.
 
-const INTERNAL_HTTP_SERVER_URL = process.env.INTERNAL_HTTP_SERVER_URL || 'http://localhost:3002';
+// Construct the URL based on the defined port, defaulting if necessary.
+const INTERNAL_HTTP_PORT = process.env.INTERNAL_HTTP_SERVER_PORT || '3002';
+const INTERNAL_HTTP_SERVER_URL = `http://localhost:${INTERNAL_HTTP_PORT}`;
 
 interface UserNotificationData {
   title: string;

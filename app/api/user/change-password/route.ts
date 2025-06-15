@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "New password must be at least 8 characters long" }, { status: 400 });
     }
 
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
 

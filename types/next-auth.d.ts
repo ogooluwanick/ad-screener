@@ -9,7 +9,10 @@ declare module "next-auth" {
     user: {
       /** The user's id. */
       id: string;
-      role?: string; 
+      role?: string;
+      firstName?: string;
+      lastName?: string;
+      profileImageUrl?: string;
     } & DefaultSession["user"] // Inherit other default properties
   }
 
@@ -18,7 +21,10 @@ declare module "next-auth" {
    * or the second parameter of the `session` callback, when using a database.
    */
   interface User extends DefaultUser {
-    role?: string; 
+    role?: string;
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
   }
 }
 
@@ -26,7 +32,10 @@ declare module "next-auth/jwt" {
   /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT extends DefaultJWT {
     /** OpenID ID Token */
-    id?: string; 
-    role?: string; 
+    id?: string;
+    role?: string;
+    firstName?: string;
+    lastName?: string;
+    profileImageUrl?: string;
   }
 }

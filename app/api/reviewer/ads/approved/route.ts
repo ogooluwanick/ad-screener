@@ -23,6 +23,7 @@ export interface AdDocumentForListing {
 export interface ApprovedAdListItem {
   id: string; // string version of ObjectId
   title: string;
+  submitterId: string; // Added submitterId
   submitterEmail: string;
   submissionDate: string; // ISO string date
   approvalDate: string; // ISO string date for reviewedAt
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const adsCollection = db.collection<AdDocumentForListing>('ads');
 
@@ -49,15 +50,19 @@ export async function GET(request: Request) {
 
     const approvedAdsDocuments = await approvedAdsCursor.toArray();
 
-    const approvedAds: ApprovedAdListItem[] = approvedAdsDocuments.map(ad => ({
-      id: ad._id.toHexString(),
-      title: ad.title,
-      submitterEmail: ad.submitterEmail,
-      submissionDate: ad.submittedAt.toISOString(),
-      approvalDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), // Fallback for safety
-      reviewerId: ad.reviewerId,
-      contentUrl: ad.contentUrl,
-    }));
+    // Corrected mapping
+    const approvedAds: ApprovedAdListItem[] = approvedAdsDocuments.map((ad: AdDocumentForListing) => {
+      return {
+        id: ad._id.toHexString(),
+        title: ad.title,
+        submitterId: ad.submitterId,
+        submitterEmail: ad.submitterEmail,
+        submissionDate: ad.submittedAt.toISOString(),
+        approvalDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), // Fallback for safety
+        reviewerId: ad.reviewerId,
+        contentUrl: ad.contentUrl,
+      };
+    });
 
     return NextResponse.json(approvedAds, { status: 200 });
 

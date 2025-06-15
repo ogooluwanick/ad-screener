@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { CheckCircle, Clock, Eye, Filter, PlusCircle, Search, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,63 +9,59 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Skeleton } from "@/components/ui/skeleton" // Added for loading state
 
-// Mock data
-const mockAds = [
-  {
-    id: "1",
-    title: "Summer Sale Campaign",
-    description: "Promote our summer sale with 50% off on all products.",
-    targetUrl: "https://example.com/summer-sale",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submissionDate: "2023-06-15",
-    status: "approved",
-  },
-  {
-    id: "2",
-    title: "New Product Launch",
-    description: "Introducing our new product line with special features.",
-    targetUrl: "https://example.com/new-product",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submissionDate: "2023-06-10",
-    status: "rejected",
-    rejectionReason: "Image resolution too low. Please upload a higher quality image.",
-  },
-  {
-    id: "3",
-    title: "Holiday Special",
-    description: "Special offers for the holiday season.",
-    targetUrl: "https://example.com/holiday",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submissionDate: "2023-06-05",
-    status: "pending",
-  },
-  {
-    id: "4",
-    title: "Back to School",
-    description: "Discounts on school supplies and equipment.",
-    targetUrl: "https://example.com/back-to-school",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submissionDate: "2023-05-20",
-    status: "approved",
-  },
-  {
-    id: "5",
-    title: "Flash Sale",
-    description: "24-hour flash sale with incredible discounts.",
-    targetUrl: "https://example.com/flash-sale",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    submissionDate: "2023-05-15",
-    status: "approved",
-  },
-]
+// Type for Ad data from API
+interface Ad {
+  _id: string
+  title: string
+  description: string
+  targetUrl: string // Mapped from contentUrl
+  imageUrl?: string
+  submissionDate: string // Mapped from submittedAt
+  status: "pending" | "approved" | "rejected"
+  rejectionReason?: string
+}
 
 export default function SubmitterAds() {
-  const [ads, setAds] = useState(mockAds)
+  const [ads, setAds] = useState<Ad[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
-  const [selectedAd, setSelectedAd] = useState<(typeof mockAds)[0] | null>(null)
+  const [selectedAd, setSelectedAd] = useState<Ad | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchAds = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch("/api/submitter/ads")
+        if (!response.ok) {
+          throw new Error("Failed to fetch ads")
+        }
+        const data = await response.json()
+        // Map API data to frontend Ad type
+        const formattedAds: Ad[] = data.map((ad: any) => ({
+          _id: ad._id,
+          title: ad.title,
+          description: ad.description,
+          targetUrl: ad.contentUrl,
+          imageUrl: ad.imageUrl,
+          submissionDate: ad.submittedAt,
+          status: ad.status,
+          rejectionReason: ad.rejectionReason,
+        }))
+        setAds(formattedAds)
+      } catch (error) {
+        console.error("Error fetching ads:", error)
+        // Handle error state, e.g., show a toast notification
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAds()
+  }, [])
 
   const filteredAds = ads.filter((ad) => {
     const matchesSearch = ad.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,7 +69,7 @@ export default function SubmitterAds() {
     return matchesSearch && matchesStatus
   })
 
-  const handleViewAd = (ad: (typeof mockAds)[0]) => {
+  const handleViewAd = (ad: Ad) => {
     setSelectedAd(ad)
     setIsDialogOpen(true)
   }
@@ -157,7 +153,16 @@ export default function SubmitterAds() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAds.length === 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={`skeleton-${index}`}>
+                      <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredAds.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                       No ads found
@@ -165,7 +170,7 @@ export default function SubmitterAds() {
                   </TableRow>
                 ) : (
                   filteredAds.map((ad) => (
-                    <TableRow key={ad.id}>
+                    <TableRow key={ad._id}>
                       <TableCell className="font-medium">{ad.title}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         {new Date(ad.submissionDate).toLocaleDateString()}

@@ -3,6 +3,8 @@ import axios from "axios";
 
 // Define the expected shape of the profile data
 export interface UserProfileData {
+  _id: string; // Assuming MongoDB ObjectId string is the primary ID from the DB
+  id?: string;  // NextAuth session often uses 'id', this could be the same as _id or different depending on session setup
   firstName: string;
   lastName: string;
   email: string;
@@ -12,30 +14,38 @@ export interface UserProfileData {
   location?: string;
   bio?: string;
   website?: string;
-  joinDate?: string;
-  // Add any other fields you expect from the API
-  // For the logged-in user, this might include more sensitive or detailed info
-  // than a public profile view.
-  // The `image` field for profile picture URL might be part of this or handled separately.
-  profileImageUrl?: string; // Example if image URL is fetched with main profile
+  joinDate?: string; // Should be string if already formatted, or Date if needs formatting
+  profileImageUrl?: string;
 }
 
 // Interface for data returned by the public profile endpoint /api/user/profile/[userId]
-// This should match the structure returned by that API route.
 export interface PublicProfileViewData {
+  // Assuming this might also need an ID if it's fetched for a specific user context
+  _id?: string; 
+  id?: string;
   firstName: string;
   lastName: string;
   role: string;
   location?: string;
   bio?: string;
   joinDate?: string;
-  image?: string; // Profile image URL (mapped from profileImageUrl or similar)
+  image?: string; 
   company?: string;
   website?: string;
   department?: string;
   reviewerLevel?: string;
-  // Excludes sensitive data like email, phone, detailed stats
-  profileVisibility?: "public" | "private" | "reviewers-only"; // Added for visibility status
+  expertise?: string[]; // Added for reviewers
+  accuracy?: number; // Added for reviewer's accuracy rate
+  profileVisibility?: "public" | "private" | "reviewers-only";
+
+  // Submitter-specific stats
+  totalAds?: number;
+  approvedAds?: number;
+  pendingAds?: number;
+  rejectedAds?: number;
+
+  // Common fields
+  email?: string; // Added email
 }
 
 
@@ -48,45 +58,35 @@ export const useUserProfile = () => {
   return useQuery<UserProfileData, Error>({
     queryKey: ["userProfile"],
     queryFn: fetchUserProfile,
-    // Optional: configure staleTime, cacheTime, refetchOnWindowFocus, etc.
-    // staleTime: 5 * 60 * 1000, // 5 minutes
-    // cacheTime: 10 * 60 * 1000, // 10 minutes
+    // staleTime: 5 * 60 * 1000, 
+    // cacheTime: 10 * 60 * 1000, 
   });
 };
 
-// Fetch public user profile by ID
 const fetchPublicUserProfileById = async (userId: string): Promise<PublicProfileViewData> => {
   if (!userId) throw new Error("User ID is required to fetch public profile.");
   const { data } = await axios.get<PublicProfileViewData>(`/api/user/profile/${userId}`);
   return data;
 };
 
-// Hook to use for fetching a specific user's public profile
 export const usePublicUserProfile = (userId: string | null | undefined) => {
   return useQuery<PublicProfileViewData, Error>({
     queryKey: ["publicUserProfile", userId],
     queryFn: () => {
       if (!userId) {
-        // React Query expects a Promise, so if userId is null/undefined,
-        // we can return a rejected promise or handle it as an enabled: false case.
-        // For simplicity here, let's assume the component disables the query if no userId.
-        // Or, throw to indicate bad usage if userId is strictly required for the hook to be called.
         return Promise.reject(new Error("User ID not provided for public profile fetch."));
       }
       return fetchPublicUserProfileById(userId);
     },
-    enabled: !!userId, // Only run the query if userId is available
-    // Optional: configure staleTime, cacheTime, etc.
-    // staleTime: 10 * 60 * 1000, // 10 minutes for public profiles
+    enabled: !!userId, 
+    // staleTime: 10 * 60 * 1000, 
   });
 };
 
-
-// Define the expected shape of the data for updating the profile
 export interface UpdateUserProfilePayload {
-  profileImageUrl?: string; // Added to allow updating profile image URL
-  firstName: string;
-  lastName: string;
+  profileImageUrl?: string; 
+  firstName?: string; // Make fields optional for partial updates
+  lastName?: string;
   phone?: string;
   company?: string;
   location?: string;
@@ -94,7 +94,6 @@ export interface UpdateUserProfilePayload {
   website?: string;
 }
 
-// Define the expected response from the PUT request
 interface UpdateUserProfileResponse {
   message: string;
   user: UserProfileData; 
@@ -112,12 +111,10 @@ export const useUpdateUserProfile = () => {
     mutationFn: updateUserProfile,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-      // Optionally, you can directly set the query data if the mutation returns the updated profile
-      // queryClient.setQueryData(["userProfile"], data.user);
+      // queryClient.setQueryData(["userProfile"], data.user); // Optionally update cache directly
     },
     onError: (error) => {
       console.error("Error updating profile:", error);
-      // Consider showing a toast notification for errors in the component using the mutation's error state
     },
   });
 };

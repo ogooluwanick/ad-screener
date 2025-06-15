@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
 import { useUserProfile, useUpdateUserProfile, type UserProfileData, type UpdateUserProfilePayload } from "@/hooks/use-user-profile"
+import { useSubmitterDashboardStats } from "@/hooks/use-submitter-dashboard-stats"
 
 // Unified interface for both Reviewer and Submitter profiles
 interface UnifiedProfileData extends UserProfileData {
@@ -40,10 +41,11 @@ interface UnifiedProfileData extends UserProfileData {
 }
 
 const initialUnifiedProfileData: UnifiedProfileData = {
+  _id: "", // Add _id
   firstName: "",
   lastName: "",
   email: "",
-  role: "", 
+  role: "",
   image: undefined,
   phone: "",
   location: "",
@@ -51,12 +53,9 @@ const initialUnifiedProfileData: UnifiedProfileData = {
   joinDate: "",
   company: "",
   website: "",
-  totalAds: 0,
-  approvedAds: 0,
-  rejectedAds: 0,
-  pendingAds: 0,
-  department: "Quality Assurance", 
-  expertise: ["Content Review", "Brand Safety"], 
+  // totalAds, approvedAds, rejectedAds, pendingAds will be fetched for submitters
+  department: "Quality Assurance",
+  expertise: ["Content Review", "Brand Safety"],
   reviewerLevel: "Junior", 
   totalReviews: 0,
   approvedReviews: 0,
@@ -71,17 +70,24 @@ export default function UnifiedProfilePage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newlyUploadedImageUrl, setNewlyUploadedImageUrl] = useState<string | null>(null);
 
-  const { 
-    data: fetchedProfileData, 
-    isLoading: isLoadingProfile, 
-    error: profileError, 
-    refetch: refetchProfile 
+  const {
+    data: fetchedProfileData,
+    isLoading: isLoadingProfile,
+    error: profileError,
+    refetch: refetchProfile
   } = useUserProfile();
-  
-  const { 
-    mutate: updateProfile, 
-    isPending: isUpdatingProfile 
+
+  const {
+    mutate: updateProfile,
+    isPending: isUpdatingProfile
   } = useUpdateUserProfile();
+
+  const { 
+    data: submitterStats, 
+    isLoading: isLoadingSubmitterStats,
+    error: submitterStatsError,
+    refetch: refetchSubmitterStats,
+  } = useSubmitterDashboardStats({ enabled: !!(profileData.role && profileData.role === 'submitter') });
 
   useEffect(() => {
     if (fetchedProfileData) {
@@ -101,14 +107,25 @@ export default function UnifiedProfilePage() {
         department: (fetchedProfileData as UnifiedProfileData).department || initialUnifiedProfileData.department,
         expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise,
         reviewerLevel: (fetchedProfileData as UnifiedProfileData).reviewerLevel || initialUnifiedProfileData.reviewerLevel,
-        // Stats would also be part of fetchedProfileData if they come from API
-        totalAds: (fetchedProfileData as UnifiedProfileData).totalAds || initialUnifiedProfileData.totalAds,
-        approvedAds: (fetchedProfileData as UnifiedProfileData).approvedAds || initialUnifiedProfileData.approvedAds,
-        // ... and so on for all fields in UnifiedProfileData
+        // Submitter stats are now handled by useSubmitterDashboardStats hook
       }));
       setNewlyUploadedImageUrl(null); // Reset any pending new image upload URL
     }
   }, [fetchedProfileData]);
+
+  // Effect to update profileData with submitter stats when they are fetched
+  useEffect(() => {
+    if (submitterStats && profileData.role === 'submitter') {
+      setProfileData(prev => ({
+        ...prev,
+        totalAds: submitterStats.totalAds,
+        approvedAds: submitterStats.approvedAds,
+        pendingAds: submitterStats.pendingAds,
+        rejectedAds: submitterStats.rejectedAds,
+      }));
+    }
+  }, [submitterStats, profileData.role]);
+
 
   const handleInputChange = (field: keyof UnifiedProfileData, value: string | number | string[]) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -247,6 +264,12 @@ export default function UnifiedProfilePage() {
   
   const userRole = profileData.role?.toLowerCase();
 
+  const displayTotalAds = userRole === 'submitter' && submitterStats ? submitterStats.totalAds : profileData.totalAds;
+  const displayApprovedAds = userRole === 'submitter' && submitterStats ? submitterStats.approvedAds : profileData.approvedAds;
+  const displayPendingAds = userRole === 'submitter' && submitterStats ? submitterStats.pendingAds : profileData.pendingAds;
+  const displayRejectedAds = userRole === 'submitter' && submitterStats ? submitterStats.rejectedAds : profileData.rejectedAds;
+
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -340,15 +363,49 @@ export default function UnifiedProfilePage() {
                 <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg"><div className="flex items-center"><XCircle className="h-5 w-5 text-red-600 mr-3" /><div><p className="font-medium">Rejected "Summer Sale" ad</p><p className="text-sm text-gray-500">1 day ago</p></div></div><Badge variant="outline" className="text-red-600 border-red-600">Rejected</Badge></div>
             </div></CardContent></Card>
         </>)}
-        {userRole === 'submitter' && (<Card className="md:col-span-3">
-            <CardHeader><CardTitle>Account Statistics</CardTitle><CardDescription>Overview of your ad submissions (mock data)</CardDescription></CardHeader>
-            <CardContent><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg"><div className="text-2xl font-bold text-blue-600">{profileData.totalAds}</div><div className="text-sm text-gray-600">Total Ads</div></div>
-                <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{profileData.approvedAds}</div><div className="text-sm text-gray-600">Approved Ads</div></div>
-                <div className="text-center p-4 bg-amber-50 rounded-lg"><div className="text-2xl font-bold text-amber-600">{profileData.pendingAds}</div><div className="text-sm text-gray-600">Pending Ads</div></div>
-                <div className="text-center p-4 bg-red-50 rounded-lg"><div className="text-2xl font-bold text-red-600">{profileData.rejectedAds}</div><div className="text-sm text-gray-600">Rejected Ads</div></div>
-            </div></CardContent>
-        </Card>)}
+        {userRole === 'submitter' && (
+          <Card className="md:col-span-3">
+            <CardHeader>
+              <CardTitle>Account Statistics</CardTitle>
+              <CardDescription>Overview of your ad submissions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingSubmitterStats && (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <p className="ml-3 text-gray-600">Loading statistics...</p>
+                </div>
+              )}
+              {submitterStatsError && (
+                <div className="text-center p-8 text-red-600">
+                  <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                  <p>Could not load statistics: {submitterStatsError.message}</p>
+                  <Button onClick={() => refetchSubmitterStats()} variant="outline" className="mt-3">Retry</Button>
+                </div>
+              )}
+              {!isLoadingSubmitterStats && !submitterStatsError && submitterStats && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{displayTotalAds}</div>
+                    <div className="text-sm text-gray-600">Total Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{displayApprovedAds}</div>
+                    <div className="text-sm text-gray-600">Approved Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-lg">
+                    <div className="text-2xl font-bold text-amber-600">{displayPendingAds}</div>
+                    <div className="text-sm text-gray-600">Pending Ads</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">{displayRejectedAds}</div>
+                    <div className="text-sm text-gray-600">Rejected Ads</div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,12 @@
 "use client";
-import { X, Bell, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react"; // Import useEffect and useRef
+import { X, Bell, CheckCircle, XCircle, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNotifications, NotificationMessage } from "@/hooks/use-notifications";
-import { useUserProfile } from "@/hooks/use-user-profile";
+// UINotification might still be needed if it's used for typing within this component
+import { UINotification } from "@/hooks/use-notifications"; 
+import { useNotificationContext } from "@/contexts/NotificationContext"; // Import the context hook
+import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,42 +15,58 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 
-// The Notification interface is now imported from useNotifications as NotificationMessage
-
 interface NotificationPanelProps {
-  // onClose is the only prop needed now, as the panel manages its own notification state
   onClose: () => void;
-  isOpen: boolean; // To control visibility from parent
+  isOpen: boolean; 
 }
 
 export default function NotificationPanel({
   onClose,
   isOpen,
 }: NotificationPanelProps) {
-  const { data: userProfile } = useUserProfile();
-  const userId = userProfile?.email;
+  const panelRef = useRef<HTMLDivElement>(null); // Ref for the panel's main div
 
+  // Get notification data and functions from context
   const {
     notifications,
+    isLoading,
     markAsRead,
     markAllAsRead,
-    clearNotifications, // This clears ALL notifications
-    clearReadNotifications, // This clears only read notifications
-  } = useNotifications(userId);
+    clearNotifications,
+    clearReadNotifications,
+    unreadNotificationCount, // Use the count from context
+  } = useNotificationContext();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only act if the panel is open and the click is outside
+      if (isOpen && panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    // Add event listener if panel is open
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    // Cleanup function to remove listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose, panelRef]); // Add panelRef to dependencies, though it's stable
 
   if (!isOpen) {
     return null;
   }
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
+  // unreadCount is now unreadNotificationCount from context
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-900 shadow-lg z-50 flex flex-col border-l border-gray-200 dark:border-gray-700">
+    <div ref={panelRef} className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-900 shadow-lg z-50 flex flex-col border-l border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
         <div className="flex items-center">
           <Bell className="h-5 w-5 text-blue-600 mr-2" />
           <h2 className="font-semibold text-lg text-gray-800 dark:text-gray-100">
-            Notifications {unreadCount > 0 && <span className="text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 ml-2">{unreadCount}</span>}
+            Notifications {unreadNotificationCount > 0 && <span className="text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 ml-2">{unreadNotificationCount}</span>}
           </h2>
         </div>
         <div className="flex items-center space-x-1">
@@ -58,10 +77,10 @@ export default function NotificationPanel({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={markAllAsRead} disabled={notifications.length === 0 || unreadCount === 0}>
+              <DropdownMenuItem onClick={markAllAsRead} disabled={notifications.length === 0 || unreadNotificationCount === 0}>
                 Mark all as read
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={clearReadNotifications} disabled={notifications.filter(n => n.read).length === 0}>
+              <DropdownMenuItem onClick={clearReadNotifications} disabled={notifications.filter(n => n.isRead).length === 0}>
                 Clear read notifications
               </DropdownMenuItem>
               <DropdownMenuItem onClick={clearNotifications} disabled={notifications.length === 0} className="text-red-600">
@@ -76,7 +95,12 @@ export default function NotificationPanel({
       </div>
 
       <ScrollArea className="flex-1">
-        {notifications.length === 0 ? (
+        {isLoading && notifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4">
+            <Bell className="h-12 w-12 mb-2 opacity-20 animate-pulse" />
+            <p>Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4">
             <Bell className="h-12 w-12 mb-2 opacity-20" />
             <p>No notifications yet</p>
@@ -84,40 +108,76 @@ export default function NotificationPanel({
           </div>
         ) : (
           <div className="divide-y dark:divide-gray-700">
-            {notifications.map((notification: NotificationMessage) => (
-              <div
-                key={notification.id}
-                className={`p-4 cursor-pointer group ${
-                  notification.read ? "opacity-70 hover:bg-gray-50 dark:hover:bg-gray-800" : "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50"
-                }`}
-                onClick={() => !notification.read && markAsRead(notification.id)}
-              >
-                <div className="flex items-start">
-                  {notification.type === "success" && (
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-                  )}
-                  {notification.type === "error" && (
-                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-                  )}
-                  {(notification.type === "info" || notification.type === "default") && (
-                    <Bell className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className={`font-medium ${notification.read ? "text-gray-700 dark:text-gray-300" : "text-gray-900 dark:text-gray-50"}`}>
-                        {notification.title}
-                      </h3>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {new Date(notification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+            {notifications.map((notification: UINotification) => {
+              const NotificationIcon = 
+                notification.level === 'success' ? CheckCircle :
+                notification.level === 'error' ? XCircle :
+                notification.level === 'warning' ? AlertTriangle :
+                Info;
+              
+              const iconColor =
+                notification.level === 'success' ? 'text-green-500' :
+                notification.level === 'error' ? 'text-red-500' :
+                notification.level === 'warning' ? 'text-yellow-500' :
+                'text-blue-500';
+
+              const notificationKey = notification._id || notification.clientGeneratedId || String(Date.now() + Math.random());
+              const notificationIdForMarkRead = notification._id || notification.clientGeneratedId;
+
+              const content = (
+                <div
+                  className={`p-4 group ${
+                    notification.isRead ? "opacity-70 hover:bg-gray-50 dark:hover:bg-gray-800" : "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50"
+                  }`}
+                  onClick={() => {
+                    if (!notification.isRead && notificationIdForMarkRead) {
+                      markAsRead(notificationIdForMarkRead);
+                    }
+                  }}
+                >
+                  <div className="flex items-start">
+                    <NotificationIcon className={`h-5 w-5 ${iconColor} mt-0.5 mr-3 flex-shrink-0`} />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <h3 className={`font-medium ${notification.isRead ? "text-gray-700 dark:text-gray-300" : "text-gray-900 dark:text-gray-50"}`}>
+                          {notification.title}
+                        </h3>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className={`text-sm mt-1 ${notification.isRead ? "text-gray-500 dark:text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
+                        {notification.message}
+                      </p>
+                       {notification.type && notification.type !== 'realtime_update' && notification.type !== 'general' && (
+                        <p className="text-xs mt-1 text-gray-400 dark:text-gray-500">Category: {notification.type}</p>
+                       )}
                     </div>
-                    <p className={`text-sm mt-1 ${notification.read ? "text-gray-500 dark:text-gray-400" : "text-gray-700 dark:text-gray-300"}`}>
-                      {notification.message}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+
+              return (
+                <div key={notificationKey} className={notification.deepLink ? "" : "cursor-pointer"}>
+                  {notification.deepLink ? (
+                    <Link href={notification.deepLink} passHref legacyBehavior>
+                      <a 
+                        onClick={() => { 
+                          if (!notification.isRead && notificationIdForMarkRead) {
+                            markAsRead(notificationIdForMarkRead);
+                          }
+                        }} 
+                        className="block no-underline text-inherit"
+                      >
+                        {content}
+                      </a>
+                    </Link>
+                  ) : (
+                    content
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </ScrollArea>

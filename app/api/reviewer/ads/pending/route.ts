@@ -18,16 +18,28 @@ export interface AdDocumentForListing { // Renamed to avoid conflict if imported
   reviewerId?: string;
   rejectionReason?: string;
   assignedReviewerIds?: string[];
+  imageUrl?: string; // Added imageUrl
   // Add any other fields you want to return for the listing
 }
 
 export interface PendingAdListItem {
   id: string; // string version of ObjectId
   title: string;
+  submitterId: string; // Added submitterId
   submitterEmail: string;
   submissionDate: string; // ISO string date
   description: string;
   contentUrl: string;
+  imageUrl?: string; // Added imageUrl
+  submitterName?: string; // Added submitterName
+}
+
+// Basic User interface for fetching name
+interface UserDocument {
+  _id: ObjectId;
+  name?: string;
+  email?: string;
+  // other fields if necessary
 }
 
 export async function GET(request: Request) {
@@ -38,9 +50,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const adsCollection = db.collection<AdDocumentForListing>('ads');
+    const usersCollection = db.collection<UserDocument>('users'); // Added users collection
     const currentReviewerId = session.user.id;
 
     // Fetch pending ads: ads assigned to current reviewer OR ads with no assignment
@@ -59,14 +72,29 @@ export async function GET(request: Request) {
 
     const pendingAdsDocuments = await pendingAdsCursor.toArray();
 
-    const pendingAds: PendingAdListItem[] = pendingAdsDocuments.map(ad => ({
-      id: ad._id.toHexString(),
-      title: ad.title,
-      submitterEmail: ad.submitterEmail,
-      submissionDate: ad.submittedAt.toISOString(),
-      description: ad.description, // Added description
-      contentUrl: ad.contentUrl,   // Added contentUrl
-    }));
+    const pendingAdsPromises = pendingAdsDocuments.map(async (ad) => {
+      let submitterName = ad.submitterEmail; // Default to email
+      if (ObjectId.isValid(ad.submitterId)) {
+        const submitter = await usersCollection.findOne({ _id: new ObjectId(ad.submitterId) });
+        if (submitter && submitter.name) {
+          submitterName = submitter.name;
+        }
+      }
+
+      return {
+        id: ad._id.toHexString(),
+        title: ad.title,
+        submitterId: ad.submitterId, // Added submitterId
+        submitterEmail: ad.submitterEmail,
+        submitterName: submitterName, // Use fetched name or fallback
+        submissionDate: ad.submittedAt.toISOString(),
+        description: ad.description,
+        contentUrl: ad.contentUrl,
+        imageUrl: ad.imageUrl,
+      };
+    });
+
+    const pendingAds: PendingAdListItem[] = await Promise.all(pendingAdsPromises);
 
     return NextResponse.json(pendingAds, { status: 200 });
 

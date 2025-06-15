@@ -51,7 +51,7 @@ export async function GET() {
   console.log("Exchange Rate API: Endpoint hit.");
 
   try {
-    client = await clientPromise;
+    client = await clientPromise(); // Call the function
     const db = client.db();
     const configCollection = db.collection<ExchangeRateDocument>(CONFIG_COLLECTION_NAME);
 

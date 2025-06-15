@@ -309,7 +309,7 @@ export default function SubmitterDashboard() {
         <CardContent>
           <div className="text-sm">
             <p className="mb-4">
-              Hello {session?.user?.email || 'Submitter'}, welcome to your AdScreener dashboard. Here you can submit new ads for review, track the
+              Hello <span className="capitalize">{session?.user?.firstName || 'Submitter'}</span>, welcome to your AdScreener dashboard. Here you can submit new ads for review, track the
               status of your submissions, and receive notifications about approval or rejection.
             </p>
             <p>

@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   try {
-    const client = await clientPromise;
+    const client = await clientPromise(); // Call the function
     const db = client.db();
     const userId = new ObjectId(session.user.id);
 
