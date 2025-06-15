@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { Suspense } from "react" // Added Suspense
 
 import { useState, useEffect } from "react" // Added useEffect
 import { useRouter, useSearchParams } from "next/navigation" // Added useSearchParams
@@ -13,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 
-export default function LoginPage() {
+// This component contains the actual login form logic and uses useSearchParams
+function LoginFormWrapper() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
@@ -195,4 +197,22 @@ export default function LoginPage() {
       </div>
     </div>
   )
+}
+
+// The main export LoginPage now wraps LoginFormWrapper with Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <div className="w-full max-w-md text-center">
+          <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+          <p className="text-xl font-semibold text-gray-800">Loading AdScreener...</p>
+          <p className="text-sm text-gray-600 mt-2">Please wait a moment.</p>
+          {/* Optionally, add a simple spinner animation here if desired */}
+        </div>
+      </div>
+    }>
+      <LoginFormWrapper />
+    </Suspense>
+  );
 }
