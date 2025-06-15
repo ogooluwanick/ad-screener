@@ -51,7 +51,7 @@ export function NotificationDisplay() {
         
         toastFunction(notification.title, {
           description: notification.message,
-          duration: notification.level === 'error' ? 8000 : 5000,
+          duration: 2000, // Changed to 2 seconds for all notifications
           icon: iconComponent,
           // Add other sonner options if needed, e.g., actions, links
         });

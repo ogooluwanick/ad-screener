@@ -10,7 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added Select
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+// import { appConfig } from "@/lib/app_config" // Will be replaced by useAdCategories
+import { useAdCategories } from "@/hooks/use-ad-categories" // Added
 import {
   Dialog,
   DialogContent,
@@ -32,6 +35,7 @@ export default function SubmitAd() {
     title: "",
     description: "",
     targetUrl: "",
+    category: "", // Added category
   })
 
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -47,6 +51,12 @@ export default function SubmitAd() {
   const [calculatedFeeInKobo, setCalculatedFeeInKobo] = useState<number | null>(null)
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
   const [isFetchingRate, setIsFetchingRate] = useState(true)
+
+  const { 
+    data: adCategories, 
+    isLoading: isLoadingAdCategories, 
+    error: adCategoriesError 
+  } = useAdCategories();
 
   useEffect(() => {
     const fetchRateAndSetFee = async () => {
@@ -101,6 +111,13 @@ export default function SubmitAd() {
     }
   }
 
+  const handleCategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, category: value }));
+    if (errors.category) {
+      setErrors((prevErrors) => ({ ...prevErrors, category: undefined }));
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -129,6 +146,7 @@ export default function SubmitAd() {
     } else {
       try { new URL(formData.targetUrl) } catch { newErrors.targetUrl = "Please enter a valid URL" }
     }
+    if (!formData.category) newErrors.category = "Ad category is required"; // Added category validation
     if (!imageFile) newErrors.image = "Image is required"
     setErrors(newErrors)
     return Object.values(newErrors).every(error => error === undefined);
@@ -168,6 +186,7 @@ export default function SubmitAd() {
       adUploadData.append("title", formData.title);
       adUploadData.append("description", formData.description);
       adUploadData.append("contentUrl", formData.targetUrl);
+      adUploadData.append("category", formData.category); // Added category
       if (imageFile) {
         adUploadData.append("image", imageFile);
       }
@@ -318,6 +337,31 @@ export default function SubmitAd() {
               {errors.targetUrl && <p className="text-sm text-red-600">{errors.targetUrl}</p>}
             </div>
             <div className="space-y-2">
+              <Label htmlFor="category">Ad Category *</Label>
+              <Select 
+                value={formData.category} 
+                onValueChange={handleCategoryChange}
+                disabled={isLoadingAdCategories || !!adCategoriesError || !adCategories || adCategories.length === 0}
+              >
+                <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                  <SelectValue placeholder={
+                    isLoadingAdCategories ? "Loading categories..." : 
+                    adCategoriesError ? "Error loading" :
+                    (!adCategories || adCategories.length === 0) ? "No categories available" :
+                    "Select a category"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {adCategories && adCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && <p className="text-sm text-red-600">{errors.category}</p>}
+              {adCategoriesError && <p className="text-xs text-red-500 mt-1">Could not load categories: {adCategoriesError.message}</p>}
+              {!isLoadingAdCategories && !adCategoriesError && (!adCategories || adCategories.length === 0) && <p className="text-xs text-gray-500 mt-1">No ad categories are currently configured. Please contact support.</p>}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="image">Image *</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 {imagePreview ? (
@@ -377,6 +421,7 @@ export default function SubmitAd() {
               <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
                 <li><span className="font-medium">Title:</span> {formData.title || "N/A"}</li>
                 <li><span className="font-medium">Target URL:</span> {formData.targetUrl || "N/A"}</li>
+                <li><span className="font-medium">Category:</span> {formData.category || "N/A"}</li>
                 <li><span className="font-medium">Image:</span> {imageFile?.name || "N/A"}</li>
               </ul>
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">

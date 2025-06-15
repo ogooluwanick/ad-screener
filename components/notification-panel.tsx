@@ -76,7 +76,14 @@ export default function NotificationPanel({
                 <DotsHorizontalIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent 
+              align="end"
+              onMouseDown={(e) => {
+                // Prevent this event from bubbling up to the document listener
+                // which closes the notification panel when the dropdown content is clicked.
+                e.stopPropagation();
+              }}
+            >
               <DropdownMenuItem onClick={markAllAsRead} disabled={notifications.length === 0 || unreadNotificationCount === 0}>
                 Mark all as read
               </DropdownMenuItem>

@@ -244,15 +244,61 @@ export function useNotifications(
     }
   }, [notifications]);
 
-  const clearNotifications = useCallback(() => {
+  const clearNotifications = useCallback(async () => {
+    // Optimistically update UI
+    const originalNotifications = notifications;
     setNotifications([]);
-    // Note: This only clears client-side. No API call to delete from DB is implemented here.
-  }, []);
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        // Optionally, send user ID if backend needs to scope the deletion
+        // body: JSON.stringify({ userId }), 
+      });
+      if (!response.ok) {
+        throw new Error('API call to clear all notifications failed');
+      }
+      console.log('[useNotifications] Cleared all notifications via API.');
+    } catch (error) {
+      console.error('[useNotifications] Failed to clear all notifications via API:', error);
+      // Revert UI update on error
+      setNotifications(originalNotifications);
+      // Optionally, show an error toast to the user
+    }
+  }, [notifications, userId]); // Added userId dependency if used in body
 
-  const clearReadNotifications = useCallback(() => {
+  const clearReadNotifications = useCallback(async () => {
+    const readNotificationIds = notifications
+      .filter(n => n.isRead && n._id && n._id !== '')
+      .map(n => n._id as string); // Ensure _id is treated as string
+
+    if (readNotificationIds.length === 0) {
+      // No server-side read notifications to clear, just update UI if any client-only read ones exist
+      setNotifications((prevs) => prevs.filter(n => !n.isRead));
+      return;
+    }
+
+    // Optimistically update UI
+    const originalNotifications = notifications;
     setNotifications((prevs) => prevs.filter(n => !n.isRead));
-    // Note: This only clears client-side. No API call to delete from DB is implemented here.
-  }, []);
+
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationIds: readNotificationIds, action: 'clearRead' }), // Added action for clarity
+      });
+      if (!response.ok) {
+        throw new Error('API call to clear read notifications failed');
+      }
+      console.log('[useNotifications] Cleared read notifications via API.');
+    } catch (error) {
+      console.error('[useNotifications] Failed to clear read notifications via API:', error);
+      // Revert UI update on error
+      setNotifications(originalNotifications);
+      // Optionally, show an error toast to the user
+    }
+  }, [notifications]);
 
   return useMemo(() => ({
     notifications,

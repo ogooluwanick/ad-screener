@@ -24,7 +24,13 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
-          <Toaster richColors position="top-right" /> {/* Or your preferred position and options */}
+          <Toaster 
+            richColors 
+            position="top-right" 
+            toastOptions={{
+              style: { marginTop: '4rem' },
+            }}
+          /> {/* Or your preferred position and options */}
           <NotificationDisplay />
         </Providers>
       </body>

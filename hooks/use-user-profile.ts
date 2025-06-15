@@ -84,7 +84,7 @@ export const usePublicUserProfile = (userId: string | null | undefined) => {
 };
 
 export interface UpdateUserProfilePayload {
-  profileImageUrl?: string; 
+  profileImageUrl?: string;
   firstName?: string; // Make fields optional for partial updates
   lastName?: string;
   phone?: string;
@@ -92,6 +92,8 @@ export interface UpdateUserProfilePayload {
   location?: string;
   bio?: string;
   website?: string;
+  department?: string; // Added for reviewers
+  expertise?: string[]; // Added for reviewers
 }
 
 interface UpdateUserProfileResponse {

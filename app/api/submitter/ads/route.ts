@@ -23,6 +23,7 @@ interface AdDocument {
   reviewerId?: string;
   rejectionReason?: string;
   assignedReviewerIds: string[];
+  category?: string; // Added category field
 }
 
 // Type for the data to be inserted (excluding _id as it's auto-generated)
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
     const paymentReference = formData.get('paymentReference') as string | null;
     const imageFile = formData.get('image') as File | null;
     const amountInKoboString = formData.get('amountInKobo') as string | null; // Added to receive amount charged
+    const category = formData.get('category') as string | null; // Added category
 
     // const clientSubmitterId = formData.get('submitterId') as string | null; // Not used for security, session.user.id is authoritative
 
@@ -76,11 +78,12 @@ export async function POST(request: Request) {
     console.log('  Image File Type:', imageFile?.type);
     console.log('  Image File Size:', imageFile?.size);
     console.log('  Amount in Kobo String:', amountInKoboString);
+    console.log('  Category:', category);
 
 
-    if (!title || !description || !contentUrl || !paymentReference || !imageFile || !amountInKoboString) {
-      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'URL:', !!contentUrl, 'Ref:', !!paymentReference, 'Img:', !!imageFile, 'AmountStr:', !!amountInKoboString);
-      return NextResponse.json({ message: 'Missing required fields: title, description, contentUrl, paymentReference, image, or amountInKobo.' }, { status: 400 });
+    if (!title || !description || !contentUrl || !paymentReference || !imageFile || !amountInKoboString || !category) {
+      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'URL:', !!contentUrl, 'Ref:', !!paymentReference, 'Img:', !!imageFile, 'AmountStr:', !!amountInKoboString, 'Category:', !!category);
+      return NextResponse.json({ message: 'Missing required fields: title, description, contentUrl, paymentReference, image, amountInKobo, or category.' }, { status: 400 });
     }
 
     const amountInKobo = parseInt(amountInKoboString, 10);
@@ -128,6 +131,7 @@ export async function POST(request: Request) {
       status: 'pending' as 'pending',
       submittedAt: new Date(),
       assignedReviewerIds: [],
+      category: category, // Added category
       // reviewedAt, reviewerId, rejectionReason will be undefined initially
     };
     console.log('[API /submitter/ads] Prepared ad data for insertion:', JSON.stringify(newAdData));

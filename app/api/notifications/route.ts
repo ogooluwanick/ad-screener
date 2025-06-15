@@ -97,3 +97,55 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Failed to mark notifications as read', error: errorMessage }, { status: 500 });
   }
 }
+
+// DELETE: Clear notifications
+export async function DELETE(request: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const mongoClient = await clientPromise();
+    const db = mongoClient.db();
+    const notificationsCollection = db.collection('notifications');
+    let result;
+
+    // Try to parse body, it might be empty for "clear all"
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      // Expected if request has no body (e.g. clear all)
+      body = null;
+    }
+
+    if (body && body.action === 'clearRead' && Array.isArray(body.notificationIds)) {
+      // Clear specific read notifications
+      if (body.notificationIds.length === 0) {
+        return NextResponse.json({ message: 'No notification IDs provided to clear.', deletedCount: 0 }, { status: 200 });
+      }
+      const objectIdsToDelete = body.notificationIds.map((id: string) => new ObjectId(id));
+      result = await notificationsCollection.deleteMany({
+        _id: { $in: objectIdsToDelete },
+        userId: session.user.id, // Ensure user owns the notifications
+        isRead: true, // Optionally ensure they are indeed read, though client should filter
+      });
+      console.log(`[API Notifications] Cleared ${result.deletedCount} read notifications for user ${session.user.id}.`);
+    } else if (!body || Object.keys(body).length === 0) {
+      // Clear all notifications for the user
+      result = await notificationsCollection.deleteMany({ userId: session.user.id });
+      console.log(`[API Notifications] Cleared all ${result.deletedCount} notifications for user ${session.user.id}.`);
+    } else {
+      return NextResponse.json({ message: 'Invalid request body for DELETE operation.' }, { status: 400 });
+    }
+    
+    return NextResponse.json({ message: `Successfully deleted ${result.deletedCount} notifications.`, deletedCount: result.deletedCount }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ message: 'Failed to clear notifications', error: errorMessage }, { status: 500 });
+  }
+}

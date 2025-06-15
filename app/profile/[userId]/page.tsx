@@ -2,15 +2,17 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield, CheckCircle, XCircle } from "lucide-react"; // Added CheckCircle, XCircle
+import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield, CheckCircle, XCircle, Clock } from "lucide-react"; // Added CheckCircle, XCircle, Clock
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label"; // Import Label
 import { usePublicUserProfile, type PublicProfileViewData } from "@/hooks/use-user-profile";
+import { useReviewerProfileData, type RecentActivityItem } from "@/hooks/use-reviewer-profile-data"; // Added
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns'; // For formatting dates
 
 interface DisplayProfileData extends PublicProfileViewData {
   expertise?: string[]; // Added for reviewers
@@ -38,6 +40,14 @@ const initialDisplayProfileData: DisplayProfileData = {
   profileVisibility: "public", 
 };
 
+const calculateReviewerLevel = (totalReviews?: number): string => {
+  if (totalReviews === undefined || totalReviews === null) return "Junior"; // Default if undefined
+  if (totalReviews >= 500) return "Lead";
+  if (totalReviews >= 200) return "Senior";
+  if (totalReviews >= 50) return "Mid-Level";
+  return "Junior";
+};
+
 export default function UserProfilePage() {
   const params = useParams();
   const userId = typeof params.userId === 'string' ? params.userId : undefined;
@@ -48,9 +58,20 @@ export default function UserProfilePage() {
   const [profileData, setProfileData] = useState<DisplayProfileData>(initialDisplayProfileData);
   const { data: fetchedProfileData, isLoading, error, refetch } = usePublicUserProfile(userId);
 
+  // Fetch reviewer specific data if the profile being viewed is a reviewer
+  const isReviewerProfile = fetchedProfileData?.role?.toLowerCase() === 'reviewer';
+  const { 
+    data: reviewerProfileData, 
+    isLoading: isLoadingReviewerData, 
+    error: reviewerDataError 
+  } = useReviewerProfileData(userId, { enabled: !!userId && isReviewerProfile });
+
   useEffect(() => {
     if (fetchedProfileData) {
-      setProfileData({
+      // Initial population from fetchedProfileData
+      // reviewerLevel will be updated by the reviewerProfileData effect if applicable
+      setProfileData(prev => ({
+        ...prev,
         firstName: fetchedProfileData.firstName || "",
         lastName: fetchedProfileData.lastName || "",
         role: fetchedProfileData.role || "",
@@ -61,7 +82,9 @@ export default function UserProfilePage() {
         company: fetchedProfileData.company || "",
         website: fetchedProfileData.website || "",
         department: fetchedProfileData.department || "",
-        reviewerLevel: fetchedProfileData.reviewerLevel || "",
+        // Use existing reviewerLevel from fetchedProfileData as a fallback
+        // until reviewerProfileData loads and potentially overrides it.
+        reviewerLevel: fetchedProfileData.reviewerLevel || prev.reviewerLevel || "Junior", 
         expertise: fetchedProfileData.expertise || [],
         accuracy: fetchedProfileData.accuracy || 0,
         totalAds: fetchedProfileData.totalAds || 0,
@@ -70,9 +93,22 @@ export default function UserProfilePage() {
         rejectedAds: fetchedProfileData.rejectedAds || 0,
         email: fetchedProfileData.email || "",
         profileVisibility: fetchedProfileData.profileVisibility || "public",
-      });
+      }));
     }
   }, [fetchedProfileData]);
+
+  // Effect to update reviewerLevel when reviewerProfileData loads
+  useEffect(() => {
+    if (reviewerProfileData && isReviewerProfile) {
+      const newLevel = calculateReviewerLevel(reviewerProfileData.performanceStats?.totalReviews);
+      setProfileData(prev => ({
+        ...prev,
+        reviewerLevel: newLevel,
+        // Optionally update other reviewer-specific stats here if they aren't covered by fetchedProfileData
+        accuracy: reviewerProfileData.performanceStats?.accuracy ?? prev.accuracy,
+      }));
+    }
+  }, [reviewerProfileData, isReviewerProfile]);
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return "U";
@@ -81,67 +117,64 @@ export default function UserProfilePage() {
 
   const getReviewerLevelColor = (level?: string) => {
     switch (level) {
+      case "Lead": return "bg-indigo-100 text-indigo-800";
       case "Senior": return "bg-purple-100 text-purple-800";
-      case "Lead": return "bg-blue-100 text-blue-800";
+      case "Mid-Level": return "bg-blue-100 text-blue-800";
+      case "Junior": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-        <p className="ml-4 text-lg">Loading profile...</p>
-      </div>
-    );
-  }
+  const formatAvgReviewTime = (ms?: number) => {
+    if (ms === undefined || ms === null) return "N/A";
+    const minutes = Math.round(ms / (1000 * 60));
+    if (minutes < 1) return "<1m";
+    return `${minutes}m`;
+  };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-red-600">
-        <AlertTriangle className="h-12 w-12 mb-4" />
-        <p className="text-lg">Error loading profile: {error.message}</p>
-        <Button onClick={() => refetch()} className="mt-4">Try Again</Button>
-      </div>
-    );
-  }
-
-  if (!fetchedProfileData) {
-     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <User className="h-12 w-12 mb-4 text-gray-400" />
-        <p className="text-lg text-gray-500">Profile not found or not available.</p>
-      </div>
-    );
-  }
-  
   const userRole = profileData.role?.toLowerCase();
   const viewingUserRole = session?.user?.role?.toLowerCase(); // Role of the person viewing the profile
   const isOwnProfile = loggedInUserId === userId;
 
   // Handle profile visibility
-  if (!isOwnProfile && profileData.profileVisibility === "private") {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <Shield className="h-12 w-12 mb-4 text-gray-400" />
-        <p className="text-lg text-gray-500">This profile is private.</p>
-      </div>
-    );
-  }
-
-  if (!isOwnProfile && profileData.profileVisibility === "reviewers-only" && viewingUserRole !== "reviewer") {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <Shield className="h-12 w-12 mb-4 text-gray-400" />
-        <p className="text-lg text-gray-500">This profile is only visible to reviewers.</p>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {isLoading && (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <p className="ml-4 text-lg">Loading profile...</p>
+        </div>
+      )}
+      {!isLoading && error && (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-red-600">
+          <AlertTriangle className="h-12 w-12 mb-4" />
+          <p className="text-lg">Error loading profile: {error.message}</p>
+          <Button onClick={() => refetch()} className="mt-4">Try Again</Button>
+        </div>
+      )}
+      {!isLoading && !error && !fetchedProfileData && (
+         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+           <User className="h-12 w-12 mb-4 text-gray-400" />
+           <p className="text-lg text-gray-500">Profile not found or not available.</p>
+         </div>
+      )}
+      {!isLoading && !error && fetchedProfileData && !isOwnProfile && profileData.profileVisibility === "private" && (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+          <Shield className="h-12 w-12 mb-4 text-gray-400" />
+          <p className="text-lg text-gray-500">This profile is private.</p>
+        </div>
+      )}
+      {!isLoading && !error && fetchedProfileData && !isOwnProfile && profileData.profileVisibility === "reviewers-only" && viewingUserRole !== "reviewer" && (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+          <Shield className="h-12 w-12 mb-4 text-gray-400" />
+          <p className="text-lg text-gray-500">This profile is only visible to reviewers.</p>
+        </div>
+      )}
+      {!isLoading && !error && fetchedProfileData && (isOwnProfile || (profileData.profileVisibility !== "private" && (profileData.profileVisibility !== "reviewers-only" || viewingUserRole === "reviewer"))) && (
+      <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{profileData.firstName} {profileData.lastName}'s Profile</h1>
+        <h1 className="text-2xl font-bold tracking-tight capitalize">{profileData.firstName} {profileData.lastName}'s Profile</h1>
         {isOwnProfile && (
           <Button asChild className="bg-blue-600 hover:bg-blue-700 mt-2 sm:mt-0">
             <Link href="/profile">Edit My Profile</Link>
@@ -160,7 +193,7 @@ export default function UserProfilePage() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <CardTitle>{profileData.firstName} {profileData.lastName}</CardTitle>
+            <CardTitle className="capitalize">{profileData.firstName} {profileData.lastName}</CardTitle>
             <CardDescription>
               {userRole === 'reviewer' && profileData.reviewerLevel && (
                 <Badge className={getReviewerLevelColor(profileData.reviewerLevel)}>{profileData.reviewerLevel} Reviewer</Badge>
@@ -223,55 +256,94 @@ export default function UserProfilePage() {
             <Card className="md:col-span-3">
               <CardHeader>
                 <CardTitle>Review Performance</CardTitle>
-                <CardDescription>Reviewing statistics and performance metrics (mock data for public view).</CardDescription>
+                <CardDescription>Reviewing statistics and performance metrics.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">120</div> {/* Mock */}
-                    <div className="text-sm text-gray-600">Total Reviews</div>
+                {isLoadingReviewerData && (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="ml-3 text-gray-500">Loading performance data...</p>
                   </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">100</div> {/* Mock */}
-                    <div className="text-sm text-gray-600">Approved</div>
+                )}
+                {reviewerDataError && (
+                  <div className="text-center p-8 text-red-500">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                    <p>Error loading performance data: {reviewerDataError.message}</p>
                   </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">20</div> {/* Mock */}
-                    <div className="text-sm text-gray-600">Rejected</div>
+                )}
+                {reviewerProfileData && !isLoadingReviewerData && !reviewerDataError && (
+                  <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">{reviewerProfileData.performanceStats.totalReviews || 0}</div>
+                      <div className="text-sm text-gray-600">Total Reviews</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{reviewerProfileData.performanceStats.approvedReviews || 0}</div>
+                      <div className="text-sm text-gray-600">Approved</div>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 rounded-lg">
+                      <div className="text-2xl font-bold text-red-600">{reviewerProfileData.performanceStats.rejectedReviews || 0}</div>
+                      <div className="text-sm text-gray-600">Rejected</div>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">{formatAvgReviewTime(reviewerProfileData.performanceStats.avgReviewTimeMs)}</div>
+                      <div className="text-sm text-gray-600">Avg Review Time</div>
+                    </div>
+                    <div className="text-center p-4 bg-amber-50 rounded-lg">
+                      <div className="text-2xl font-bold text-amber-600">{reviewerProfileData.performanceStats.accuracy || profileData.accuracy || 0}%</div>
+                      <div className="text-sm text-gray-600">Accuracy Rate</div>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">15m</div> {/* Mock */}
-                    <div className="text-sm text-gray-600">Avg Review Time</div>
-                  </div>
-                  <div className="text-center p-4 bg-amber-50 rounded-lg">
-                    <div className="text-2xl font-bold text-amber-600">{profileData.accuracy || 0}%</div>
-                    <div className="text-sm text-gray-600">Accuracy Rate</div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
             <Card className="md:col-span-3">
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest review activities (mock data for public view).</CardDescription>
+                <CardDescription>Latest review activities.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
-                      <div><p className="font-medium">Approved "Example Ad A" ad</p><p className="text-sm text-gray-500">3 hours ago</p></div>
-                    </div>
-                    <Badge variant="outline" className="text-green-600 border-green-600">Approved</Badge>
+                {isLoadingReviewerData && (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="ml-3 text-gray-500">Loading recent activities...</p>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div className="flex items-center">
-                      <XCircle className="h-5 w-5 text-red-600 mr-3" />
-                      <div><p className="font-medium">Rejected "Example Ad B" ad</p><p className="text-sm text-gray-500">2 days ago</p></div>
-                    </div>
-                    <Badge variant="outline" className="text-red-600 border-red-600">Rejected</Badge>
+                )}
+                {reviewerDataError && (
+                  <div className="text-center p-8 text-red-500">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                    <p>Error loading recent activities: {reviewerDataError.message}</p>
                   </div>
-                </div>
+                )}
+                {reviewerProfileData && !isLoadingReviewerData && !reviewerDataError && (
+                  reviewerProfileData.recentActivities.length > 0 ? (
+                    <div className="space-y-4">
+                      {reviewerProfileData.recentActivities.map((activity: RecentActivityItem) => (
+                        <div key={activity.id} className={`flex items-center justify-between p-3 rounded-lg ${activity.status === 'approved' ? 'bg-green-50' : 'bg-red-50'}`}>
+                          <div className="flex items-center">
+                            {activity.status === 'approved' ? <CheckCircle className="h-5 w-5 text-green-600 mr-3" /> : <XCircle className="h-5 w-5 text-red-600 mr-3" />}
+                            <div>
+                              <p className="font-medium">
+                                {activity.status === 'approved' ? 'Approved' : 'Rejected'} "{activity.title}" ad
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {formatDistanceToNow(new Date(activity.reviewedAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className={activity.status === 'approved' ? 'text-green-600 border-green-600' : 'text-red-600 border-red-600'}>
+                            {activity.status === 'approved' ? 'Approved' : 'Rejected'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 text-gray-500">
+                      <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p>No recent review activities found.</p>
+                    </div>
+                  )
+                )}
               </CardContent>
             </Card>
           </>
@@ -314,6 +386,8 @@ export default function UserProfilePage() {
           </Card>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

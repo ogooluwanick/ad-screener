@@ -26,18 +26,20 @@ export async function GET() {
     // Return only the necessary fields, excluding sensitive ones like password
     // For fields not yet in your DB, return null or default values
     const profileData = {
+      _id: user._id.toHexString(), // Include _id
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       email: user.email || "",
       role: user.role || "",
-      phone: user.phone || "", // Assuming 'phone' might be added to user schema
-      company: user.company || "", // Assuming 'company' might be added
-      location: user.location || "", // Assuming 'location' might be added
-      bio: user.bio || "", // Assuming 'bio' might be added
-      website: user.website || "", // Assuming 'website' might be added
-      // joinDate could be user.createdAt
+      phone: user.phone || "", 
+      company: user.company || "", 
+      location: user.location || "", 
+      bio: user.bio || "", 
+      website: user.website || "", 
       joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
-      profileImageUrl: user.profileImageUrl || null, // Add this
+      profileImageUrl: user.profileImageUrl || null,
+      department: user.department || "", // Add department for reviewers
+      expertise: user.expertise || [],   // Add expertise for reviewers
     };
 
     return NextResponse.json(profileData, { status: 200 });
@@ -64,8 +66,19 @@ export async function PUT(req: Request) {
     const userId = new ObjectId(session.user.id);
 
     const body = await req.json();
-    // Destructure profileImageUrl as well
-    const { firstName, lastName, phone, company, location, bio, website, profileImageUrl } = body;
+    // Destructure all potential fields including new reviewer fields
+    const { 
+      firstName, 
+      lastName, 
+      phone, 
+      company, 
+      location, 
+      bio, 
+      website, 
+      profileImageUrl,
+      department, // New field for reviewers
+      expertise   // New field for reviewers (array of strings)
+    } = body;
 
     // Basic validation (can be expanded)
     if (!firstName || !lastName) {
@@ -87,10 +100,13 @@ export async function PUT(req: Request) {
     if (location !== undefined) updateData.location = location;
     if (bio !== undefined) updateData.bio = bio;
     if (website !== undefined) updateData.website = website;
-    if (profileImageUrl !== undefined) { // Check if profileImageUrl is part of the payload
-      // If an empty string or null is passed, it means remove the image.
-      // If a valid URL is passed, update it.
-      updateData.profileImageUrl = profileImageUrl; 
+    if (profileImageUrl !== undefined) { 
+      updateData.profileImageUrl = profileImageUrl;
+    }
+    // Add reviewer-specific fields if provided
+    if (department !== undefined) updateData.department = department;
+    if (expertise !== undefined && Array.isArray(expertise)) { // Ensure expertise is an array
+      updateData.expertise = expertise;
     }
     // Note: Email updates are typically handled separately due to verification needs.
     // If you want to allow email changes here, add validation and consider implications.
@@ -123,7 +139,9 @@ export async function PUT(req: Request) {
         bio: updatedUser?.bio,
         website: updatedUser?.website,
         joinDate: updatedUser?.createdAt ? new Date(updatedUser.createdAt).toISOString().split('T')[0] : "",
-        profileImageUrl: updatedUser?.profileImageUrl, // Add this
+        profileImageUrl: updatedUser?.profileImageUrl,
+        department: updatedUser?.department, // Add this
+        expertise: updatedUser?.expertise,   // Add this
       } },
       { status: 200 }
     );

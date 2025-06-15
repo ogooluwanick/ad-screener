@@ -18,6 +18,7 @@ interface AdDocument {
   reviewerId?: string;
   rejectionReason?: string;
   assignedReviewerIds?: string[];
+  category?: string; // Added category field
 }
 
 export interface ReviewerDashboardStats {
