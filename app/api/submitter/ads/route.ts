@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { sendNotificationToUser } from '@/lib/notification-client'; // Removed triggerReviewerDashboardUpdate
-import { sendEmail } from '@/lib/email'; // Added for sending email
-import fs from 'fs/promises';
-import path from 'path';
+import { sendNotificationToUser } from '@/lib/notification-client';
+import { sendEmail } from '@/lib/email';
 import { ObjectId } from 'mongodb'; // Import ObjectId
+import { uploadToCloudinary } from '@/lib/cloudinary_utils'; // Added for Cloudinary upload
 
 // AdDocument defines the structure in the database
 interface AdDocument {
@@ -15,8 +14,9 @@ interface AdDocument {
   submitterEmail: string;
   title: string;
   description: string;
-  contentUrl: string; // URL the ad links to
-  imageUrl?: string; // Path to the uploaded ad creative image
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // URL of the uploaded ad file from Cloudinary
+  adFilePublicId?: string; // Public ID of the ad file in Cloudinary
   paymentReference: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
@@ -24,7 +24,7 @@ interface AdDocument {
   reviewerId?: string;
   rejectionReason?: string;
   assignedReviewerIds: string[];
-  category?: string; // Added category field
+  // category?: string; // REMOVED
 }
 
 // Type for the data to be inserted (excluding _id as it's auto-generated)
@@ -62,29 +62,27 @@ export async function POST(request: Request) {
 
     const title = formData.get('title') as string | null;
     const description = formData.get('description') as string | null;
-    const contentUrl = formData.get('contentUrl') as string | null;
+    // const contentUrl = formData.get('contentUrl') as string | null; // REMOVED
     const paymentReference = formData.get('paymentReference') as string | null;
-    const imageFile = formData.get('image') as File | null;
-    const amountInKoboString = formData.get('amountInKobo') as string | null; // Added to receive amount charged
-    const category = formData.get('category') as string | null; // Added category
-
-    // const clientSubmitterId = formData.get('submitterId') as string | null; // Not used for security, session.user.id is authoritative
+    const adFile = formData.get('adFile') as File | null; // RENAMED from imageFile
+    const amountInKoboString = formData.get('amountInKobo') as string | null;
+    // const category = formData.get('category') as string | null; // REMOVED
 
     console.log('[API /submitter/ads] Raw form data values:');
     console.log('  Title:', title);
-    console.log('  Description:', description ? description.substring(0, 50) + '...' : 'N/A'); // Log snippet
-    console.log('  Content URL:', contentUrl);
+    console.log('  Description:', description ? description.substring(0, 50) + '...' : 'N/A');
+    // console.log('  Content URL:', contentUrl); // REMOVED
     console.log('  Payment Reference:', paymentReference);
-    console.log('  Image File Name:', imageFile?.name);
-    console.log('  Image File Type:', imageFile?.type);
-    console.log('  Image File Size:', imageFile?.size);
+    console.log('  Ad File Name:', adFile?.name);
+    console.log('  Ad File Type:', adFile?.type);
+    console.log('  Ad File Size:', adFile?.size);
     console.log('  Amount in Kobo String:', amountInKoboString);
-    console.log('  Category:', category);
+    // console.log('  Category:', category); // REMOVED
 
 
-    if (!title || !description || !contentUrl || !paymentReference || !imageFile || !amountInKoboString || !category) {
-      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'URL:', !!contentUrl, 'Ref:', !!paymentReference, 'Img:', !!imageFile, 'AmountStr:', !!amountInKoboString, 'Category:', !!category);
-      return NextResponse.json({ message: 'Missing required fields: title, description, contentUrl, paymentReference, image, amountInKobo, or category.' }, { status: 400 });
+    if (!title || !description || !paymentReference || !adFile || !amountInKoboString) {
+      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'Ref:', !!paymentReference, 'AdFile:', !!adFile, 'AmountStr:', !!amountInKoboString);
+      return NextResponse.json({ message: 'Missing required fields: title, description, paymentReference, adFile, or amountInKobo.' }, { status: 400 });
     }
 
     const amountInKobo = parseInt(amountInKoboString, 10);
@@ -94,29 +92,28 @@ export async function POST(request: Request) {
     }
     console.log('[API /submitter/ads] Parsed amountInKobo:', amountInKobo);
 
-    // Validate image type and size
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!validTypes.includes(imageFile.type)) {
-        return NextResponse.json({ message: "Invalid image file type. Please upload JPEG, PNG, GIF, or WebP." }, { status: 400 });
+    // File handling with Cloudinary
+    let cloudinaryUploadResult;
+    try {
+      const adFileBuffer = Buffer.from(await adFile.arrayBuffer());
+      const originalFileName = adFile.name.substring(0, adFile.name.lastIndexOf('.')) || adFile.name;
+      const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
+      const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
+      
+      console.log(`[API /submitter/ads] Uploading ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
+      cloudinaryUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary);
+
+      if (!cloudinaryUploadResult || !cloudinaryUploadResult.secure_url || !cloudinaryUploadResult.public_id) {
+        console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result.');
+        return NextResponse.json({ message: 'Failed to upload ad file to Cloudinary.' }, { status: 500 });
+      }
+      console.log('[API /submitter/ads] Ad file uploaded to Cloudinary:', cloudinaryUploadResult.secure_url);
+    } catch (uploadError) {
+      console.error('[API /submitter/ads] Error during Cloudinary upload process:', uploadError);
+      return NextResponse.json({ message: 'Error uploading ad file.', error: uploadError instanceof Error ? uploadError.message : 'Unknown upload error' }, { status: 500 });
     }
-    if (imageFile.size > 5 * 1024 * 1024) { // 5MB
-        return NextResponse.json({ message: "Image file size exceeds 5MB." }, { status: 400 });
-    }
 
-    // File handling
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'ads');
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const sanitizedFilename = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
-    const uniqueFilename = `${Date.now()}-${sanitizedFilename}`;
-    const imageDiskPath = path.join(uploadDir, uniqueFilename);
-    const publicImageUrl = `/uploads/ads/${uniqueFilename}`;
-
-    const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-    await fs.writeFile(imageDiskPath, imageBuffer);
-    console.log('[API /submitter/ads] Image saved to disk:', publicImageUrl);
-
-    const client = await clientPromise(); // Call the function
+    const client = await clientPromise();
     const db = client.db();
     const adsCollection = db.collection<AdInsertData>('ads');
     const paymentsCollection = db.collection<PaymentInsertData>('payments');
@@ -124,16 +121,16 @@ export async function POST(request: Request) {
     const newAdData: AdInsertData = {
       title,
       description,
-      contentUrl,
-      imageUrl: publicImageUrl,
+      // contentUrl, // REMOVED
+      adFileUrl: cloudinaryUploadResult.secure_url, // From Cloudinary
+      adFilePublicId: cloudinaryUploadResult.public_id, // From Cloudinary
       paymentReference,
-      submitterId: session.user.id, // Authoritative ID from session
+      submitterId: session.user.id,
       submitterEmail: session.user.email || '',
       status: 'pending' as 'pending',
       submittedAt: new Date(),
       assignedReviewerIds: [],
-      category: category, // Added category
-      // reviewedAt, reviewerId, rejectionReason will be undefined initially
+      // category: category, // REMOVED
     };
     console.log('[API /submitter/ads] Prepared ad data for insertion:', JSON.stringify(newAdData));
 
@@ -142,7 +139,9 @@ export async function POST(request: Request) {
 
     if (!result.insertedId) {
       console.error('[API /submitter/ads] Failed to insert ad into database. Result:', result);
-      try { await fs.unlink(imageDiskPath); } catch (cleanupError) { console.error("Failed to cleanup uploaded file after ad insertion failure:", cleanupError); }
+      // TODO: Consider deleting from Cloudinary if DB insert fails.
+      // For now, log and proceed. A more robust solution would handle this.
+      // await deleteFromCloudinary(cloudinaryUploadResult.public_id, cloudinaryUploadResult.resource_type as any);
       return NextResponse.json({ message: 'Failed to submit ad to database' }, { status: 500 });
     }
 

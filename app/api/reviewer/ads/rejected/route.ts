@@ -5,11 +5,14 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 
 // Using a similar structure to AdDocumentForListing for consistency
-export interface AdDocumentForListing {
+export interface AdDocumentForListing { // This should ideally be a shared type
   _id: ObjectId;
   title: string;
   description: string;
-  contentUrl: string;
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // ADDED
+  adFilePublicId?: string; // ADDED
+  resource_type?: string; // ADDED (from Cloudinary, e.g., 'image', 'video')
   submitterId: string;
   submitterEmail: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -17,19 +20,21 @@ export interface AdDocumentForListing {
   reviewedAt?: Date; // This date would also be the rejection date
   reviewerId?: string;
   rejectionReason?: string; // Specific to rejected ads
-  // Add any other fields you want to return for the listing
 }
 
 export interface RejectedAdListItem {
   id: string; // string version of ObjectId
   title: string;
-  submitterId: string; // Added submitterId
+  submitterId: string;
   submitterEmail: string;
   submissionDate: string; // ISO string date
   rejectionDate: string; // ISO string date for reviewedAt (when it was rejected)
   reviewerId?: string; // ID of the reviewer
   rejectionReason?: string;
-  contentUrl: string;
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // ADDED
+  adFilePublicId?: string; // ADDED
+  adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
 }
 
 export async function GET(request: Request) {
@@ -57,10 +62,25 @@ export async function GET(request: Request) {
       submitterId: ad.submitterId, // Added submitterId
       submitterEmail: ad.submitterEmail,
       submissionDate: ad.submittedAt.toISOString(),
-      rejectionDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), // Fallback for safety
+      rejectionDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), 
       reviewerId: ad.reviewerId,
       rejectionReason: ad.rejectionReason,
-      contentUrl: ad.contentUrl,
+      // contentUrl: ad.contentUrl, // REMOVED
+      adFileUrl: ad.adFileUrl, // ADDED
+      adFilePublicId: ad.adFilePublicId, // ADDED
+      adFileType: (() => { // IIFE to determine fileType
+        let fileType: RejectedAdListItem['adFileType'] = 'other';
+        if (ad.adFileUrl) {
+          if (ad.resource_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(ad.adFileUrl)) {
+            fileType = 'image';
+          } else if (ad.resource_type === 'video' || /\.(mp4|webm|ogg)$/i.test(ad.adFileUrl)) {
+            fileType = 'video';
+          } else if (/\.pdf$/i.test(ad.adFileUrl)) {
+            fileType = 'pdf';
+          }
+        }
+        return fileType;
+      })(),
     }));
 
     return NextResponse.json(rejectedAds, { status: 200 });

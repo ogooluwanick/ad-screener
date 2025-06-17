@@ -5,11 +5,14 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 
 // Consistent Ad interface (can be moved to a shared types file later)
-export interface AdDocumentForListing { // Renamed to avoid conflict if imported elsewhere
+export interface AdDocumentForListing {
   _id: ObjectId;
   title: string;
   description: string;
-  contentUrl: string;
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // RENAMED from imageUrl
+  adFilePublicId?: string; // ADDED
+  resource_type?: string; // ADDED (from Cloudinary, e.g., 'image', 'video')
   submitterId: string;
   submitterEmail: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -18,20 +21,20 @@ export interface AdDocumentForListing { // Renamed to avoid conflict if imported
   reviewerId?: string;
   rejectionReason?: string;
   assignedReviewerIds?: string[];
-  imageUrl?: string; // Added imageUrl
-  // Add any other fields you want to return for the listing
 }
 
 export interface PendingAdListItem {
   id: string; // string version of ObjectId
   title: string;
-  submitterId: string; // Added submitterId
+  submitterId: string;
   submitterEmail: string;
   submissionDate: string; // ISO string date
   description: string;
-  contentUrl: string;
-  imageUrl?: string; // Added imageUrl
-  submitterName?: string; // Added submitterName
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // RENAMED from imageUrl
+  adFilePublicId?: string; // ADDED
+  adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
+  submitterName?: string;
 }
 
 // Basic User interface for fetching name
@@ -81,16 +84,30 @@ export async function GET(request: Request) {
         }
       }
 
+      let fileType: PendingAdListItem['adFileType'] = 'other';
+      if (ad.adFileUrl) {
+        if (ad.resource_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(ad.adFileUrl)) {
+          fileType = 'image';
+        } else if (ad.resource_type === 'video' || /\.(mp4|webm|ogg)$/i.test(ad.adFileUrl)) {
+          fileType = 'video';
+        } else if (/\.pdf$/i.test(ad.adFileUrl)) {
+          fileType = 'pdf';
+        }
+      }
+
+
       return {
         id: ad._id.toHexString(),
         title: ad.title,
-        submitterId: ad.submitterId, // Added submitterId
+        submitterId: ad.submitterId,
         submitterEmail: ad.submitterEmail,
-        submitterName: submitterName, // Use fetched name or fallback
+        submitterName: submitterName,
         submissionDate: ad.submittedAt.toISOString(),
         description: ad.description,
-        contentUrl: ad.contentUrl,
-        imageUrl: ad.imageUrl,
+        // contentUrl: ad.contentUrl, // REMOVED
+        adFileUrl: ad.adFileUrl, // RENAMED
+        adFilePublicId: ad.adFilePublicId, // ADDED
+        adFileType: fileType, // ADDED
       };
     });
 

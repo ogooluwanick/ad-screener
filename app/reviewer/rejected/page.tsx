@@ -51,14 +51,20 @@ export default function RejectedAdsPage() {
     }
   }, []);
 
-  const messageCallbacks = {
-    DASHBOARD_REFRESH_REQUESTED: useCallback(() => {
-      console.log('Rejected ads list refresh triggered by WebSocket (DASHBOARD_REFRESH_REQUESTED).');
-      fetchRejectedAds();
-    }, [fetchRejectedAds]),
-  };
-
-  useNotifications(session?.user?.id, session?.user?.role as string, messageCallbacks);
+  // Corrected: useNotifications only takes userId.
+  const { refetchNotifications } = useNotifications(session?.user?.id);
+  // WebSocket messageCallbacks (and the messageCallbacks object itself) are removed as they are not used by the current useNotifications hook.
+  // If WebSocket functionality is needed, it should be implemented separately.
+  
+  useEffect(() => {
+    // Placeholder for potential WebSocket integration if messageCallbacks are for that
+    // const handleDashboardRefresh = () => {
+    //   console.log('Rejected ads list refresh triggered by WebSocket.');
+    //   fetchRejectedAds();
+    // };
+    // someWebSocketService.on('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
+    // return () => someWebSocketService.off('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
+  }, [fetchRejectedAds]);
 
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
@@ -199,26 +205,23 @@ export default function RejectedAdsPage() {
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.title}</TableCell>
                     <TableCell>
-                      {ad.submitterId ? (
-                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
-                          {ad.submitterEmail}
-                        </Link>
-                      ) : (
-                        ad.submitterEmail
-                      )}
+                      {/* Link to profile removed, displaying email as text */}
+                      {ad.submitterEmail}
                     </TableCell>
                     <TableCell>{new Date(ad.rejectionDate).toLocaleDateString()}</TableCell>
                     <TableCell>{ad.rejectionReason || "N/A"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(ad.contentUrl, '_blank')}
-                        title="View Ad Content"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">View</span>
-                      </Button>
+                      {ad.adFileUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(ad.adFileUrl, '_blank')}
+                          title="View Ad File"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">View Ad File</span>
+                        </Button>
+                      )}
                       <Button
                         variant="default" // Changed from ghost to default for blue color
                         size="sm"

@@ -387,12 +387,12 @@ export default function UnifiedSettingsPage() {
                 <div><Label htmlFor="autoAssignment">Auto-Assignment</Label><p className="text-sm text-gray-500">Automatically assign new reviews to you</p></div>
                 <Switch id="autoAssignment" checked={reviewPreferences.autoAssignment} onCheckedChange={(c) => handleReviewPreferenceChange("autoAssignment", c)} />
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Maximum Daily Reviews: {reviewPreferences.maxDailyReviews[0]}</Label>
                 <Slider value={reviewPreferences.maxDailyReviews} onValueChange={(v) => handleReviewPreferenceChange("maxDailyReviews", v)} max={50} min={5} step={5} className="w-full" />
                 <p className="text-sm text-gray-500">Set your daily review capacity</p>
-              </div>
-              <div className="space-y-2">
+              </div> */}
+              {/* <div className="space-y-2">
                 <Label htmlFor="preferredCategories">Preferred Categories</Label>
                 <Select value={reviewPreferences.preferredCategories[0]} onValueChange={(v) => handleReviewPreferenceChange("preferredCategories", [v])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -405,7 +405,7 @@ export default function UnifiedSettingsPage() {
                     <SelectItem value="education">Education</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
               <div className="flex items-center justify-between">
                 <div><Label htmlFor="reviewReminders">Review Reminders</Label><p className="text-sm text-gray-500">Remind me of pending reviews</p></div>
                 <Switch id="reviewReminders" checked={reviewPreferences.reviewReminders} onCheckedChange={(c) => handleReviewPreferenceChange("reviewReminders", c)} />

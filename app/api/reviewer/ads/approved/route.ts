@@ -5,30 +5,35 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
 
 // Using the same AdDocumentForListing from the pending route for consistency
-export interface AdDocumentForListing {
+export interface AdDocumentForListing { // This should ideally be a shared type
   _id: ObjectId;
   title: string;
   description: string;
-  contentUrl: string;
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // ADDED
+  adFilePublicId?: string; // ADDED
+  resource_type?: string; // ADDED (from Cloudinary, e.g., 'image', 'video')
   submitterId: string;
   submitterEmail: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
   reviewedAt?: Date;
   reviewerId?: string;
-  assignedReviewerIds?: string[]; // Added for consistency
-  // Add any other fields you want to return for the listing
+  assignedReviewerIds?: string[];
 }
 
 export interface ApprovedAdListItem {
   id: string; // string version of ObjectId
   title: string;
-  submitterId: string; // Added submitterId
+  submitterId: string;
   submitterEmail: string;
   submissionDate: string; // ISO string date
   approvalDate: string; // ISO string date for reviewedAt
   reviewerId?: string; // ID of the reviewer, if available
-  contentUrl: string;
+  // contentUrl: string; // REMOVED
+  adFileUrl?: string; // ADDED
+  adFilePublicId?: string; // ADDED
+  adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
 }
 
 export async function GET(request: Request) {
@@ -52,15 +57,29 @@ export async function GET(request: Request) {
 
     // Corrected mapping
     const approvedAds: ApprovedAdListItem[] = approvedAdsDocuments.map((ad: AdDocumentForListing) => {
+      let fileType: ApprovedAdListItem['adFileType'] = 'other';
+      if (ad.adFileUrl) {
+        if (ad.resource_type === 'image' || /\.(jpeg|jpg|gif|png|webp)$/i.test(ad.adFileUrl)) {
+          fileType = 'image';
+        } else if (ad.resource_type === 'video' || /\.(mp4|webm|ogg)$/i.test(ad.adFileUrl)) {
+          fileType = 'video';
+        } else if (/\.pdf$/i.test(ad.adFileUrl)) {
+          fileType = 'pdf';
+        }
+      }
+
       return {
         id: ad._id.toHexString(),
         title: ad.title,
         submitterId: ad.submitterId,
         submitterEmail: ad.submitterEmail,
         submissionDate: ad.submittedAt.toISOString(),
-        approvalDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), // Fallback for safety
+        approvalDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), 
         reviewerId: ad.reviewerId,
-        contentUrl: ad.contentUrl,
+        // contentUrl: ad.contentUrl, // REMOVED
+        adFileUrl: ad.adFileUrl, // ADDED
+        adFilePublicId: ad.adFilePublicId, // ADDED
+        adFileType: fileType, // ADDED
       };
     });
 

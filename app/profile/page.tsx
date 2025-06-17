@@ -14,7 +14,6 @@ import { toast } from "@/hooks/use-toast";
 import { useUserProfile, useUpdateUserProfile, type UserProfileData, type UpdateUserProfilePayload } from "@/hooks/use-user-profile";
 import { useSubmitterDashboardStats } from "@/hooks/use-submitter-dashboard-stats";
 import { useReviewerProfileData, type ReviewerPerformanceStats, type RecentActivityItem } from "@/hooks/use-reviewer-profile-data";
-import { useAdCategories } from "@/hooks/use-ad-categories";
 
 interface UnifiedProfileData extends UserProfileData {
   image?: string;
@@ -29,7 +28,7 @@ interface UnifiedProfileData extends UserProfileData {
   rejectedAds?: number;
   pendingAds?: number;
   department?: string;
-  expertise?: string[];
+  // expertise?: string[]; // REMOVED as it was tied to adCategories
   reviewerLevel?: string;
   totalReviews?: number;
   approvedReviews?: number;
@@ -54,7 +53,7 @@ const initialUnifiedProfileData: UnifiedProfileData = {
   company: "",
   website: "",
   department: "Quality Assurance",
-  expertise: [], // Default to empty, will be populated from DB or selection
+  // expertise: [], // REMOVED
   reviewerLevel: "Junior",
   totalReviews: 0,
   approvedReviews: 0,
@@ -108,11 +107,8 @@ export default function UnifiedProfilePage() {
     { enabled: !!(fetchedProfileData?._id && profileData.role && profileData.role === 'reviewer') }
   );
 
-  const { 
-    data: adCategories, 
-    isLoading: isLoadingAdCategories, 
-    error: adCategoriesError 
-  } = useAdCategories();
+  // The useAdCategories hook call and its destructured variables (adCategories, isLoadingAdCategories, adCategoriesError)
+  // were intended to be fully removed. Ensuring they are not present.
 
   const formatAvgReviewTime = (ms?: number): string => {
     if (ms === undefined || ms === null || ms < 0) return "N/A";
@@ -140,7 +136,7 @@ export default function UnifiedProfilePage() {
         company: fetchedProfileData.company || initialUnifiedProfileData.company,
         website: fetchedProfileData.website || initialUnifiedProfileData.website,
         department: (fetchedProfileData as UnifiedProfileData).department || initialUnifiedProfileData.department,
-        expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise,
+        // expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise, // REMOVED
         reviewerLevel: (fetchedProfileData as UnifiedProfileData).reviewerLevel || initialUnifiedProfileData.reviewerLevel,
       }));
       setNewlyUploadedImageUrl(null);
@@ -196,7 +192,7 @@ export default function UnifiedProfilePage() {
       payload = { 
         ...payload, 
         department: profileData.department, 
-        expertise: profileData.expertise || [] 
+        // expertise: profileData.expertise || []  // REMOVED
       };
     }
 
@@ -228,7 +224,7 @@ export default function UnifiedProfilePage() {
         image: fetchedProfileData.profileImageUrl || initialUnifiedProfileData.image,
         role: fetchedProfileData.role || initialUnifiedProfileData.role,
         department: (fetchedProfileData as UnifiedProfileData).department || initialUnifiedProfileData.department,
-        expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise,
+        // expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise, // REMOVED
         reviewerLevel: calculatedLevel,
         totalReviews: currentTotalReviews ?? initialUnifiedProfileData.totalReviews,
         approvedReviews: reviewerProfileApiData?.performanceStats.approvedReviews ?? initialUnifiedProfileData.approvedReviews,
@@ -413,46 +409,10 @@ export default function UnifiedProfilePage() {
             {userRole === 'submitter' && (<div className="space-y-2"><Label htmlFor="website">Website</Label><Input id="website" value={profileData.website || ""} onChange={(e) => handleInputChange("website", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="https://example.com" /></div>)}
             <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" rows={4} value={profileData.bio} onChange={(e) => handleInputChange("bio", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder={userRole === 'reviewer' ? "Tell us about your reviewing experience..." : "Tell us about yourself or your company..."} /></div>
             
-            {userRole === 'reviewer' && (
-              <div className="space-y-2">
-                <Label>Areas of Expertise</Label>
-                {!isEditing ? (
-                  <div className="flex flex-wrap gap-2">
-                    {(profileData.expertise && profileData.expertise.length > 0) ? 
-                      profileData.expertise.map((skill, index) => (<Badge key={index} variant="secondary">{skill}</Badge>)) : 
-                      <p className="text-sm text-gray-500">No expertise selected.</p>}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                    {isLoadingAdCategories && <p className="text-sm text-gray-500 col-span-full">Loading expertise options...</p>}
-                    {adCategoriesError && <p className="text-sm text-red-500 col-span-full">Error: {adCategoriesError.message}</p>}
-                    {!isLoadingAdCategories && !adCategoriesError && (!adCategories || adCategories.length === 0) && <p className="text-sm text-gray-500 col-span-full">No expertise options available.</p>}
-                    {!isLoadingAdCategories && !adCategoriesError && adCategories && adCategories.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`expertise-${option.replace(/\s+/g, '-')}`}
-                          checked={(profileData.expertise || []).includes(option)}
-                          onCheckedChange={(checked) => {
-                            const currentExpertise = profileData.expertise || [];
-                            let newExpertise: string[];
-                            if (checked) {
-                              newExpertise = [...currentExpertise, option];
-                            } else {
-                              newExpertise = currentExpertise.filter(item => item !== option);
-                            }
-                            handleInputChange("expertise", newExpertise);
-                          }}
-                          disabled={isUpdatingProfile || isUploadingImage}
-                        />
-                        <Label htmlFor={`expertise-${option.replace(/\s+/g, '-')}`} className="font-normal text-sm">{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Ensuring Areas of Expertise section and its logic are fully removed */}
           </CardContent>
         </Card>
+        {/* The extraneous >>>>>>> REPLACE marker seems to be an artifact from a previous merge/edit, removing it. */}
 
         {userRole === 'reviewer' && (<>
             {/* Review Performance and Recent Activity Cards remain the same */}

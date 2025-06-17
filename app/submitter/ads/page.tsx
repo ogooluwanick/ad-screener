@@ -16,8 +16,10 @@ interface Ad {
   _id: string
   title: string
   description: string
-  targetUrl: string // Mapped from contentUrl
-  imageUrl?: string
+  // targetUrl: string // REMOVED
+  adFileUrl?: string // RENAMED from imageUrl, mapped from adFileUrl
+  adFilePublicId?: string // Added
+  adFileType?: 'image' | 'video' | 'pdf' | 'other'; // Added to help render
   submissionDate: string // Mapped from submittedAt
   status: "pending" | "approved" | "rejected"
   rejectionReason?: string
@@ -41,16 +43,33 @@ export default function SubmitterAds() {
         }
         const data = await response.json()
         // Map API data to frontend Ad type
-        const formattedAds: Ad[] = data.map((ad: any) => ({
-          _id: ad._id,
-          title: ad.title,
-          description: ad.description,
-          targetUrl: ad.contentUrl,
-          imageUrl: ad.imageUrl,
-          submissionDate: ad.submittedAt,
-          status: ad.status,
-          rejectionReason: ad.rejectionReason,
-        }))
+        const formattedAds: Ad[] = data.map((ad: any) => {
+          let fileType: Ad['adFileType'] = 'other';
+          if (ad.adFileUrl) {
+            if (/\.(jpeg|jpg|gif|png|webp)$/i.test(ad.adFileUrl)) {
+              fileType = 'image';
+            } else if (/\.(mp4|webm|ogg)$/i.test(ad.adFileUrl)) {
+              fileType = 'video';
+            } else if (/\.pdf$/i.test(ad.adFileUrl)) {
+              fileType = 'pdf';
+            }
+          } else if (ad.resource_type === 'image' || ad.resource_type === 'video') {
+            fileType = ad.resource_type;
+          }
+
+          return {
+            _id: ad._id,
+            title: ad.title,
+            description: ad.description,
+            // targetUrl: ad.contentUrl, // REMOVED
+            adFileUrl: ad.adFileUrl, // RENAMED
+            adFilePublicId: ad.adFilePublicId, // ADDED
+            adFileType: fileType, // ADDED
+            submissionDate: ad.submittedAt,
+            status: ad.status,
+            rejectionReason: ad.rejectionReason,
+          };
+        });
         setAds(formattedAds)
       } catch (error) {
         console.error("Error fetching ads:", error)
@@ -206,12 +225,41 @@ export default function SubmitterAds() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="aspect-video overflow-hidden rounded-md">
-              <img
-                src={selectedAd?.imageUrl || "/placeholder.svg"}
-                alt={selectedAd?.title}
-                className="w-full h-full object-cover"
-              />
+            <div>
+              <h3 className="font-semibold mb-1">Ad File</h3>
+              {selectedAd?.adFileType === 'image' && selectedAd.adFileUrl && (
+                <div className="aspect-video overflow-hidden rounded-md border">
+                  <img
+                    src={selectedAd.adFileUrl}
+                    alt={`Ad file for ${selectedAd.title}`}
+                    className="w-full h-full object-contain" // Changed to object-contain
+                  />
+                </div>
+              )}
+              {selectedAd?.adFileType === 'video' && selectedAd.adFileUrl && (
+                <div className="aspect-video overflow-hidden rounded-md border">
+                  <video controls src={selectedAd.adFileUrl} className="w-full h-full object-contain">
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
+              {selectedAd?.adFileType === 'pdf' && selectedAd.adFileUrl && (
+                 <div className="my-2">
+                    <Button asChild variant="outline">
+                      <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF</a>
+                    </Button>
+                 </div>
+              )}
+              {(!selectedAd?.adFileType || selectedAd?.adFileType === 'other') && selectedAd?.adFileUrl && (
+                <p className="text-sm text-gray-600">
+                  Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAd.adFileUrl}</a> (Preview not available)
+                </p>
+              )}
+              {!selectedAd?.adFileUrl && (
+                <div className="aspect-video overflow-hidden rounded-md border bg-slate-100 flex items-center justify-center">
+                  <p className="text-sm text-gray-500">No ad file uploaded.</p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -219,14 +267,7 @@ export default function SubmitterAds() {
               <p className="text-sm text-gray-600">{selectedAd?.description}</p>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="font-semibold">Target URL</h3>
-              <p className="text-sm text-blue-600 break-all">
-                <a href={selectedAd?.targetUrl} target="_blank" rel="noopener noreferrer">
-                  {selectedAd?.targetUrl}
-                </a>
-              </p>
-            </div>
+            {/* REMOVED Target URL section */}
 
             <div className="flex items-center space-x-2">
               <h3 className="font-semibold">Status:</h3>

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added Select
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 // import { appConfig } from "@/lib/app_config" // Will be replaced by useAdCategories
-import { useAdCategories } from "@/hooks/use-ad-categories" // Added
+// import { useAdCategories } from "@/hooks/use-ad-categories" // REMOVED
 import {
   Dialog,
   DialogContent,
@@ -34,12 +34,12 @@ export default function SubmitAd() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    targetUrl: "",
-    category: "", // Added category
+    // targetUrl: "", // REMOVED
+    // category: "", // REMOVED
   })
 
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [adFile, setAdFile] = useState<File | null>(null) // RENAMED from imageFile
+  const [adFilePreview, setAdFilePreview] = useState<string | null>(null) // RENAMED from imagePreview
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false) // For the ad data submission step
@@ -52,11 +52,7 @@ export default function SubmitAd() {
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
   const [isFetchingRate, setIsFetchingRate] = useState(true)
 
-  const { 
-    data: adCategories, 
-    isLoading: isLoadingAdCategories, 
-    error: adCategoriesError 
-  } = useAdCategories();
+  // REMOVED useAdCategories hook usage and its destructured variables
 
   useEffect(() => {
     const fetchRateAndSetFee = async () => {
@@ -111,43 +107,40 @@ export default function SubmitAd() {
     }
   }
 
-  const handleCategoryChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, category: value }));
-    if (errors.category) {
-      setErrors((prevErrors) => ({ ...prevErrors, category: undefined }));
-    }
-  };
+  // REMOVED handleCategoryChange
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { // RENAMED from handleImageChange
     const file = e.target.files?.[0]
     if (!file) return
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-    if (!validTypes.includes(file.type)) {
-      setErrors((prev) => ({ ...prev, image: "Invalid image file type (JPEG, PNG, GIF, WebP)." }))
+    // Broaden accepted types, Cloudinary will handle more specific validation.
+    // Keep a client-side size check for immediate feedback. Vercel has a 4.5MB limit for serverless function request bodies.
+    // Let's use 4MB as a slightly safer client-side limit.
+    const maxSize = 4 * 1024 * 1024; // 4MB
+    if (file.size > maxSize) { 
+      setErrors((prev) => ({ ...prev, adFile: `File size must be less than ${maxSize / (1024*1024)}MB.` }))
+      setAdFile(null);
+      setAdFilePreview(null);
+      e.target.value = ""; // Clear the input
       return
     }
-    if (file.size > 5 * 1024 * 1024) { 
-      setErrors((prev) => ({ ...prev, image: "Image file size must be less than 5MB." }))
-      return
+    setAdFile(file) // RENAMED from setImageFile
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader()
+      reader.onload = (event) => setAdFilePreview(event.target?.result as string) // RENAMED from setImagePreview
+      reader.readAsDataURL(file)
+    } else {
+      setAdFilePreview(null); // No preview for non-image files for now
     }
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onload = (event) => setImagePreview(event.target?.result as string)
-    reader.readAsDataURL(file)
-    if (errors.image) setErrors((prev) => ({ ...prev, image: undefined }))
+    if (errors.adFile) setErrors((prev) => ({ ...prev, adFile: undefined })) // RENAMED from errors.image
   }
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string | undefined> = {}
     if (!formData.title.trim()) newErrors.title = "Title is required"
     if (!formData.description.trim()) newErrors.description = "Description is required"
-    if (!formData.targetUrl.trim()) {
-      newErrors.targetUrl = "Target URL is required"
-    } else {
-      try { new URL(formData.targetUrl) } catch { newErrors.targetUrl = "Please enter a valid URL" }
-    }
-    if (!formData.category) newErrors.category = "Ad category is required"; // Added category validation
-    if (!imageFile) newErrors.image = "Image is required"
+    // REMOVED targetUrl validation
+    // REMOVED category validation
+    if (!adFile) newErrors.adFile = "Ad File is required" // RENAMED from imageFile / errors.image
     setErrors(newErrors)
     return Object.values(newErrors).every(error => error === undefined);
   }
@@ -185,10 +178,10 @@ export default function SubmitAd() {
       const adUploadData = new FormData();
       adUploadData.append("title", formData.title);
       adUploadData.append("description", formData.description);
-      adUploadData.append("contentUrl", formData.targetUrl);
-      adUploadData.append("category", formData.category); // Added category
-      if (imageFile) {
-        adUploadData.append("image", imageFile);
+      // adUploadData.append("contentUrl", formData.targetUrl); // REMOVED
+      // adUploadData.append("category", formData.category); // REMOVED
+      if (adFile) { // RENAMED from imageFile
+        adUploadData.append("adFile", adFile); // RENAMED from "image"
       }
       
       if (!paymentResult || typeof paymentResult.reference !== 'string') {
@@ -331,54 +324,33 @@ export default function SubmitAd() {
               <Textarea id="description" name="description" placeholder="Describe your advertisement" rows={4} value={formData.description} onChange={handleChange} className={errors.description ? "border-red-500" : ""} />
               {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
             </div>
+            {/* REMOVED Target URL Field */}
+            {/* REMOVED Ad Category Field */}
             <div className="space-y-2">
-              <Label htmlFor="targetUrl">Target URL *</Label>
-              <Input id="targetUrl" name="targetUrl" type="url" placeholder="https://example.com" value={formData.targetUrl} onChange={handleChange} className={errors.targetUrl ? "border-red-500" : ""} />
-              {errors.targetUrl && <p className="text-sm text-red-600">{errors.targetUrl}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Ad Category *</Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={handleCategoryChange}
-                disabled={isLoadingAdCategories || !!adCategoriesError || !adCategories || adCategories.length === 0}
-              >
-                <SelectTrigger className={errors.category ? "border-red-500" : ""}>
-                  <SelectValue placeholder={
-                    isLoadingAdCategories ? "Loading categories..." : 
-                    adCategoriesError ? "Error loading" :
-                    (!adCategories || adCategories.length === 0) ? "No categories available" :
-                    "Select a category"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {adCategories && adCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category && <p className="text-sm text-red-600">{errors.category}</p>}
-              {adCategoriesError && <p className="text-xs text-red-500 mt-1">Could not load categories: {adCategoriesError.message}</p>}
-              {!isLoadingAdCategories && !adCategoriesError && (!adCategories || adCategories.length === 0) && <p className="text-xs text-gray-500 mt-1">No ad categories are currently configured. Please contact support.</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="image">Image *</Label>
+              <Label htmlFor="adFile">Ad File *</Label> {/* RENAMED from Image */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {imagePreview ? (
+                {adFilePreview ? ( // RENAMED from imagePreview
                   <div className="space-y-4">
-                    <img src={imagePreview} alt="Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
-                    <Button type="button" variant="outline" onClick={() => { setImageFile(null); setImagePreview(null); }}>Remove Image</Button>
+                    <img src={adFilePreview} alt="Ad File Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
+                    <Button type="button" variant="outline" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Remove Ad File</Button> {/* RENAMED */}
+                  </div>
+                ) : adFile ? (
+                  <div className="space-y-2">
+                     <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                    <p className="text-sm text-gray-600">Selected file: {adFile.name} ({ (adFile.size / (1024*1024)).toFixed(2)} MB)</p>
+                    <p className="text-xs text-gray-500">Preview not available for this file type.</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Change File</Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                    <div><Label htmlFor="image" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
-                    <p className="text-xs text-gray-400">PNG, JPG, GIF, WebP up to 5MB</p>
+                    <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div> {/* RENAMED */}
+                    <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p> {/* UPDATED description */}
                   </div>
                 )}
-                <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                <Input id="adFile" type="file" accept="image/*,video/*,application/pdf" onChange={handleAdFileChange} className="hidden" /> {/* RENAMED, UPDATED accept */}
               </div>
-              {errors.image && <p className="text-sm text-red-600">{errors.image}</p>}
+              {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>} {/* RENAMED from errors.image */}
             </div>
           </form>
         </CardContent>
@@ -420,9 +392,9 @@ export default function SubmitAd() {
               <h4 className="font-semibold text-slate-700 mb-2">Ad Summary:</h4>
               <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
                 <li><span className="font-medium">Title:</span> {formData.title || "N/A"}</li>
-                <li><span className="font-medium">Target URL:</span> {formData.targetUrl || "N/A"}</li>
-                <li><span className="font-medium">Category:</span> {formData.category || "N/A"}</li>
-                <li><span className="font-medium">Image:</span> {imageFile?.name || "N/A"}</li>
+                {/* <li><span className="font-medium">Target URL:</span> {formData.targetUrl || "N/A"}</li> REMOVED */}
+                {/* <li><span className="font-medium">Category:</span> {formData.category || "N/A"}</li> REMOVED */}
+                <li><span className="font-medium">Ad File:</span> {adFile?.name || "N/A"}</li> {/* RENAMED */}
               </ul>
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
                 <span className="font-medium text-slate-700">Total Fee:</span>

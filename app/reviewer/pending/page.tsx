@@ -53,7 +53,25 @@ export default function PendingAdsPage() {
     }, [fetchPendingAds]),
   };
 
-  useNotifications(session?.user?.id, session?.user?.role as string, messageCallbacks);
+  // Corrected: useNotifications only takes userId. WebSocket callbacks need separate handling if still used.
+  const { refetchNotifications } = useNotifications(session?.user?.id); 
+  // If DASHBOARD_REFRESH_REQUESTED is still a valid WebSocket event you want to listen to,
+  // you would need a separate WebSocket listener setup that calls fetchPendingAds.
+  // For now, I'm assuming the primary notification mechanism is through polling or manual refresh.
+  // If messageCallbacks were for a different system, that system needs to be checked.
+  // The original useNotifications hook does not seem to use these messageCallbacks.
+
+  useEffect(() => {
+    // Example of how you might use a WebSocket event if it were set up elsewhere:
+    // const handleDashboardRefresh = () => {
+    //   console.log('Pending ads list refresh triggered by WebSocket.');
+    //   fetchPendingAds();
+    // };
+    // someWebSocketService.on('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
+    // return () => someWebSocketService.off('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
+    // This is just a placeholder to illustrate. The actual implementation depends on your WebSocket setup.
+  }, [fetchPendingAds]);
+
 
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
@@ -201,33 +219,16 @@ export default function PendingAdsPage() {
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.title}</TableCell>
                     <TableCell>
-                      {ad.submitterId ? (
-                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
-                          {ad.submitterName || ad.submitterEmail}
-                        </Link>
-                      ) : (
-                        ad.submitterName || ad.submitterEmail
-                      )}
+                      {/* Link to profile removed, displaying name/email as text */}
+                      {ad.submitterName || ad.submitterEmail}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {ad.submitterId ? (
-                        <Link href={`/profile/${ad.submitterId}`} className="text-blue-600 hover:underline">
-                          {ad.submitterEmail}
-                        </Link>
-                      ) : (
-                        ad.submitterEmail
-                      )}
+                      {/* Link to profile removed, displaying email as text */}
+                      {ad.submitterEmail}
                     </TableCell>
                     <TableCell>{new Date(ad.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
-                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(ad.contentUrl, '_blank')}
-                        title="View Ad Content"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                       {/* Button to directly open contentUrl removed, review modal will show ad file */}
                       <Button 
                         variant="default" 
                         size="sm" 
@@ -267,29 +268,45 @@ export default function PendingAdsPage() {
                 <h3 className="font-semibold mb-1">Ad Description:</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForReview.description}</p>
               </div>
+              {/* REMOVED Target URL display */}
+              
               <div>
-                <h3 className="font-semibold mb-1">Target URL:</h3>
-                <a 
-                  href={selectedAdForReview.contentUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline break-all"
-                >
-                  {selectedAdForReview.contentUrl} <ExternalLink className="inline h-3 w-3 ml-1" />
-                </a>
-              </div>
-              {selectedAdForReview.imageUrl && (
-                <div>
-                  <h3 className="font-semibold mb-1">Ad Creative:</h3>
+                <h3 className="font-semibold mb-1">Ad File:</h3>
+                {selectedAdForReview.adFileType === 'image' && selectedAdForReview.adFileUrl && (
                   <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
                     <img 
-                      src={selectedAdForReview.imageUrl} 
-                      alt={`Ad creative for ${selectedAdForReview.title}`} 
+                      src={selectedAdForReview.adFileUrl} 
+                      alt={`Ad file for ${selectedAdForReview.title}`} 
                       className="w-full h-auto object-contain" 
                     />
                   </div>
-                </div>
-              )}
+                )}
+                {selectedAdForReview.adFileType === 'video' && selectedAdForReview.adFileUrl && (
+                  <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
+                    <video controls src={selectedAdForReview.adFileUrl} className="w-full h-auto object-contain">
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+                {selectedAdForReview.adFileType === 'pdf' && selectedAdForReview.adFileUrl && (
+                  <div className="my-2">
+                      <Button asChild variant="outline">
+                        <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF <ExternalLink className="inline h-3 w-3 ml-1" /></a>
+                      </Button>
+                  </div>
+                )}
+                {(!selectedAdForReview.adFileType || selectedAdForReview.adFileType === 'other') && selectedAdForReview.adFileUrl && (
+                  <p className="text-sm text-muted-foreground">
+                    Ad file: <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAdForReview.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available for this type)
+                  </p>
+                )}
+                {!selectedAdForReview.adFileUrl && (
+                   <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
+                    <p className="text-sm text-gray-500">No ad file provided.</p>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <h3 className="font-semibold mb-1">Submitted By:</h3>
                 <p className="text-sm text-muted-foreground">{selectedAdForReview.submitterName || selectedAdForReview.submitterEmail} ({selectedAdForReview.submitterEmail})</p>
