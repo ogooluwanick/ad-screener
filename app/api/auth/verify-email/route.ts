@@ -44,6 +44,13 @@ export async function GET(req: NextRequest) {
       }
     );
 
+    // Redirect to set password page if emailVerified was null
+    if (user.emailVerified === null) {
+      const setPasswordUrl = new URL("/auth/set-password", req.nextUrl.origin);
+      setPasswordUrl.searchParams.set("token", token);
+      return NextResponse.redirect(setPasswordUrl);
+    }
+
     // Redirect to a status page indicating success
     const statusUrl = new URL("/auth/verify-email-status", req.nextUrl.origin);
     statusUrl.searchParams.set("status", "success");

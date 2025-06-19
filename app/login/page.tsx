@@ -33,6 +33,8 @@ function LoginFormWrapper() {
       const callbackUrl = searchParams.get("callbackUrl")
       if (callbackUrl) {
         router.push(callbackUrl)
+      } else if (session.user.role === "superadmin") {
+        router.push("/admin/dashboard"); // Redirect superadmin to admin dashboard
       } else if (session.user.role === "submitter") {
         router.push("/submitter/dashboard")
       } else if (session.user.role === "reviewer") {

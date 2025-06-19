@@ -123,7 +123,7 @@ export const sendSignupEmail = async (customerEmail: string, Cname: string) => {
   // });
 };
 
-export const sendVerificationEmail = async (customerEmail: string, Cname: string, verificationToken: string) => {
+export const sendVerificationEmail = async (customerEmail: string, Cname: string, verificationToken: string, isNewUser: boolean = false) => {
   if (!email) {
     console.error("Nodemailer 'from' email is not configured. Verification email not sent.");
     // Potentially throw an error to be caught by the calling function in register route
@@ -131,12 +131,14 @@ export const sendVerificationEmail = async (customerEmail: string, Cname: string
   }
 
   // Ensure NEXT_PUBLIC_APP_URL is set in your .env file
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-  const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:6999');
+  const verificationLink = isNewUser
+    ? `${appUrl}/auth/set-password?token=${verificationToken}`
+    : `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
 
   const subject = `Verify Your Email for AdScreener`;
   const text = `Hi ${capitalize(Cname.split(" ")[0])}, \nPlease verify your email address by clicking the link below:\n${verificationLink}\nIf you did not request this, please ignore this email. This link will expire in 24 hours.`;
-  
+
   const verificationHtmlTemplate = `
     <!DOCTYPE html>
     <html>

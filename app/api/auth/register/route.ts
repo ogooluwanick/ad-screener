@@ -7,6 +7,7 @@ import { sendVerificationEmail } from "@/lib/email"; // Changed to sendVerificat
 
 export async function POST(req: NextRequest) {
   try {
+    // Adding a comment to test the replace_in_file tool
     const { 
       firstName, 
       lastName, 
@@ -26,7 +27,14 @@ export async function POST(req: NextRequest) {
 
     if (!firstName || !lastName || !email || !password || !role) {
       return NextResponse.json(
-        { message: "First name, last name, email, password, and role are required." },
+        { message: "First name, last name, email, password, and role are required. Role must be 'submitter', 'reviewer', or 'superadmin'." },
+        { status: 400 }
+      );
+    }
+
+    if (!['submitter', 'reviewer', 'superadmin'].includes(role)) {
+      return NextResponse.json(
+        { message: "Invalid role. Role must be 'submitter', 'reviewer', or 'superadmin'." },
         { status: 400 }
       );
     }
@@ -77,7 +85,7 @@ export async function POST(req: NextRequest) {
       verificationTokenExpires,
       image: null, // Required by MongoDBAdapter
       role: role, // 'submitter' or 'reviewer'
-      companyName: companyName || null, 
+      companyName: companyName || null,
       createdAt: new Date(),
       updatedAt: new Date(),
       // Add new submitter fields if role is submitter

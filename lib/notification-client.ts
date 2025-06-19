@@ -12,7 +12,7 @@ interface UserNotificationData {
 export async function sendNotificationToUser(userId: string, messageData: UserNotificationData) {
   // Calls the new Next.js API route for creating notifications
   const relativeEndpoint = '/api/notifications/create';
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL}` : 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL}` : 'http://localhost:6999';
   const endpoint = `${baseUrl}${relativeEndpoint}`;
   console.log(`[NotificationClient] Attempting to send notification to user ${userId} via ${endpoint}:`, messageData);
   try {

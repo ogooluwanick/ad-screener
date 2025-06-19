@@ -107,7 +107,7 @@ export const authOptions: NextAuthOptions = {
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
         token.profileImageUrl = (user as any).profileImageUrl;
-        
+
         // Set JWT expiration based on user's sessionTimeout setting
         const sessionTimeoutInHours = (user as any).sessionTimeoutInHours || 4; // Default to 4 hours if not set
         const sessionTimeoutInSeconds = sessionTimeoutInHours * 60 * 60;
