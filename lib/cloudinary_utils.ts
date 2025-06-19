@@ -22,14 +22,15 @@ interface CloudinaryUploadResult {
 export async function uploadToCloudinary(
   fileBuffer: Buffer,
   folder: string,
-  fileName: string
+  fileName: string,
+  resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto' // Added resourceType parameter
 ): Promise<CloudinaryUploadResult | null> {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: folder,
         public_id: fileName,
-        resource_type: 'auto', // Automatically detect if it's an image or video
+        resource_type: resourceType, // Use the passed resourceType
       },
       (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
         if (error) {

@@ -12,6 +12,7 @@ import { RejectedAdListItem } from "@/app/api/reviewer/ads/rejected/route";
 import { useNotifications } from "@/hooks/use-notifications";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -36,12 +37,8 @@ export default function RejectedAdsPage() {
   const getCloudinaryDownloadUrl = (url: string, filename?: string): string => {
     if (!url) return '#';
     const parts = url.split('/upload/');
-    if (parts.length !== 2) return url;
-    let transformation = 'fl_attachment';
-    if (filename) {
-      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 100);
-      transformation += `:${encodeURIComponent(sanitizedFilename)}`;
-    }
+    if (parts.length !== 2) return url; // Not a standard Cloudinary upload URL
+    const transformation = 'fl_attachment';
     return `${parts[0]}/upload/${transformation}/${parts[1]}`;
   };
 

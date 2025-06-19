@@ -39,13 +39,9 @@ export default function SubmitterAds() {
     const parts = url.split('/upload/');
     if (parts.length !== 2) return url; // Not a standard Cloudinary upload URL
   
-    let transformation = 'fl_attachment';
-    if (filename) {
-      // Basic sanitization for the filename in the URL.
-      // Cloudinary might have specific rules for characters in `fl_attachment:filename`.
-      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 100); // Limit length
-      transformation += `:${encodeURIComponent(sanitizedFilename)}`;
-    }
+    // Using simplified fl_attachment without custom filename to avoid 400 errors.
+    // The original filename will be suggested by the 'download' attribute on the <a> tag.
+    const transformation = 'fl_attachment';
     return `${parts[0]}/upload/${transformation}/${parts[1]}`;
   };
 

@@ -21,12 +21,12 @@ export default function Home() {
             <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">
               How it Works
             </a>
-            <a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors">
+            {/* <a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors">
               Testimonials
             </a>
             <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
               Pricing
-            </a>
+            </a> */}
           </nav>
           <div className="space-x-4">
             <Link href="/login">
@@ -46,7 +46,7 @@ export default function Home() {
             <div className="space-y-8">
               <div className="space-y-4">
                 <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
-                  🚀 Trusted by 500+ Companies
+                  🚀 Trusted by 100+ Companies
                 </Badge>
                 <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
                   Streamline Your
@@ -65,10 +65,10 @@ export default function Home() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="text-lg px-8 py-4">
+                {/* <Button size="lg" variant="outline" className="text-lg px-8 py-4">
                   <Play className="mr-2 h-5 w-5" />
                   Watch Demo
-                </Button>
+                </Button> */}
               </div>
 
               <div className="flex items-center space-x-8 pt-4">
@@ -78,7 +78,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-gray-600">14-day free trial</span>
+                  <span className="text-sm text-gray-600">Just pure feedbacks</span>
                 </div>
               </div>
             </div>
@@ -86,16 +86,16 @@ export default function Home() {
             <div className="relative">
               <div className="relative z-10">
                 <img
-                  src="/hero_img_01.jpg"
+                  src="/hero_landing.jpg"
                   alt="AdScreener Dashboard Preview"
                   className="rounded-2xl shadow-2xl border border-gray-200"
                 />
-                <div className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4 border border-gray-100">
+                {/* <div className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4 border border-gray-100">
                   <div className="flex items-center space-x-3">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-sm font-medium text-gray-700">Live Dashboard</span>
                   </div>
-                </div>
+                </div> */}
               </div>
               <div className="absolute top-8 -right-8 w-32 h-32 bg-blue-100 rounded-full opacity-20"></div>
               <div className="absolute -bottom-8 right-8 w-24 h-24 bg-indigo-100 rounded-full opacity-30"></div>
@@ -109,7 +109,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">500+</div>
+              <div className="text-3xl md:text-4xl font-bold text-blue-600">100+</div>
               <div className="text-gray-600 mt-2">Companies</div>
             </div>
             <div className="text-center">
@@ -129,7 +129,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gray-50">
+      {/* <section id="features" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Everything You Need for Ad Management</h2>
@@ -258,10 +258,10 @@ export default function Home() {
             </Card>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-white">
+      <section id="how-it-works" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How AdScreener Works</h2>
@@ -274,7 +274,7 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/placeholder.svg?height=300&width=400"
+                  src="/img_01.png"
                   alt="Step 1: Submit"
                   className="rounded-2xl shadow-lg mx-auto"
                 />
@@ -292,7 +292,7 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/placeholder.svg?height=300&width=400"
+                  src="/img_02.png"
                   alt="Step 2: Review"
                   className="rounded-2xl shadow-lg mx-auto"
                 />
@@ -310,7 +310,7 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/placeholder.svg?height=300&width=400"
+                  src="/img_03.png"
                   alt="Step 3: Publish"
                   className="rounded-2xl shadow-lg mx-auto"
                 />
@@ -328,7 +328,7 @@ export default function Home() {
       </section>
 
       {/* Dashboard Preview Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Powerful Dashboards for Every Role</h2>
@@ -399,10 +399,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-white">
+      {/* <section id="testimonials" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trusted by Industry Leaders</h2>
@@ -486,16 +486,16 @@ export default function Home() {
             </Card>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="py-20 bg-blue-600">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Transform Your Ad Review Process?</h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-blue-100  max-w-2xl mx-auto">
             Join thousands of companies already using AdScreener to streamline their advertisement workflows.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 hover:border-blue-800 text-lg px-8 py-4">
                 Start Free Trial
@@ -509,14 +509,14 @@ export default function Home() {
             >
               Schedule Demo
             </Button>
-          </div>
+          </div> */}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-16">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center mb-4">
                 <Shield className="h-8 w-8 text-blue-400 mr-2" />
@@ -527,13 +527,13 @@ export default function Home() {
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white">
-                  Twitter
+                  X
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white">
                   LinkedIn
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white">
-                  GitHub
+                  Instagam
                 </a>
               </div>
             </div>
@@ -546,21 +546,21 @@ export default function Home() {
                     Features
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a href="#" className="hover:text-white">
                     Pricing
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a href="#" className="hover:text-white">
                     API
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a href="#" className="hover:text-white">
                     Integrations
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
 
@@ -572,16 +572,16 @@ export default function Home() {
                     About
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a href="#" className="hover:text-white">
                     Blog
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a href="#" className="hover:text-white">
                     Careers
                   </a>
-                </li>
+                </li> */}
                 <li>
                   <a href="#" className="hover:text-white">
                     Contact
@@ -590,7 +590,7 @@ export default function Home() {
               </ul>
             </div>
 
-            <div>
+            {/* <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
@@ -614,11 +614,11 @@ export default function Home() {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> */}
           </div>
 
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400">© 2024 AdScreener. All rights reserved.</p>
+            <p className="text-gray-400">© {(new Date()).getFullYear()} AdScreener. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-gray-400 hover:text-white text-sm">
                 Privacy Policy

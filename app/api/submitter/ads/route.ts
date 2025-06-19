@@ -104,13 +104,13 @@ export async function POST(request: Request) {
     try {
       const adFileBuffer = Buffer.from(await adFile.arrayBuffer());
       const originalFileName = adFile.name.substring(0, adFile.name.lastIndexOf('.')) || adFile.name;
-      const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
-      const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
-      
-      console.log(`[API /submitter/ads] Uploading ad file ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
-      adFileUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary);
+          const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
+          const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
+          // For the main ad file, 'auto' is usually fine, or determine based on adFile.type if more specific control is needed.
+          console.log(`[API /submitter/ads] Uploading ad file ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary} with resource_type: 'auto'`);
+          adFileUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary, 'auto');
 
-      if (!adFileUploadResult || !adFileUploadResult.secure_url || !adFileUploadResult.public_id) {
+          if (!adFileUploadResult || !adFileUploadResult.secure_url || !adFileUploadResult.public_id) {
         console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result for ad file.');
         return NextResponse.json({ message: 'Failed to upload ad file to Cloudinary.' }, { status: 500 });
       }
@@ -131,8 +131,19 @@ export async function POST(request: Request) {
           const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
           const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
 
-          console.log(`[API /submitter/ads] Uploading supporting document ${file.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
-          const uploadResult = await uploadToCloudinary(fileBuffer, 'supporting_documents', uniqueFileNameForCloudinary);
+          let resourceTypeForSupportingDoc: 'raw' | 'auto' = 'auto';
+          const fileType = file.type;
+          if (fileType === 'application/pdf' || 
+              fileType === 'application/msword' || 
+              fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+              fileType === 'text/plain'
+              // Add other document MIME types as needed
+             ) {
+            resourceTypeForSupportingDoc = 'raw';
+          }
+
+          console.log(`[API /submitter/ads] Uploading supporting document ${file.name} to Cloudinary as ${uniqueFileNameForCloudinary} with resource_type: ${resourceTypeForSupportingDoc}`);
+          const uploadResult = await uploadToCloudinary(fileBuffer, 'supporting_documents', uniqueFileNameForCloudinary, resourceTypeForSupportingDoc);
 
           if (uploadResult && uploadResult.secure_url && uploadResult.public_id) {
             uploadedSupportingDocuments.push({ 
