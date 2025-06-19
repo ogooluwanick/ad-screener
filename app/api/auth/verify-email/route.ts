@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient } from "mongodb";
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -43,6 +44,13 @@ export async function GET(req: NextRequest) {
         },
       }
     );
+
+    // Send in-app notification
+    await sendNotificationToUser(user._id.toString(), {
+      title: "Email Verified",
+      message: "Your email has been verified successfully! You can now log in.",
+      level: "success",
+    });
 
     // Redirect to set password page if emailVerified was null
     if (user.emailVerified === null) {

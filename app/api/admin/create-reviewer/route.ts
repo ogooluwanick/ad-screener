@@ -6,6 +6,7 @@ import crypto from "crypto";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email";
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -74,6 +75,19 @@ export async function POST(req: NextRequest) {
       const passwordSetupLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${verificationToken}`;
       await sendVerificationEmail(newUser.email, newUser.name, verificationToken, true);
       console.log(`Verification email sent to ${newUser.email}`);
+
+      if (session?.user?.id) {
+        await sendNotificationToUser(session.user.id, {
+          title: "Reviewer Account Created",
+          message: `A new reviewer account was created with the email ${email}.`,
+          level: "success",
+        });
+      }
+
+      return NextResponse.json(
+        { message: "Reviewer account created successfully. Please check the reviewer's email to set up their password." },
+        { status: 201 }
+      );
     } catch (error: any) {
       console.error(`Failed to send verification email to ${newUser.email}:`, error);
       await usersCollection.deleteOne({ _id: result.insertedId });
@@ -82,11 +96,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      { message: "Reviewer account created successfully. Please check the reviewer's email to set up their password." },
-      { status: 201 }
-    );
   } catch (error) {
     console.error("Reviewer account creation error:", error);
     return NextResponse.json(

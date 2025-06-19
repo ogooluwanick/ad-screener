@@ -4,6 +4,7 @@ import crypto from "crypto"; // For token generation
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email"; // Changed to sendVerificationEmail
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -145,6 +146,12 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    await sendNotificationToUser(createdUser.id, {
+      title: "Account Created",
+      message: "Your account has been created successfully. Please check your email to verify your account.",
+      level: "success",
+    });
 
     return NextResponse.json(
       { message: "User created successfully. Please check your email to verify your account.", user: createdUser }, // Updated message

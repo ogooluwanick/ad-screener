@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -42,6 +43,19 @@ export async function POST(req: NextRequest) {
         { message: "Failed to update user information." },
         { status: 500 }
       );
+    }
+
+    if (session?.user?.id) {
+      await sendNotificationToUser(session.user.id, {
+        title: "User Role Updated",
+        message: `User ${userId} role was updated to ${role}.`,
+        level: "success",
+      });
+      await sendNotificationToUser(userId, {
+        title: "Your Role Was Updated",
+        message: `Your role was updated to ${role} by ${session.user.name}.`,
+        level: "info",
+      });
     }
 
     return NextResponse.json(

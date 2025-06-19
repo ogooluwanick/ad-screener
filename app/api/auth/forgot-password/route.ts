@@ -3,6 +3,7 @@ import crypto from "crypto";
 import clientPromise from "@/lib/mongodb"; // Use the native MongoDB client
 import { MongoClient } from "mongodb";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { sendNotificationToUser } from "@/lib/notification-client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
       const userName = user.name || user.firstName || userEmail; 
       await sendPasswordResetEmail(user.email, userName, resetUrl);
       console.log(`Password reset email sent to ${user.email}`);
+
+      // Send in-app notification
+      await sendNotificationToUser(user._id.toString(), {
+        title: "Password Reset Requested",
+        message: "A password reset link has been sent to your email address.",
+        level: "info",
+      });
+
       return NextResponse.json({ message: "If an account with that email exists, a password reset link has been sent." }, { status: 200 });
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
