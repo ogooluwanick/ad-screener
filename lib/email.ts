@@ -131,7 +131,7 @@ export const sendVerificationEmail = async (customerEmail: string, Cname: string
   }
 
   // Ensure NEXT_PUBLIC_APP_URL is set in your .env file
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
 
   const subject = `Verify Your Email for AdScreener`;

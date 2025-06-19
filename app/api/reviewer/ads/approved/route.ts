@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
+import { sendNotificationToUser } from '@/lib/notification-client';
+import { sendEmail } from '@/lib/email';
 
 // Using the same AdDocumentForListing from the pending route for consistency
 export interface AdDocumentForListing { // This should ideally be a shared type
@@ -21,6 +23,26 @@ export interface AdDocumentForListing { // This should ideally be a shared type
   reviewedAt?: Date;
   reviewerId?: string;
   assignedReviewerIds?: string[];
+  compliance?: ComplianceData; // Added for compliance checklist
+}
+
+// Structure for the compliance checklist data (should be in a shared types file)
+interface ComplianceData {
+  rulesCompliance: "Yes" | "No" | "N/A";
+  falseClaimsFree: "Yes" | "No" | "N/A";
+  claimsSubstantiated: "Yes" | "No" | "N/A";
+  offensiveContentFree: "Yes" | "No" | "N/A";
+  targetAudienceAppropriate: "Yes" | "No" | "N/A";
+  comparativeAdvertisingFair: "Yes" | "No" | "N/A";
+  disclaimersDisplayed: "Yes" | "No" | "N/A";
+  unapprovedEndorsementsAbsent: "Yes" | "No" | "N/A";
+  statutoryApprovalsAttached: "Yes" | "No" | "N/A";
+  sanctionHistoryReviewed: "Yes" | "No" | "N/A";
+  culturalReferencesAppropriate: "Yes" | "No" | "N/A";
+  childrenProtected: "Yes" | "No" | "N/A";
+  overallComplianceNotes?: string;
+  filledAt: Date;
+  reviewerId: string;
 }
 
 export interface ApprovedAdListItem {
@@ -37,6 +59,7 @@ export interface ApprovedAdListItem {
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
   description: string; // Added description
   supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
+  compliance?: ComplianceData; // Added for compliance checklist
 }
 
 export async function GET(request: Request) {
@@ -85,6 +108,7 @@ export async function GET(request: Request) {
         adFileType: fileType, // ADDED
         description: ad.description, // Added description
         supportingDocuments: ad.supportingDocuments, // Added
+        compliance: ad.compliance, // Added
       };
     });
 
@@ -94,5 +118,121 @@ export async function GET(request: Request) {
     console.error('Error fetching approved ads:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return NextResponse.json({ message: 'Failed to fetch approved ads', error: errorMessage }, { status: 500 });
+  }
+}
+
+// POST handler to approve an ad
+export async function POST(request: Request) {
+  console.log('[API /reviewer/ads/approved] POST request received');
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user || !session.user.id || session.user.role !== 'reviewer') {
+    console.log('[API /reviewer/ads/approved] Unauthorized access attempt or invalid role.');
+    return NextResponse.json({ message: 'Unauthorized or invalid role' }, { status: 401 });
+  }
+  console.log('[API /reviewer/ads/approved] Session validated for reviewer:', session.user.id);
+
+  try {
+    const body = await request.json();
+    const { adId, complianceData } = body;
+
+    console.log(`[API /reviewer/ads/approved] Received adId: ${adId}`);
+    // console.log(`[API /reviewer/ads/approved] Received complianceData:`, JSON.stringify(complianceData, null, 2));
+
+    if (!adId || typeof adId !== 'string') {
+      console.error('[API /reviewer/ads/approved] Missing or invalid adId.');
+      return NextResponse.json({ message: 'Missing or invalid adId' }, { status: 400 });
+    }
+    if (!complianceData || typeof complianceData !== 'object') {
+      console.error('[API /reviewer/ads/approved] Missing or invalid complianceData.');
+      return NextResponse.json({ message: 'Missing or invalid complianceData' }, { status: 400 });
+    }
+    
+    const requiredKeys: (keyof ComplianceData)[] = [
+      "rulesCompliance", "falseClaimsFree", "claimsSubstantiated", "offensiveContentFree",
+      "targetAudienceAppropriate", "comparativeAdvertisingFair", "disclaimersDisplayed",
+      "unapprovedEndorsementsAbsent", "statutoryApprovalsAttached", "sanctionHistoryReviewed",
+      "culturalReferencesAppropriate", "childrenProtected"
+    ];
+    for (const key of requiredKeys) {
+      if (!(key in complianceData) || !["Yes", "No", "N/A"].includes(complianceData[key])) {
+        console.error(`[API /reviewer/ads/approved] Invalid or missing compliance field: ${key}`);
+        return NextResponse.json({ message: `Invalid or missing compliance field: ${key}` }, { status: 400 });
+      }
+    }
+
+    const client = await clientPromise();
+    const db = client.db();
+    const adsCollection = db.collection<AdDocumentForListing>('ads');
+
+    const adObjectId = new ObjectId(adId);
+    const adToUpdate = await adsCollection.findOne({ _id: adObjectId });
+
+    if (!adToUpdate) {
+      console.error(`[API /reviewer/ads/approved] Ad with ID ${adId} not found.`);
+      return NextResponse.json({ message: 'Ad not found' }, { status: 404 });
+    }
+
+    if (adToUpdate.status !== 'pending') {
+      console.warn(`[API /reviewer/ads/approved] Ad ${adId} is not in 'pending' status. Current status: ${adToUpdate.status}`);
+      return NextResponse.json({ message: `Ad is not in 'pending' status. Current status: ${adToUpdate.status}` }, { status: 400 });
+    }
+
+    const finalComplianceData: ComplianceData = {
+      ...complianceData, // Spread the received compliance data
+      reviewerId: session.user.id, // Override/set reviewerId from session
+      filledAt: new Date(), // Set current timestamp
+    };
+    // console.log(`[API /reviewer/ads/approved] Final compliance data for ad ${adId}:`, JSON.stringify(finalComplianceData, null, 2));
+
+    const updateResult = await adsCollection.updateOne(
+      { _id: adObjectId },
+      {
+        $set: {
+          status: 'approved' as 'approved',
+          reviewedAt: new Date(),
+          reviewerId: session.user.id,
+          compliance: finalComplianceData,
+        },
+      }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      console.error(`[API /reviewer/ads/approved] Failed to update ad ${adId}. No document was modified.`);
+      return NextResponse.json({ message: 'Failed to approve ad. Please try again.' }, { status: 500 });
+    }
+
+    console.log(`[API /reviewer/ads/approved] Ad ${adId} successfully approved by reviewer ${session.user.id}.`);
+
+    // --- Start Notifications ---
+    if (adToUpdate.submitterId) {
+      console.log(`[API /reviewer/ads/approved] Attempting to send in-app notification to submitter ${adToUpdate.submitterId} for approved ad ${adId}`);
+      sendNotificationToUser(adToUpdate.submitterId, {
+        title: 'Your Ad Has Been Approved!',
+        message: `Congratulations! Your ad "${adToUpdate.title}" has been approved. Ad ID: ${adId}`,
+        level: 'success',
+        deepLink: `/submitter/ads?adId=${adId}`
+      }).then(() => console.log(`[API /reviewer/ads/approved] In-app notification sent to submitter ${adToUpdate.submitterId}`))
+        .catch(err => console.error(`[API /reviewer/ads/approved] Failed to send in-app notification to submitter ${adToUpdate.submitterId}:`, err));
+    }
+
+    if (adToUpdate.submitterEmail && adToUpdate.title) {
+      console.log(`[API /reviewer/ads/approved] Attempting to send email notification to submitter ${adToUpdate.submitterEmail} for approved ad ${adId}`);
+      sendEmail({
+        to: adToUpdate.submitterEmail,
+        subject: `Ad Approved: "${adToUpdate.title}"`,
+        text: `Hi,\n\nYour ad titled "${adToUpdate.title}" (ID: ${adId}) has been approved.\n\nThank you for advertising with AdScreener!`,
+        htmlContent: `<p>Hi,</p><p>Your ad titled "<strong>${adToUpdate.title}</strong>" (ID: ${adId}) has been approved.</p><p>Thank you for advertising with AdScreener!</p>`
+      }).then(() => console.log(`[API /reviewer/ads/approved] Email notification sent to submitter ${adToUpdate.submitterEmail}`))
+        .catch(err => console.error(`[API /reviewer/ads/approved] Failed to send email notification to submitter ${adToUpdate.submitterEmail}:`, err));
+    }
+    // --- End Notifications ---
+
+    return NextResponse.json({ message: 'Ad approved successfully', adId }, { status: 200 });
+
+  } catch (error) {
+    console.error('[API /reviewer/ads/approved] Critical error in POST handler:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ message: 'Failed to approve ad', error: errorMessage }, { status: 500 });
   }
 }

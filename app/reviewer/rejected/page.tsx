@@ -23,6 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import ComplianceForm, { ComplianceFormData } from "@/components/compliance-form"; // Added
 
 export default function RejectedAdsPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -317,6 +318,18 @@ export default function RejectedAdsPage() {
                     <h3 className="font-semibold mb-1">Rejected By (Reviewer ID):</h3>
                     <p className="text-sm text-muted-foreground">{selectedAdForDetails.reviewerId}</p>
                  </div>
+              )}
+
+              {/* Display Compliance Data */}
+              {selectedAdForDetails.compliance && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-lg font-semibold mb-2">Compliance Checklist Details</h3>
+                  <ComplianceForm
+                    initialData={selectedAdForDetails.compliance as ComplianceFormData}
+                    isReadOnly={true}
+                    onSubmit={() => {}} // No-op for read-only
+                  />
+                </div>
               )}
               <hr className="my-3"/>
               <div>

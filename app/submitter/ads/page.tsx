@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton" // Added for loading state
+import ComplianceForm from "@/components/compliance-form"; // Added
 
 // Type for Ad data from API
 interface Ad {
@@ -24,6 +25,29 @@ interface Ad {
   submissionDate: string // Mapped from submittedAt
   status: "pending" | "approved" | "rejected"
   rejectionReason?: string
+  compliance?: ComplianceFormData // Added for compliance checklist
+}
+
+// Forward declaration for ComplianceFormData if not imported directly
+// For actual use, ensure ComplianceFormData is imported or defined appropriately.
+// Assuming ComplianceFormData is similar to what's in compliance-form.tsx
+interface ComplianceFormData {
+  rulesCompliance: "Yes" | "No" | "N/A";
+  falseClaimsFree: "Yes" | "No" | "N/A";
+  claimsSubstantiated: "Yes" | "No" | "N/A";
+  offensiveContentFree: "Yes" | "No" | "N/A";
+  targetAudienceAppropriate: "Yes" | "No" | "N/A";
+  comparativeAdvertisingFair: "Yes" | "No" | "N/A";
+  disclaimersDisplayed: "Yes" | "No" | "N/A";
+  unapprovedEndorsementsAbsent: "Yes" | "No" | "N/A";
+  statutoryApprovalsAttached: "Yes" | "No" | "N/A";
+  sanctionHistoryReviewed: "Yes" | "No" | "N/A";
+  culturalReferencesAppropriate: "Yes" | "No" | "N/A";
+  childrenProtected: "Yes" | "No" | "N/A";
+  overallComplianceNotes?: string;
+  // filledAt and reviewerId might also be part of the full ComplianceData from backend
+  filledAt?: string; // Or Date
+  reviewerId?: string;
 }
 
 export default function SubmitterAds() {
@@ -81,6 +105,7 @@ export default function SubmitterAds() {
             submissionDate: ad.submittedAt,
             status: ad.status,
             rejectionReason: ad.rejectionReason,
+            compliance: ad.compliance, // Added
           };
         });
         setAds(formattedAds)
@@ -237,7 +262,7 @@ export default function SubmitterAds() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[80vh] overflow-y-scroll">
             <div>
               <h3 className="font-semibold mb-1">Ad File</h3>
               {selectedAd?.adFileType === 'image' && selectedAd.adFileUrl && (
@@ -319,6 +344,18 @@ export default function SubmitterAds() {
               <div className="p-3 bg-red-50 border border-red-100 rounded-md">
                 <h3 className="font-semibold text-red-600">Rejection Reason</h3>
                 <p className="text-sm text-red-600">{selectedAd.rejectionReason}</p>
+              </div>
+            )}
+
+            {/* Display Compliance Data if available and ad is not pending */}
+            {selectedAd && (selectedAd.status === "approved" || selectedAd.status === "rejected") && selectedAd.compliance && (
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="text-lg font-semibold mb-2">Compliance Checklist Review</h3>
+                <ComplianceForm
+                  initialData={selectedAd.compliance}
+                  isReadOnly={true}
+                  onSubmit={() => {}} // No-op for read-only
+                />
               </div>
             )}
           </div>

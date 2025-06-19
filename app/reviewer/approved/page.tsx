@@ -11,6 +11,7 @@ import { AlertTriangle, Download, ExternalLink, Info, ListChecks, Eye } from "lu
 import Link from "next/link"; // Import Link
 import { ApprovedAdListItem } from "@/app/api/reviewer/ads/approved/route";
 import { useNotifications } from "@/hooks/use-notifications";
+import ComplianceForm, { ComplianceFormData } from "@/components/compliance-form"; // Added
 
 export default function ApprovedAdsPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -290,6 +291,18 @@ export default function ApprovedAdsPage() {
                     <h3 className="font-semibold mb-1">Approved By (ID):</h3>
                     <p className="text-sm text-muted-foreground">{selectedAdForDetails.reviewerId}</p>
                  </div>
+              )}
+
+              {/* Display Compliance Data */}
+              {selectedAdForDetails.compliance && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-lg font-semibold mb-2">Compliance Checklist Details</h3>
+                  <ComplianceForm
+                    initialData={selectedAdForDetails.compliance as ComplianceFormData}
+                    isReadOnly={true}
+                    onSubmit={() => {}} // No-op for read-only
+                  />
+                </div>
               )}
             </div>
           )}

@@ -26,6 +26,26 @@ interface AdDocument {
   rejectionReason?: string;
   assignedReviewerIds: string[];
   // category?: string; // REMOVED
+  compliance?: ComplianceData; // Added for compliance checklist
+}
+
+// Structure for the compliance checklist data
+interface ComplianceData {
+  rulesCompliance: "Yes" | "No" | "N/A";
+  falseClaimsFree: "Yes" | "No" | "N/A";
+  claimsSubstantiated: "Yes" | "No" | "N/A";
+  offensiveContentFree: "Yes" | "No" | "N/A";
+  targetAudienceAppropriate: "Yes" | "No" | "N/A";
+  comparativeAdvertisingFair: "Yes" | "No" | "N/A";
+  disclaimersDisplayed: "Yes" | "No" | "N/A";
+  unapprovedEndorsementsAbsent: "Yes" | "No" | "N/A";
+  statutoryApprovalsAttached: "Yes" | "No" | "N/A";
+  sanctionHistoryReviewed: "Yes" | "No" | "N/A";
+  culturalReferencesAppropriate: "Yes" | "No" | "N/A";
+  childrenProtected: "Yes" | "No" | "N/A";
+  overallComplianceNotes?: string;
+  filledAt: Date;
+  reviewerId: string;
 }
 
 // Type for the data to be inserted (excluding _id as it's auto-generated)

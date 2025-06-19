@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea"; // Added Textarea
 import { Label } from "@/components/ui/label"; // Added Label
 import { toast } from "@/components/ui/use-toast"; // For notifications
+import ComplianceForm, { ComplianceFormData } from "@/components/compliance-form"; // Added ComplianceForm
 
 export default function PendingAdsPage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -25,6 +26,8 @@ export default function PendingAdsPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [complianceData, setComplianceData] = useState<ComplianceFormData | null>(null);
+  const [showComplianceFormStep, setShowComplianceFormStep] = useState(true); // Initially show compliance form
 
   const getCloudinaryDownloadUrl = (url: string, filename?: string): string => {
     if (!url) return '#';
@@ -96,6 +99,8 @@ export default function PendingAdsPage() {
   const handleOpenReviewModal = (ad: PendingAdListItem) => {
     setSelectedAdForReview(ad);
     setRejectionReason(""); // Reset reason
+    setComplianceData(null); // Reset compliance data
+    setShowComplianceFormStep(true); // Reset to show compliance form step
     setIsReviewModalOpen(true);
   };
 
@@ -103,6 +108,8 @@ export default function PendingAdsPage() {
     setSelectedAdForReview(null);
     setIsReviewModalOpen(false);
     setRejectionReason("");
+    setComplianceData(null);
+    setShowComplianceFormStep(true);
   };
 
   const submitReview = async (adId: string, status: 'approved' | 'rejected', reason?: string) => {
@@ -114,17 +121,26 @@ export default function PendingAdsPage() {
       toast({ title: "Validation Error", description: "Rejection reason is required.", variant: "destructive" });
       return;
     }
+    if (!complianceData) {
+      toast({ title: "Validation Error", description: "Compliance form must be submitted.", variant: "destructive" });
+      return;
+    }
 
     setIsSubmittingReview(true);
     try {
-      const response = await fetch(`/api/reviewer/ads/${adId}`, {
-        method: 'PUT',
+      const endpoint = status === 'approved' ? `/api/reviewer/ads/approved` : `/api/reviewer/ads/rejected`;
+      const body: any = {
+        adId,
+        complianceData,
+      };
+      if (status === 'rejected') {
+        body.rejectionReason = reason;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST', // Changed from PUT
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status,
-          rejectionReason: status === 'rejected' ? reason : undefined,
-          reviewerId: session.user.id,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -348,8 +364,30 @@ export default function PendingAdsPage() {
 
               <hr className="my-4" />
 
-              <div>
-                <Label htmlFor="rejectionReason" className="font-semibold">Rejection Reason (if rejecting):</Label>
+              {/* Compliance Form Integration */}
+              <div className="my-4 p-4 border rounded-md bg-slate-50">
+                <h3 className="text-lg font-semibold mb-3">Step 1: Complete Compliance Checklist</h3>
+                <ComplianceForm
+                  onSubmit={(data) => {
+                    setComplianceData(data);
+                    toast({ title: "Compliance Form Saved", description: "You can now proceed to approve or reject.", variant: "default" });
+                    setShowComplianceFormStep(false); // Hide form, show approve/reject
+                  }}
+                  isSubmitting={isSubmittingReview} // Disable form while main review is submitting
+                  // To prevent re-submission of compliance form if already submitted for this modal session
+                  // We can hide its internal submit button if complianceData is already set.
+                  // Or, the ComplianceForm itself can handle this.
+                  // For now, the form's submit button will always be active unless isSubmittingReview is true.
+                  // The parent controls enabling Approve/Reject based on complianceData state.
+                />
+              </div>
+              
+              <hr className="my-4" />
+
+              <div className={`${complianceData ? '' : 'opacity-50 pointer-events-none'}`}>
+                <h3 className="text-lg font-semibold mb-3">Step 2: Approve or Reject Ad</h3>
+                {!complianceData && <p className="text-sm text-orange-600 mb-2"><Info size={14} className="inline mr-1" />Please complete and submit the compliance checklist above to enable these actions.</p>}
+                <Label htmlFor="rejectionReason" className="font-semibold">Rejection Reason (Required if rejecting):</Label>
                 <Textarea
                   id="rejectionReason"
                   placeholder="Provide a clear reason if rejecting the ad..."
@@ -369,16 +407,16 @@ export default function PendingAdsPage() {
             <Button 
               variant="destructive" 
               onClick={() => selectedAdForReview && submitReview(selectedAdForReview.id, 'rejected', rejectionReason)}
-              disabled={isSubmittingReview || (!!selectedAdForReview && !rejectionReason.trim())}
+              disabled={isSubmittingReview || !complianceData || (!!selectedAdForReview && !rejectionReason.trim())}
             >
-              <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+              <ThumbsDown className="mr-2 h-4 w-4" /> Reject Ad
             </Button>
             <Button 
               className="bg-green-600 hover:bg-green-700"
               onClick={() => selectedAdForReview && submitReview(selectedAdForReview.id, 'approved')}
-              disabled={isSubmittingReview}
+              disabled={isSubmittingReview || !complianceData}
             >
-              <ThumbsUp className="mr-2 h-4 w-4" /> Approve
+              <ThumbsUp className="mr-2 h-4 w-4" /> Approve Ad
             </Button>
           </DialogFooter>
         </DialogContent>
