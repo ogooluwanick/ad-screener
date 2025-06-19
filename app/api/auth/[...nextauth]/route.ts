@@ -3,7 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter"
 import clientPromise from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
-import { MongoClient } from "mongodb"
+import { MongoClient, ObjectId } from "mongodb" // Added ObjectId
+import crypto from "crypto" // For token generation
+import { sendVerificationEmail } from "@/lib/email" // For resending verification
 
 // clientPromise is now a function that returns Promise<MongoClient>
 // We need to call it to get the promise for the adapter.
@@ -28,6 +30,32 @@ export const authOptions: NextAuthOptions = {
 
         if (!dbUser) {
           throw new Error("No user found with this email");
+        }
+        
+        // Check if email is verified
+        if (!dbUser.emailVerified) {
+          // Email is not verified, resend verification email
+          const newVerificationToken = crypto.randomBytes(32).toString("hex");
+          const newVerificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+          await usersCollection.updateOne(
+            { _id: new ObjectId(dbUser._id) },
+            {
+              $set: {
+                verificationToken: newVerificationToken,
+                verificationTokenExpires: newVerificationTokenExpires,
+              },
+            }
+          );
+
+          try {
+            await sendVerificationEmail(dbUser.email, dbUser.name, newVerificationToken);
+            throw new Error("Your email is not verified. We've sent a new verification link to your email address. Please check your inbox.");
+          } catch (emailError: any) {
+            console.error("Error resending verification email:", emailError);
+            // If resending fails, throw a more generic error or the original "please verify"
+            throw new Error("Your email is not verified. Please check your inbox or try registering again if issues persist.");
+          }
         }
 
         const isValidPassword = await bcrypt.compare(credentials.password, dbUser.password as string);

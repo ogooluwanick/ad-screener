@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto"; // For token generation
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
-import { sendSignupEmail } from "@/lib/email"; // Added import for email sending
+import { sendVerificationEmail } from "@/lib/email"; // Changed to sendVerificationEmail
 
 export async function POST(req: NextRequest) {
   try {
-    const { firstName, lastName, email, password, role } = await req.json();
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      role, 
+      companyName, // Used for Business Name (Agency/Business)
+      // New fields for submitter (agency/business)
+      submitterType, 
+      registrationNumber, // For Agency Reg No or Business CAC No
+      sector,
+      officeAddress,
+      state,
+      country,
+      businessDescription 
+    } = await req.json();
 
     if (!firstName || !lastName || !email || !password || !role) {
       return NextResponse.json(
@@ -14,6 +30,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    // Other fields are conditionally required by frontend based on role and submitterType
 
     // Basic email validation
     if (!/\S+@\S+\.\S+/.test(email)) {
@@ -45,6 +62,9 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
 
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
     const newUser = {
       _id: new ObjectId(),
       firstName,
@@ -52,11 +72,24 @@ export async function POST(req: NextRequest) {
       email,
       password: hashedPassword,
       name: `${firstName} ${lastName}`, // Combine firstName and lastName for the 'name' field
-      emailVerified: null, // Required by MongoDBAdapter if not using email verification provider
+      emailVerified: null, 
+      verificationToken,
+      verificationTokenExpires,
       image: null, // Required by MongoDBAdapter
       role: role, // 'submitter' or 'reviewer'
+      companyName: companyName || null, 
       createdAt: new Date(),
       updatedAt: new Date(),
+      // Add new submitter fields if role is submitter
+      ...(role === 'submitter' && {
+        submitterType: submitterType || null,
+        registrationNumber: registrationNumber || null,
+        sector: sector || null,
+        officeAddress: officeAddress || null,
+        state: state || null,
+        country: country || null,
+        businessDescription: businessDescription || null,
+      }),
     };
 
     const result = await usersCollection.insertOne(newUser);
@@ -76,20 +109,37 @@ export async function POST(req: NextRequest) {
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
+        companyName: newUser.companyName,
+        // Conditionally add submitter specific fields to response
+        ...(newUser.role === 'submitter' && {
+          submitterType: newUser.submitterType,
+          registrationNumber: newUser.registrationNumber,
+          sector: newUser.sector,
+          officeAddress: newUser.officeAddress,
+          state: newUser.state,
+          country: newUser.country,
+          businessDescription: newUser.businessDescription,
+        }),
     };
 
-    // Send signup email
+    // Send verification email
     try {
-      await sendSignupEmail(newUser.email, newUser.name);
-      console.log(`Signup email sent to ${newUser.email}`);
-    } catch (emailError) {
-      console.error(`Failed to send signup email to ${newUser.email}:`, emailError);
-      // Optionally, decide if this failure should affect the overall response.
-      // For now, registration is successful even if email fails, but it's logged.
+      await sendVerificationEmail(newUser.email, newUser.name, verificationToken);
+      console.log(`Verification email sent to ${newUser.email}`);
+    } catch (emailError: any) {
+      console.error(`Failed to send verification email to ${newUser.email}:`, emailError);
+      // Critical: If email sending fails, we might want to roll back user creation or at least inform the user.
+      // For now, let's return an error indicating email sending failed.
+      // Consider a more robust transaction or cleanup mechanism in a production scenario.
+      await usersCollection.deleteOne({ _id: result.insertedId }); // Attempt to clean up user
+      return NextResponse.json(
+        { message: `User registration initiated, but failed to send verification email. Please try again. Error: ${emailError.message || 'Unknown email error'}` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(
-      { message: "User created successfully", user: createdUser },
+      { message: "User created successfully. Please check your email to verify your account.", user: createdUser }, // Updated message
       { status: 201 }
     );
   } catch (error) {

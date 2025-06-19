@@ -10,8 +10,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added Select
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // No longer used directly
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox" // Added Checkbox
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" // Added Tabs
+import { X } from "lucide-react" // For remove button
 // import { appConfig } from "@/lib/app_config" // Will be replaced by useAdCategories
 // import { useAdCategories } from "@/hooks/use-ad-categories" // REMOVED
 import {
@@ -40,6 +43,8 @@ export default function SubmitAd() {
 
   const [adFile, setAdFile] = useState<File | null>(null) // RENAMED from imageFile
   const [adFilePreview, setAdFilePreview] = useState<string | null>(null) // RENAMED from imagePreview
+  const [supportingDocuments, setSupportingDocuments] = useState<File[]>([])
+  const [activeTab, setActiveTab] = useState("adDetails")
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false) // For the ad data submission step
@@ -52,7 +57,15 @@ export default function SubmitAd() {
   const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
   const [isFetchingRate, setIsFetchingRate] = useState(true)
 
+  // Affirmation states
+  const [affirmation1, setAffirmation1] = useState(false)
+  const [affirmation2, setAffirmation2] = useState(false)
+  const [affirmation3, setAffirmation3] = useState(false)
+
   // REMOVED useAdCategories hook usage and its destructured variables
+
+  const MAX_SUPPORTING_DOCS = 5;
+  const MAX_SUPPORTING_DOC_SIZE_MB = 2; // Max 2MB per supporting document
 
   useEffect(() => {
     const fetchRateAndSetFee = async () => {
@@ -134,6 +147,54 @@ export default function SubmitAd() {
     if (errors.adFile) setErrors((prev) => ({ ...prev, adFile: undefined })) // RENAMED from errors.image
   }
 
+  const handleSupportingDocumentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    let currentErrors = { ...errors };
+    let newErrorMessages: string[] = [];
+
+    if (supportingDocuments.length + newFiles.length > MAX_SUPPORTING_DOCS) {
+      newErrorMessages.push(`You can upload a maximum of ${MAX_SUPPORTING_DOCS} supporting documents.`);
+      // Truncate newFiles to fit the limit if some are already selected
+      newFiles.splice(MAX_SUPPORTING_DOCS - supportingDocuments.length);
+    }
+    
+    const validNewFiles = newFiles.filter(file => {
+      if (file.size > MAX_SUPPORTING_DOC_SIZE_MB * 1024 * 1024) {
+        newErrorMessages.push(`File "${file.name}" exceeds ${MAX_SUPPORTING_DOC_SIZE_MB}MB limit.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (newErrorMessages.length > 0) {
+      currentErrors.supportingDocuments = newErrorMessages.join(" ");
+      toast({
+        title: "Upload Error",
+        description: newErrorMessages.join(" "),
+        variant: "destructive",
+        duration: 5000,
+      });
+    } else {
+      delete currentErrors.supportingDocuments;
+    }
+    
+    setErrors(currentErrors);
+    setSupportingDocuments(prev => [...prev, ...validNewFiles].slice(0, MAX_SUPPORTING_DOCS));
+    e.target.value = ""; // Clear the input for next selection
+  };
+
+  const removeSupportingDocument = (indexToRemove: number) => {
+    setSupportingDocuments(prev => prev.filter((_, index) => index !== indexToRemove));
+    if (errors.supportingDocuments && supportingDocuments.length -1 < MAX_SUPPORTING_DOCS) { // Clear error if now under limit
+        const newErrors = {...errors};
+        delete newErrors.supportingDocuments;
+        setErrors(newErrors);
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string | undefined> = {}
     if (!formData.title.trim()) newErrors.title = "Title is required"
@@ -141,6 +202,12 @@ export default function SubmitAd() {
     // REMOVED targetUrl validation
     // REMOVED category validation
     if (!adFile) newErrors.adFile = "Ad File is required" // RENAMED from imageFile / errors.image
+
+    // Affirmation validation
+    if (!affirmation1) newErrors.affirmation1 = "You must affirm accuracy and compliance."
+    if (!affirmation2) newErrors.affirmation2 = "You must confirm authorization."
+    if (!affirmation3) newErrors.affirmation3 = "You must acknowledge sanctions for false information."
+    
     setErrors(newErrors)
     return Object.values(newErrors).every(error => error === undefined);
   }
@@ -183,6 +250,11 @@ export default function SubmitAd() {
       if (adFile) { // RENAMED from imageFile
         adUploadData.append("adFile", adFile); // RENAMED from "image"
       }
+
+      // Append supporting documents
+      supportingDocuments.forEach(file => {
+        adUploadData.append("supportingDocuments", file);
+      });
       
       if (!paymentResult || typeof paymentResult.reference !== 'string') {
         console.error("[SubmitAdPage] Invalid payment reference object from Paystack:", paymentResult);
@@ -309,50 +381,139 @@ export default function SubmitAd() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Ad Details</CardTitle>
-          <CardDescription>Fill in the details for your advertisement</CardDescription>
+          <CardTitle>Ad Submission</CardTitle>
+          <CardDescription>Fill in your ad details and upload any supporting documents.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form id="ad-submission-form" onSubmit={handleSubmitForm} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input id="title" name="title" placeholder="Enter ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
-              {errors.title && <p className="text-sm text-red-600">{errors.title}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea id="description" name="description" placeholder="Describe your advertisement" rows={4} value={formData.description} onChange={handleChange} className={errors.description ? "border-red-500" : ""} />
-              {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
-            </div>
-            {/* REMOVED Target URL Field */}
-            {/* REMOVED Ad Category Field */}
-            <div className="space-y-2">
-              <Label htmlFor="adFile">Ad File *</Label> {/* RENAMED from Image */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {adFilePreview ? ( // RENAMED from imagePreview
-                  <div className="space-y-4">
-                    <img src={adFilePreview} alt="Ad File Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
-                    <Button type="button" variant="outline" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Remove Ad File</Button> {/* RENAMED */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="adDetails">Ad Details</TabsTrigger>
+              <TabsTrigger value="supportingDocs">Supporting Documents (Optional)</TabsTrigger>
+            </TabsList>
+            <form id="ad-submission-form" onSubmit={handleSubmitForm} className="space-y-6 pt-4">
+              <TabsContent value="adDetails" className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input id="title" name="title" placeholder="Enter ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
+                  {errors.title && <p className="text-sm text-red-600">{errors.title}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea id="description" name="description" placeholder="Describe your advertisement" rows={4} value={formData.description} onChange={handleChange} className={errors.description ? "border-red-500" : ""} />
+                  {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adFile">Ad File *</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    {adFilePreview ? (
+                      <div className="space-y-4">
+                        <img src={adFilePreview} alt="Ad File Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
+                        <Button type="button" variant="outline" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Remove Ad File</Button>
+                      </div>
+                    ) : adFile ? (
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                        <p className="text-sm text-gray-600">Selected file: {adFile.name} ({ (adFile.size / (1024*1024)).toFixed(2)} MB)</p>
+                        <p className="text-xs text-gray-500">Preview not available for this file type.</p>
+                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Change File</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                        <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
+                        <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p>
+                      </div>
+                    )}
+                    <Input id="adFile" type="file" accept="image/*,video/*,application/pdf" onChange={handleAdFileChange} className="hidden" />
                   </div>
-                ) : adFile ? (
-                  <div className="space-y-2">
-                     <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">Selected file: {adFile.name} ({ (adFile.size / (1024*1024)).toFixed(2)} MB)</p>
-                    <p className="text-xs text-gray-500">Preview not available for this file type.</p>
-                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Change File</Button>
+                  {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="supportingDocs" className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <div>
+                      <Label htmlFor="supportingDocumentsInput" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to select files</Label>
+                      <p className="text-sm text-gray-500">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-400">PDFs, Docs, Images, etc.</p>
+                    <Input 
+                      id="supportingDocumentsInput" 
+                      type="file" 
+                      multiple 
+                      onChange={handleSupportingDocumentsChange} 
+                      className="hidden" 
+                      accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.txt" // Common document types
+                    />
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                    <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div> {/* RENAMED */}
-                    <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p> {/* UPDATED description */}
+                  {errors.supportingDocuments && <p className="text-sm text-red-600 mt-1">{errors.supportingDocuments}</p>}
+                </div>
+
+                {supportingDocuments.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium">Selected Supporting Documents:</h4>
+                    <ul className="space-y-2">
+                      {supportingDocuments.map((file, index) => (
+                        <li key={index} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                          <div className="text-sm">
+                            <p className="font-medium truncate max-w-xs">{file.name}</p>
+                            <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeSupportingDocument(index)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-                <Input id="adFile" type="file" accept="image/*,video/*,application/pdf" onChange={handleAdFileChange} className="hidden" /> {/* RENAMED, UPDATED accept */}
+              </TabsContent>
+
+              {/* Affirmation Checkboxes - common to both tabs, placed outside TabsContent but inside form */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h3 className="text-md font-semibold">Affirmations</h3>
+                <div className="items-top flex space-x-2">
+                  <Checkbox id="affirmation1" checked={affirmation1} onCheckedChange={(checked) => { setAffirmation1(checked as boolean); if (errors.affirmation1) setErrors(prev => ({...prev, affirmation1: undefined})); }} />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="affirmation1"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I affirm that all information and materials submitted are accurate and compliant with applicable advertising guidelines.
+                    </label>
+                    {errors.affirmation1 && <p className="text-xs text-red-600">{errors.affirmation1}</p>}
+                  </div>
+                </div>
+                <div className="items-top flex space-x-2">
+                  <Checkbox id="affirmation2" checked={affirmation2} onCheckedChange={(checked) => { setAffirmation2(checked as boolean); if (errors.affirmation2) setErrors(prev => ({...prev, affirmation2: undefined})); }} />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="affirmation2"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I confirm that I am authorized to submit on behalf of the advertiser.
+                    </label>
+                    {errors.affirmation2 && <p className="text-xs text-red-600">{errors.affirmation2}</p>}
+                  </div>
+                </div>
+                <div className="items-top flex space-x-2">
+                  <Checkbox id="affirmation3" checked={affirmation3} onCheckedChange={(checked) => { setAffirmation3(checked as boolean); if (errors.affirmation3) setErrors(prev => ({...prev, affirmation3: undefined})); }} />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="affirmation3"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I acknowledge that any misleading or false information may lead to sanctions.
+                    </label>
+                    {errors.affirmation3 && <p className="text-xs text-red-600">{errors.affirmation3}</p>}
+                  </div>
+                </div>
               </div>
-              {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>} {/* RENAMED from errors.image */}
-            </div>
-          </form>
+            </form>
+          </Tabs>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
@@ -392,9 +553,10 @@ export default function SubmitAd() {
               <h4 className="font-semibold text-slate-700 mb-2">Ad Summary:</h4>
               <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
                 <li><span className="font-medium">Title:</span> {formData.title || "N/A"}</li>
-                {/* <li><span className="font-medium">Target URL:</span> {formData.targetUrl || "N/A"}</li> REMOVED */}
-                {/* <li><span className="font-medium">Category:</span> {formData.category || "N/A"}</li> REMOVED */}
-                <li><span className="font-medium">Ad File:</span> {adFile?.name || "N/A"}</li> {/* RENAMED */}
+                <li><span className="font-medium">Ad File:</span> {adFile?.name || "N/A"}</li>
+                {supportingDocuments.length > 0 && (
+                  <li><span className="font-medium">Supporting Docs:</span> {supportingDocuments.length} file(s)</li>
+                )}
               </ul>
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
                 <span className="font-medium text-slate-700">Total Fee:</span>

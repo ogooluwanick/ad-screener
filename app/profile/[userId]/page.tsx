@@ -2,20 +2,20 @@
 
 // import { useParams } from 'next/navigation';
 // import { useEffect, useState } from 'react';
-// import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield, CheckCircle, XCircle, Clock } from "lucide-react"; // Added CheckCircle, XCircle, Clock
+// import { Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, Briefcase, Link as LinkIcon, User, Shield, CheckCircle, XCircle, Clock } from "lucide-react";
 // import { Button } from "@/components/ui/button";
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 // import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // import { Badge } from "@/components/ui/badge";
-// import { Label } from "@/components/ui/label"; // Import Label
+// import { Label } from "@/components/ui/label";
 // import { usePublicUserProfile, type PublicProfileViewData } from "@/hooks/use-user-profile";
-// import { useReviewerProfileData, type RecentActivityItem } from "@/hooks/use-reviewer-profile-data"; // Added
+// import { useReviewerProfileData, type RecentActivityItem } from "@/hooks/use-reviewer-profile-data";
 // import { useSession } from 'next-auth/react';
 // import Link from 'next/link';
-// import { formatDistanceToNow } from 'date-fns'; // For formatting dates
+// import { formatDistanceToNow } from 'date-fns';
 
 // interface DisplayProfileData extends PublicProfileViewData {
-//   expertise?: string[]; // Added for reviewers
+//   expertise?: string[];
 // }
 
 // const initialDisplayProfileData: DisplayProfileData = {
@@ -23,7 +23,6 @@
 //   lastName: "",
 //   role: "",
 //   image: undefined,
-//   location: "",
 //   bio: "",
 //   joinDate: "",
 //   company: "",
@@ -31,17 +30,24 @@
 //   department: "",
 //   reviewerLevel: "",
 //   expertise: [], 
-//   accuracy: 0, // Added for reviewers
-//   totalAds: 0, // Added for submitters
-//   approvedAds: 0, // Added for submitters
-//   pendingAds: 0, // Added for submitters
-//   rejectedAds: 0, // Added for submitters
-//   email: "", // Added email
-//   profileVisibility: "public", 
+//   accuracy: 0,
+//   totalAds: 0,
+//   approvedAds: 0,
+//   pendingAds: 0, 
+//   rejectedAds: 0, 
+//   email: "", 
+//   profileVisibility: "public",
+//   submitterType: "",
+//   registrationNumber: "",
+//   sector: "",
+//   officeAddress: "",
+//   state: "",
+//   country: "",
+//   businessDescription: "",
 // };
 
 // const calculateReviewerLevel = (totalReviews?: number): string => {
-//   if (totalReviews === undefined || totalReviews === null) return "Junior"; // Default if undefined
+//   if (totalReviews === undefined || totalReviews === null) return "Junior";
 //   if (totalReviews >= 500) return "Lead";
 //   if (totalReviews >= 200) return "Senior";
 //   if (totalReviews >= 50) return "Mid-Level";
@@ -58,7 +64,6 @@
 //   const [profileData, setProfileData] = useState<DisplayProfileData>(initialDisplayProfileData);
 //   const { data: fetchedProfileData, isLoading, error, refetch } = usePublicUserProfile(userId);
 
-//   // Fetch reviewer specific data if the profile being viewed is a reviewer
 //   const isReviewerProfile = fetchedProfileData?.role?.toLowerCase() === 'reviewer';
 //   const { 
 //     data: reviewerProfileData, 
@@ -68,22 +73,18 @@
 
 //   useEffect(() => {
 //     if (fetchedProfileData) {
-//       // Initial population from fetchedProfileData
-//       // reviewerLevel will be updated by the reviewerProfileData effect if applicable
 //       setProfileData(prev => ({
 //         ...prev,
+//         ...fetchedProfileData,
 //         firstName: fetchedProfileData.firstName || "",
 //         lastName: fetchedProfileData.lastName || "",
 //         role: fetchedProfileData.role || "",
 //         image: fetchedProfileData.image || undefined,
-//         location: fetchedProfileData.location || "",
 //         bio: fetchedProfileData.bio || "",
 //         joinDate: fetchedProfileData.joinDate || "",
 //         company: fetchedProfileData.company || "",
 //         website: fetchedProfileData.website || "",
 //         department: fetchedProfileData.department || "",
-//         // Use existing reviewerLevel from fetchedProfileData as a fallback
-//         // until reviewerProfileData loads and potentially overrides it.
 //         reviewerLevel: fetchedProfileData.reviewerLevel || prev.reviewerLevel || "Junior", 
 //         expertise: fetchedProfileData.expertise || [],
 //         accuracy: fetchedProfileData.accuracy || 0,
@@ -93,18 +94,23 @@
 //         rejectedAds: fetchedProfileData.rejectedAds || 0,
 //         email: fetchedProfileData.email || "",
 //         profileVisibility: fetchedProfileData.profileVisibility || "public",
+//         submitterType: fetchedProfileData.submitterType || "",
+//         registrationNumber: fetchedProfileData.registrationNumber || "",
+//         sector: fetchedProfileData.sector || "",
+//         officeAddress: fetchedProfileData.officeAddress || "",
+//         state: fetchedProfileData.state || "",
+//         country: fetchedProfileData.country || "",
+//         businessDescription: fetchedProfileData.businessDescription || "",
 //       }));
 //     }
 //   }, [fetchedProfileData]);
 
-//   // Effect to update reviewerLevel when reviewerProfileData loads
 //   useEffect(() => {
 //     if (reviewerProfileData && isReviewerProfile) {
 //       const newLevel = calculateReviewerLevel(reviewerProfileData.performanceStats?.totalReviews);
 //       setProfileData(prev => ({
 //         ...prev,
 //         reviewerLevel: newLevel,
-//         // Optionally update other reviewer-specific stats here if they aren't covered by fetchedProfileData
 //         accuracy: reviewerProfileData.performanceStats?.accuracy ?? prev.accuracy,
 //       }));
 //     }
@@ -133,10 +139,8 @@
 //   };
 
 //   const userRole = profileData.role?.toLowerCase();
-//   const viewingUserRole = session?.user?.role?.toLowerCase(); // Role of the person viewing the profile
+//   const viewingUserRole = session?.user?.role?.toLowerCase(); 
 //   const isOwnProfile = loggedInUserId === userId;
-
-//   // Handle profile visibility
   
 //   return (
 //     <div className="space-y-6 p-4 md:p-6">
@@ -199,24 +203,37 @@
 //                 <Badge className={getReviewerLevelColor(profileData.reviewerLevel)}>{profileData.reviewerLevel} Reviewer</Badge>
 //               )}
 //               {userRole === 'submitter' && (
-//                 <Badge variant="secondary">Submitter</Badge>
+//                 <Badge variant="secondary">Submitter {profileData.submitterType && `(${profileData.submitterType.charAt(0).toUpperCase() + profileData.submitterType.slice(1)})`}</Badge>
 //               )}
 //               {!userRole && <Badge variant="outline">User</Badge>}
 //             </CardDescription>
 //           </CardHeader>
 //           <CardContent className="space-y-4">
 //             {profileData.email && <div className="flex items-center text-sm text-gray-600"><Mail className="h-4 w-4 mr-2" />{profileData.email}</div>}
-//             {profileData.location && <div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />{profileData.location}</div>}
 //             <div className="flex items-center text-sm text-gray-600"><Calendar className="h-4 w-4 mr-2" />Joined {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString() : "N/A"}</div>
-//             {userRole === 'reviewer' && profileData.accuracy !== undefined && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />{profileData.accuracy}% Accuracy Rate</div>)}
-//             {userRole === 'submitter' && profileData.company && (
-//               <div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />{profileData.company}</div>
+            
+//             {userRole === 'reviewer' && (
+//               <>
+//                 {profileData.accuracy !== undefined && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />{profileData.accuracy}% Accuracy Rate</div>)}
+//                 {profileData.department && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />Department: {profileData.department}</div>)}
+//                 {profileData.company && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />Affiliated: {profileData.company}</div>)}
+//               </>
 //             )}
-//             {userRole === 'submitter' && profileData.website && (
-//               <div className="flex items-center text-sm text-gray-600"><LinkIcon className="h-4 w-4 mr-2" /><a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{profileData.website}</a></div>
-//             )}
-//              {userRole === 'reviewer' && profileData.department && (
-//               <div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />Department: {profileData.department}</div>
+
+//             {userRole === 'submitter' && (
+//               <>
+//                 {profileData.company && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />{profileData.company}</div>)}
+//                 {profileData.registrationNumber && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />Reg No: {profileData.registrationNumber}</div>)}
+//                 {profileData.website && (<div className="flex items-center text-sm text-gray-600"><LinkIcon className="h-4 w-4 mr-2" /><a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{profileData.website}</a></div>)}
+//                 {profileData.submitterType === 'business' && (
+//                   <>
+//                     {profileData.sector && (<div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />Sector: {profileData.sector}</div>)}
+//                     {profileData.officeAddress && (<div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />Address: {profileData.officeAddress}</div>)}
+//                     {profileData.state && (<div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />State: {profileData.state}</div>)}
+//                     {profileData.country && (<div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />Country: {profileData.country}</div>)}
+//                   </>
+//                 )}
+//               </>
 //             )}
 //           </CardContent>
 //         </Card>
@@ -232,7 +249,17 @@
 //                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{profileData.bio}</p>
 //               </div>
 //             )}
-//             {!profileData.bio && <p className="text-sm text-gray-500">No bio provided.</p>}
+            
+//             {userRole === 'submitter' && profileData.submitterType === 'business' && profileData.businessDescription && (
+//               <div className="space-y-2">
+//                 <Label>Business Description</Label>
+//                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{profileData.businessDescription}</p>
+//               </div>
+//             )}
+
+//             {!profileData.bio && !(userRole === 'submitter' && profileData.submitterType === 'business' && profileData.businessDescription) && (
+//               <p className="text-sm text-gray-500">No detailed information provided.</p>
+//             )}
 
 //             {userRole === 'reviewer' && profileData.expertise && profileData.expertise.length > 0 && (
 //               <div className="space-y-2">
@@ -244,13 +271,9 @@
 //                 </div>
 //               </div>
 //             )}
-//              {userRole === 'reviewer' && (!profileData.expertise || profileData.expertise.length === 0) && !profileData.bio && (
-//                 <p className="text-sm text-gray-500">No additional information provided.</p>
-//             )}
 //           </CardContent>
 //         </Card>
 
-//         {/* Reviewer Specific Sections - Mock Data */}
 //         {userRole === 'reviewer' && (
 //           <>
 //             <Card className="md:col-span-3">
@@ -349,7 +372,6 @@
 //           </>
 //         )}
 
-//         {/* Submitter Specific Section - Using Fetched Stats */}
 //         {userRole === 'submitter' && (
 //           <Card className="md:col-span-3">
 //             <CardHeader>
@@ -357,7 +379,7 @@
 //               <CardDescription>Overview of ad submissions.</CardDescription>
 //             </CardHeader>
 //             <CardContent>
-//               {(profileData.totalAds === undefined) && !error && !isLoading && ( // Check if stats are undefined (not just 0)
+//               {(profileData.totalAds === undefined) && !error && !isLoading && ( 
 //                  <div className="text-center p-8 text-gray-500">
 //                     <p>Statistics are not available for this user.</p>
 //                  </div>

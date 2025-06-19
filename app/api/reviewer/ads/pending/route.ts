@@ -17,6 +17,7 @@ export interface AdDocumentForListing {
   submitterEmail: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
   reviewedAt?: Date;
   reviewerId?: string;
   rejectionReason?: string;
@@ -34,6 +35,7 @@ export interface PendingAdListItem {
   adFileUrl?: string; // RENAMED from imageUrl
   adFilePublicId?: string; // ADDED
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
   submitterName?: string;
 }
 
@@ -108,6 +110,7 @@ export async function GET(request: Request) {
         adFileUrl: ad.adFileUrl, // RENAMED
         adFilePublicId: ad.adFilePublicId, // ADDED
         adFileType: fileType, // ADDED
+        supportingDocuments: ad.supportingDocuments, // Added
       };
     });
 

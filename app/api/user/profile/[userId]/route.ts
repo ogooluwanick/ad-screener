@@ -9,17 +9,24 @@ interface PublicProfileData {
   lastName: string;
   role: string;
   // Common fields suitable for public view
-  location?: string;
+  // location?: string; // Removed
   bio?: string;
   joinDate?: string; // Consider if joinDate is public
   image?: string; // Profile image URL
 
   // Submitter-specific public fields
-  company?: string;
+  company?: string; // Business/Agency Name
   website?: string;
+  submitterType?: "business" | "agency" | "";
+  registrationNumber?: string;
+  sector?: string; // Business only
+  officeAddress?: string; // Business only
+  state?: string; // Business only
+  country?: string; // Business only
+  businessDescription?: string; // Business only
   
   // Reviewer-specific public fields
-  department?: string; 
+  department?: string;
   reviewerLevel?: string;
   expertise?: string[];
   accuracy?: number; // For reviewer's accuracy rate
@@ -58,18 +65,25 @@ export async function GET(
           firstName: 1,
           lastName: 1,
           role: 1,
-          location: 1,
+          // location: 1, // Removed
           bio: 1,
           createdAt: 1, // Use createdAt for joinDate consistency
           profileImageUrl: 1, // Assuming image URL is stored as profileImageUrl
-          company: 1, // For submitters
-          website: 1, // For submitters
+          company: 1, 
+          website: 1, 
+          submitterType: 1,
+          registrationNumber: 1,
+          sector: 1,
+          officeAddress: 1,
+          state: 1,
+          country: 1,
+          businessDescription: 1,
           department: 1, // For reviewers
           reviewerLevel: 1, // For reviewers
           expertise: 1, // For reviewers
           accuracy: 1, // For reviewers
           // For submitters, profile visibility is nested in settings
-          "settings.privacy.profileVisibility": 1, 
+          "settings.privacy.profileVisibility": 1,
           // Submitter stats
           totalAds: 1,
           approvedAds: 1,
@@ -90,17 +104,25 @@ export async function GET(
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      location: user.location,
+      // location: user.location, // Removed
       bio: user.bio,
-      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "", // Use createdAt
-      image: user.profileImageUrl, 
+      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
+      image: user.profileImageUrl,
       company: user.company,
       website: user.website,
+      // Submitter specific
+      submitterType: user.submitterType,
+      registrationNumber: user.registrationNumber,
+      sector: user.sector,
+      officeAddress: user.officeAddress,
+      state: user.state,
+      country: user.country,
+      businessDescription: user.businessDescription,
+      // Reviewer specific
       department: user.department,
       reviewerLevel: user.reviewerLevel,
       expertise: user.expertise,
       accuracy: user.accuracy,
-      // Profile visibility: from submitter settings, or default to 'public' if not set (e.g., for reviewers)
       profileVisibility: user.settings?.privacy?.profileVisibility || "public",
       // Submitter stats
       totalAds: user.totalAds,

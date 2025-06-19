@@ -72,21 +72,16 @@ function LoginFormWrapper() {
       })
 
       if (result?.error) {
-        let errorMessage = "Login failed. Please check your credentials."
-        if (result.error === "CredentialsSignin") {
-             // More specific messages can be set based on error from authorize
-            errorMessage = "Invalid email or password."
-        } else if (result.error.includes("No user found") || result.error.includes("Incorrect password")) {
-            errorMessage = result.error;
-        }
+        // Use the error message directly from the authorize function if available
+        const errorMessage = result.error || "Login failed. Please check your credentials.";
         
-        setError(errorMessage) // Set error for display
+        setError(errorMessage); // Set error for display
         toast({
           title: "Login Failed",
-          description: errorMessage,
+          description: errorMessage, // Display the specific error from authorize
           variant: "destructive",
-        })
-        setIsLoading(false)
+        });
+        setIsLoading(false);
       } else if (result?.ok) {
         // Successful login, session will be updated.
         // The useEffect hook will handle redirection based on role.
@@ -173,7 +168,7 @@ function LoginFormWrapper() {
                       Remember me
                     </Label>
                   </div>
-                  <Link href="#" className="text-sm text-blue-600 hover:underline">
+                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
                     Forgot password?
                   </Link>
                 </div>

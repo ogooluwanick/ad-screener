@@ -10,32 +10,54 @@ export interface UserProfileData {
   email: string;
   role: string;
   phone?: string;
-  company?: string;
-  location?: string;
+  company?: string; // For Submitter's company or Reviewer's affiliated company
+  // location?: string; // Removed
   bio?: string;
-  website?: string;
-  joinDate?: string; // Should be string if already formatted, or Date if needs formatting
+  website?: string; // Submitter's website
+  joinDate?: string; 
   profileImageUrl?: string;
+  // Submitter specific fields
+  submitterType?: "business" | "agency" | ""; // "business" or "agency"
+  registrationNumber?: string; // CAC or Agency Reg No.
+  sector?: string; // Business sector
+  officeAddress?: string; // Business address
+  state?: string; // Business state
+  country?: string; // Business country
+  businessDescription?: string; // Business description
+  // Reviewer specific fields
+  department?: string; // Reviewer's internal department
+  expertise?: string[]; // Reviewer's areas of expertise
 }
 
 // Interface for data returned by the public profile endpoint /api/user/profile/[userId]
 export interface PublicProfileViewData {
   // Assuming this might also need an ID if it's fetched for a specific user context
-  _id?: string; 
+  _id?: string;
   id?: string;
   firstName: string;
   lastName: string;
   role: string;
-  location?: string;
+  // location?: string; // Removed
   bio?: string;
   joinDate?: string;
-  image?: string; 
-  company?: string;
-  website?: string;
+  image?: string;
+  company?: string; // For Submitter's company or Reviewer's affiliated company
+  website?: string; // Submitter's website
+  
+  // Submitter specific fields
+  submitterType?: "business" | "agency" | "";
+  registrationNumber?: string;
+  sector?: string;
+  officeAddress?: string;
+  state?: string;
+  country?: string;
+  businessDescription?: string;
+
+  // Reviewer specific fields
   department?: string;
   reviewerLevel?: string;
-  expertise?: string[]; // Added for reviewers
-  accuracy?: number; // Added for reviewer's accuracy rate
+  expertise?: string[];
+  accuracy?: number;
   profileVisibility?: "public" | "private" | "reviewers-only";
 
   // Submitter-specific stats
@@ -89,11 +111,22 @@ export interface UpdateUserProfilePayload {
   lastName?: string;
   phone?: string;
   company?: string;
-  location?: string;
+  // location?: string; // Removed
   bio?: string;
-  website?: string;
-  department?: string; // Added for reviewers
-  expertise?: string[]; // Added for reviewers
+  website?: string; // Submitter's website
+
+  // Submitter specific fields (mirroring UserProfileData for consistency if needed)
+  submitterType?: "business" | "agency" | "";
+  registrationNumber?: string;
+  sector?: string;
+  officeAddress?: string;
+  state?: string;
+  country?: string;
+  businessDescription?: string;
+
+  // Reviewer specific fields
+  department?: string;
+  expertise?: string[];
 }
 
 interface UpdateUserProfileResponse {

@@ -20,6 +20,7 @@ export interface AdDocumentForListing { // This should ideally be a shared type
   reviewedAt?: Date; // This date would also be the rejection date
   reviewerId?: string;
   rejectionReason?: string; // Specific to rejected ads
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
 }
 
 export interface RejectedAdListItem {
@@ -35,6 +36,8 @@ export interface RejectedAdListItem {
   adFileUrl?: string; // ADDED
   adFilePublicId?: string; // ADDED
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
+  description: string; // Added
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
 }
 
 export async function GET(request: Request) {
@@ -65,9 +68,11 @@ export async function GET(request: Request) {
       rejectionDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), 
       reviewerId: ad.reviewerId,
       rejectionReason: ad.rejectionReason,
+      description: ad.description, // Added
       // contentUrl: ad.contentUrl, // REMOVED
       adFileUrl: ad.adFileUrl, // ADDED
       adFilePublicId: ad.adFilePublicId, // ADDED
+      supportingDocuments: ad.supportingDocuments, // Added
       adFileType: (() => { // IIFE to determine fileType
         let fileType: RejectedAdListItem['adFileType'] = 'other';
         if (ad.adFileUrl) {

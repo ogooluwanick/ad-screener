@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react";
-import { Camera, Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, CheckCircle, XCircle, Briefcase, Link as LinkIcon, Clock } from "lucide-react";
+import { Camera, Mail, Calendar, MapPin, Award, AlertTriangle, Loader2, CheckCircle, XCircle, Briefcase, Link as LinkIcon, Clock, ChartBarStacked, Earth } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,25 +14,39 @@ import { toast } from "@/hooks/use-toast";
 import { useUserProfile, useUpdateUserProfile, type UserProfileData, type UpdateUserProfilePayload } from "@/hooks/use-user-profile";
 import { useSubmitterDashboardStats } from "@/hooks/use-submitter-dashboard-stats";
 import { useReviewerProfileData, type ReviewerPerformanceStats, type RecentActivityItem } from "@/hooks/use-reviewer-profile-data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 interface UnifiedProfileData extends UserProfileData {
   image?: string;
   phone: string;
-  location: string;
+  // location: string; // Removed as per request
   bio: string;
   joinDate: string;
   company?: string;
-  website?: string;
-  totalAds?: number;
-  approvedAds?: number;
-  rejectedAds?: number;
-  pendingAds?: number;
-  department?: string;
-  // expertise?: string[]; // REMOVED as it was tied to adCategories
+  website?: string; // Submitter's website
+
+  // Reviewer specific fields
+  department?: string; // Reviewer's internal department
+  expertise?: string[]; // Reviewer's areas of expertise
   reviewerLevel?: string;
-  totalReviews?: number;
-  approvedReviews?: number;
-  rejectedReviews?: number;
+
+  // Submitter specific fields
+  submitterType?: "business" | "agency" | "";
+  registrationNumber?: string;
+  sector?: string;
+  officeAddress?: string;
+  state?: string;
+  country?: string;
+  businessDescription?: string;
+
+  // Stats 
+  totalAds?: number; // For submitter
+  approvedAds?: number; // For submitter
+  rejectedAds?: number; // For submitter
+  pendingAds?: number; // For submitter
+  totalReviews?: number; // For reviewer
+  approvedReviews?: number; // For reviewer
+  rejectedReviews?: number; // For reviewer
   avgReviewTimeMs?: number;
   avgReviewTimeDisplay?: string;
   accuracy?: number;
@@ -47,16 +61,33 @@ const initialUnifiedProfileData: UnifiedProfileData = {
   role: "",
   image: undefined,
   phone: "",
-  location: "",
+  // location: "", // Removed
   bio: "",
   joinDate: "",
   company: "",
   website: "",
-  department: "Quality Assurance",
-  // expertise: [], // REMOVED
-  reviewerLevel: "Junior",
-  totalReviews: 0,
-  approvedReviews: 0,
+  
+  // Reviewer specific defaults
+  department: "Quality Assurance", 
+  expertise: [], 
+  reviewerLevel: "Junior", 
+
+  // Submitter specific defaults
+  submitterType: "",
+  registrationNumber: "",
+  sector: "",
+  officeAddress: "",
+  state: "",
+  country: "",
+  businessDescription: "",
+
+  // Stats defaults
+  totalAds: 0, // For submitter
+  approvedAds: 0, // For submitter
+  rejectedAds: 0, // For submitter
+  pendingAds: 0, // For submitter
+  totalReviews: 0, // For reviewer
+  approvedReviews: 0, // For reviewer
   rejectedReviews: 0,
   avgReviewTimeMs: 0,
   avgReviewTimeDisplay: "0 minutes",
@@ -71,6 +102,20 @@ const calculateReviewerLevel = (totalReviews?: number): string => {
   if (totalReviews >= 50) return "Mid-Level";
   return "Junior";
 };
+
+// Define a list of sectors for the dropdown, same as in signup
+const businessSectors = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Retail",
+  "Manufacturing",
+  "Education",
+  "Real Estate",
+  "Hospitality",
+  "Agriculture",
+  "Other",
+];
 
 export default function UnifiedProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -130,14 +175,25 @@ export default function UnifiedProfilePage() {
         role: fetchedProfileData.role || initialUnifiedProfileData.role,
         image: fetchedProfileData.profileImageUrl || initialUnifiedProfileData.image,
         phone: fetchedProfileData.phone || initialUnifiedProfileData.phone,
-        location: fetchedProfileData.location || initialUnifiedProfileData.location,
+        // location: fetchedProfileData.location || initialUnifiedProfileData.location, // Removed
         bio: fetchedProfileData.bio || initialUnifiedProfileData.bio,
         joinDate: fetchedProfileData.joinDate || initialUnifiedProfileData.joinDate,
-        company: fetchedProfileData.company || initialUnifiedProfileData.company,
-        website: fetchedProfileData.website || initialUnifiedProfileData.website,
-        department: (fetchedProfileData as UnifiedProfileData).department || initialUnifiedProfileData.department,
-        // expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise, // REMOVED
-        reviewerLevel: (fetchedProfileData as UnifiedProfileData).reviewerLevel || initialUnifiedProfileData.reviewerLevel,
+        company: fetchedProfileData.company || initialUnifiedProfileData.company, // Used for Submitter's company or Reviewer's affiliated company
+        website: fetchedProfileData.website || initialUnifiedProfileData.website, // Submitter's website
+        
+        // Submitter specific fields
+        submitterType: fetchedProfileData.submitterType || initialUnifiedProfileData.submitterType,
+        registrationNumber: fetchedProfileData.registrationNumber || initialUnifiedProfileData.registrationNumber,
+        sector: fetchedProfileData.sector || initialUnifiedProfileData.sector,
+        officeAddress: fetchedProfileData.officeAddress || initialUnifiedProfileData.officeAddress,
+        state: fetchedProfileData.state || initialUnifiedProfileData.state,
+        country: fetchedProfileData.country || initialUnifiedProfileData.country,
+        businessDescription: fetchedProfileData.businessDescription || initialUnifiedProfileData.businessDescription,
+        
+        // Reviewer specific fields
+        department: fetchedProfileData.department || initialUnifiedProfileData.department,
+        expertise: fetchedProfileData.expertise || initialUnifiedProfileData.expertise,
+        reviewerLevel: calculateReviewerLevel(reviewerProfileApiData?.performanceStats.totalReviews) || initialUnifiedProfileData.reviewerLevel, // Recalculate or use fetched
       }));
       setNewlyUploadedImageUrl(null);
     }
@@ -181,18 +237,32 @@ export default function UnifiedProfilePage() {
       firstName: profileData.firstName,
       lastName: profileData.lastName,
       phone: profileData.phone,
-      location: profileData.location,
+      // location: profileData.location, // Removed
       bio: profileData.bio,
       profileImageUrl: newlyUploadedImageUrl || profileData.image,
     };
 
+    // Common fields are already in payload
+
     if (profileData.role === "submitter") {
-      payload = { ...payload, company: profileData.company, website: profileData.website };
+      payload = { 
+        ...payload, 
+        company: profileData.company, // Business/Agency Name
+        website: profileData.website,
+        submitterType: profileData.submitterType,
+        registrationNumber: profileData.registrationNumber,
+        sector: profileData.submitterType === 'business' ? profileData.sector : undefined, // Only for business
+        officeAddress: profileData.submitterType === 'business' ? profileData.officeAddress : undefined,
+        state: profileData.submitterType === 'business' ? profileData.state : undefined,
+        country: profileData.submitterType === 'business' ? profileData.country : undefined,
+        businessDescription: profileData.submitterType === 'business' ? profileData.businessDescription : undefined,
+      };
     } else if (profileData.role === "reviewer") {
       payload = { 
         ...payload, 
-        department: profileData.department, 
-        // expertise: profileData.expertise || []  // REMOVED
+        department: profileData.department,
+        company: profileData.company, // Reviewer's affiliated company if any
+        expertise: profileData.expertise || [] 
       };
     }
 
@@ -223,9 +293,22 @@ export default function UnifiedProfilePage() {
         ...fetchedProfileData,
         image: fetchedProfileData.profileImageUrl || initialUnifiedProfileData.image,
         role: fetchedProfileData.role || initialUnifiedProfileData.role,
-        department: (fetchedProfileData as UnifiedProfileData).department || initialUnifiedProfileData.department,
-        // expertise: (fetchedProfileData as UnifiedProfileData).expertise || initialUnifiedProfileData.expertise, // REMOVED
+        
+        // Submitter specific
+        submitterType: fetchedProfileData.submitterType || initialUnifiedProfileData.submitterType,
+        registrationNumber: fetchedProfileData.registrationNumber || initialUnifiedProfileData.registrationNumber,
+        sector: fetchedProfileData.sector || initialUnifiedProfileData.sector,
+        officeAddress: fetchedProfileData.officeAddress || initialUnifiedProfileData.officeAddress,
+        state: fetchedProfileData.state || initialUnifiedProfileData.state,
+        country: fetchedProfileData.country || initialUnifiedProfileData.country,
+        businessDescription: fetchedProfileData.businessDescription || initialUnifiedProfileData.businessDescription,
+
+        // Reviewer specific
+        department: fetchedProfileData.department || initialUnifiedProfileData.department,
+        expertise: fetchedProfileData.expertise || initialUnifiedProfileData.expertise,
         reviewerLevel: calculatedLevel,
+        
+        // Stats
         totalReviews: currentTotalReviews ?? initialUnifiedProfileData.totalReviews,
         approvedReviews: reviewerProfileApiData?.performanceStats.approvedReviews ?? initialUnifiedProfileData.approvedReviews,
         rejectedReviews: reviewerProfileApiData?.performanceStats.rejectedReviews ?? initialUnifiedProfileData.rejectedReviews,
@@ -378,41 +461,160 @@ export default function UnifiedProfilePage() {
             <CardTitle className="capitalize">{profileData.firstName} {profileData.lastName}</CardTitle>
             <CardDescription>
               {userRole === 'reviewer' && profileData.reviewerLevel && (<Badge className={getReviewerLevelColor(profileData.reviewerLevel)}>{profileData.reviewerLevel} Reviewer</Badge>)}
-              {userRole === 'submitter' && (<Badge variant="secondary">Submitter</Badge>)}
+              {userRole === 'submitter' && (<Badge variant="secondary">Submitter {profileData.submitterType && `(${profileData.submitterType.charAt(0).toUpperCase() + profileData.submitterType.slice(1)})`}</Badge>)}
               {!userRole && <Badge variant="outline">User</Badge>}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center text-sm text-gray-600"><Mail className="h-4 w-4 mr-2" />{profileData.email}</div>
-            <div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />{profileData.location || "Unknown"}</div>
+            {/* Location display will now rely on state/country for business submitters, or be absent */}
             <div className="flex items-center text-sm text-gray-600"><Calendar className="h-4 w-4 mr-2" />Joined {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString() : "N/A"}</div>
-            {userRole === 'reviewer' && profileData.accuracy !== undefined && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />{profileData.accuracy}% Accuracy Rate</div>)}
-            {userRole === 'submitter' && profileData.company && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />{profileData.company}</div>)}
-            {userRole === 'submitter' && profileData.website && (<div className="flex items-center text-sm text-gray-600"><LinkIcon className="h-4 w-4 mr-2" /><a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{profileData.website}</a></div>)}
+            
+            {userRole === 'reviewer' && (
+              <>
+                {profileData.accuracy !== undefined && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />{profileData.accuracy}% Accuracy Rate</div>)}
+                {profileData.department && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />{isEditing ? <Input value={profileData.department || ""} onChange={(e) => handleInputChange("department", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : profileData.department}</div>)}
+                {profileData.company && (<div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />Affiliated: {isEditing ? <Input value={profileData.company || ""} onChange={(e) => handleInputChange("company", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : profileData.company}</div>)}
+              </>
+            )}
+
+            {userRole === 'submitter' && (
+              <>
+                <div className="flex items-center text-sm text-gray-600"><Briefcase className="h-4 w-4 mr-2" />
+                  {isEditing ? 
+                    <Input value={profileData.company || ""} onChange={(e) => handleInputChange("company", e.target.value)} placeholder="Company Name" className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> 
+                    : profileData.company || "Company Name N/A"}
+                  {profileData.submitterType && <Badge variant="outline" className="ml-2">{profileData.submitterType.charAt(0).toUpperCase() + profileData.submitterType.slice(1)}</Badge>}
+                </div>
+                {profileData.registrationNumber && (<div className="flex items-center text-sm text-gray-600"><Award className="h-4 w-4 mr-2" />Reg No: {isEditing ? <Input value={profileData.registrationNumber || ""} onChange={(e) => handleInputChange("registrationNumber", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : profileData.registrationNumber}</div>)}
+                {profileData.website && (<div className="flex items-center text-sm text-gray-600"><LinkIcon className="h-4 w-4 mr-2" />{isEditing ? <Input value={profileData.website || ""} onChange={(e) => handleInputChange("website", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">{profileData.website}</a>}</div>)}
+                {profileData.submitterType === 'business' && (
+                  <>
+                    {profileData.sector && (<div className="flex items-center text-sm text-gray-600"><ChartBarStacked  className="h-4 w-4 mr-2" />Sector: {isEditing ? <Input value={profileData.sector || ""} onChange={(e) => handleInputChange("sector", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : profileData.sector}</div>)}
+                    {profileData.officeAddress && (<div className="flex items-center text-sm text-gray-600"><MapPin className="h-4 w-4 mr-2" />Address: {isEditing ? <Textarea value={profileData.officeAddress || ""} onChange={(e) => handleInputChange("officeAddress", e.target.value)} className="text-sm p-1 h-auto" disabled={isUpdatingProfile || isUploadingImage} /> : profileData.officeAddress}</div>)}
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Earth className="h-4 w-4 mr-2" />
+                      Address:
+                      {isEditing ? (
+                        <div className="flex ml-1 space-x-1 flex-grow">
+                          <Input
+                            value={profileData.state || ""}
+                            onChange={(e) => handleInputChange("state", e.target.value)}
+                            placeholder="State"
+                            className="text-sm p-1 h-auto flex-1 min-w-0"
+                            disabled={isUpdatingProfile || isUploadingImage}
+                          />
+                          <Input
+                            value={profileData.country || ""}
+                            onChange={(e) => handleInputChange("country", e.target.value)}
+                            placeholder="Country"
+                            className="text-sm p-1 h-auto flex-1 min-w-0"
+                            disabled={isUpdatingProfile || isUploadingImage}
+                          />
+                        </div>
+                      ) : (
+                        <span className="ml-1">
+                          {(profileData.state && profileData.country)
+                            ? `${profileData.state}, ${profileData.country}`
+                            : profileData.state
+                            ? profileData.state
+                            : profileData.country
+                            ? profileData.country
+                            : "Unknown"}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2">
           <CardHeader><CardTitle>Profile Information</CardTitle><CardDescription>Manage your personal and role-specific information.</CardDescription></CardHeader>
           <CardContent className="space-y-6">
+            {/* Basic Info */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2"><Label htmlFor="firstName">First Name</Label><Input id="firstName" value={profileData.firstName} onChange={(e) => handleInputChange("firstName", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
               <div className="space-y-2"><Label htmlFor="lastName">Last Name</Label><Input id="lastName" value={profileData.lastName} onChange={(e) => handleInputChange("lastName", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
             </div>
-            <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={profileData.email} readOnly className="bg-gray-100 cursor-not-allowed" /></div>
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={profileData.email} readOnly className="bg-gray-100 cursor-not-allowed" /></div>
               <div className="space-y-2"><Label htmlFor="phone">Phone</Label><Input id="phone" value={profileData.phone} onChange={(e) => handleInputChange("phone", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
-              {userRole === 'reviewer' && (<div className="space-y-2"><Label htmlFor="department">Department</Label><Input id="department" value={profileData.department || ""} onChange={(e) => handleInputChange("department", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>)}
-              {userRole === 'submitter' && (<div className="space-y-2"><Label htmlFor="company">Company</Label><Input id="company" value={profileData.company || ""} onChange={(e) => handleInputChange("company", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>)}
             </div>
-            <div className="space-y-2"><Label htmlFor="location">Location</Label><Input id="location" value={profileData.location} onChange={(e) => handleInputChange("location", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
-            {userRole === 'submitter' && (<div className="space-y-2"><Label htmlFor="website">Website</Label><Input id="website" value={profileData.website || ""} onChange={(e) => handleInputChange("website", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="https://example.com" /></div>)}
+            {/* Location field removed from here. State and Country fields are part of submitter business type section */}
+            
+            {/* Role Specific Fields */}
+            {userRole === 'reviewer' && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="department">Department</Label><Input id="department" value={profileData.department || ""} onChange={(e) => handleInputChange("department", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                  <div className="space-y-2"><Label htmlFor="companyReviewer">Affiliated Company (Optional)</Label><Input id="companyReviewer" value={profileData.company || ""} onChange={(e) => handleInputChange("company", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="e.g. Partner Org Inc." /></div>
+                </div>
+                {/* Expertise could be a multi-select or tags input if needed, for now, simple text for API */}
+                <div className="space-y-2"><Label htmlFor="expertise">Areas of Expertise (comma-separated)</Label><Input id="expertise" value={profileData.expertise?.join(", ") || ""} onChange={(e) => handleInputChange("expertise", e.target.value.split(",").map(s => s.trim()))} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="e.g. Finance, Healthcare Ads, E-commerce" /></div>
+              </>
+            )}
+
+            {userRole === 'submitter' && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="submitterType">Submitter Type</Label>
+                    {isEditing ? (
+                      <select id="submitterType" value={profileData.submitterType || ""} onChange={(e) => handleInputChange("submitterType", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        <option value="">Select Type</option>
+                        <option value="business">Business</option>
+                        <option value="agency">Agency</option>
+                      </select>
+                    ) : (
+                      <Input value={profileData.submitterType ? profileData.submitterType.charAt(0).toUpperCase() + profileData.submitterType.slice(1) : "N/A"} readOnly className="bg-gray-100 cursor-not-allowed" />
+                    )}
+                  </div>
+                  <div className="space-y-2"><Label htmlFor="companySubmitter">{profileData.submitterType === 'agency' ? 'Agency Name' : 'Business Name'}</Label><Input id="companySubmitter" value={profileData.company || ""} onChange={(e) => handleInputChange("company", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2"><Label htmlFor="registrationNumber">{profileData.submitterType === 'agency' ? 'Agency Reg. No.' : 'CAC Reg. No.'}</Label><Input id="registrationNumber" value={profileData.registrationNumber || ""} onChange={(e) => handleInputChange("registrationNumber", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                  <div className="space-y-2"><Label htmlFor="website">Website</Label><Input id="website" value={profileData.website || ""} onChange={(e) => handleInputChange("website", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="https://example.com" /></div>
+                </div>
+
+                {profileData.submitterType === 'business' && (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="sector">Sector</Label>
+                        {isEditing ? (
+                          <Select name="sector" onValueChange={(value) => handleInputChange("sector", value)} value={profileData.sector || ""} disabled={isUpdatingProfile || isUploadingImage}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a sector" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {businessSectors.map((sector) => (
+                                <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input id="sector" value={profileData.sector || "N/A"} readOnly className="bg-gray-100 cursor-not-allowed" />
+                        )}
+                      </div>
+                      <div className="space-y-2"><Label htmlFor="officeAddress">Office Address</Label><Input id="officeAddress" value={profileData.officeAddress || ""} onChange={(e) => handleInputChange("officeAddress", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2"><Label htmlFor="state">State</Label><Input id="state" value={profileData.state || ""} onChange={(e) => handleInputChange("state", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                      <div className="space-y-2"><Label htmlFor="country">Country</Label><Input id="country" value={profileData.country || ""} onChange={(e) => handleInputChange("country", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
+                    </div>
+                    <div className="space-y-2"><Label htmlFor="businessDescription">Business Description</Label><Textarea id="businessDescription" rows={3} value={profileData.businessDescription || ""} onChange={(e) => handleInputChange("businessDescription", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="Describe your business..." /></div>
+                  </>
+                )}
+              </>
+            )}
+            {/* Common Bio */}
             <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" rows={4} value={profileData.bio} onChange={(e) => handleInputChange("bio", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder={userRole === 'reviewer' ? "Tell us about your reviewing experience..." : "Tell us about yourself or your company..."} /></div>
             
-            {/* Ensuring Areas of Expertise section and its logic are fully removed */}
           </CardContent>
         </Card>
-        {/* The extraneous >>>>>>> REPLACE marker seems to be an artifact from a previous merge/edit, removing it. */}
 
         {userRole === 'reviewer' && (<>
             {/* Review Performance and Recent Activity Cards remain the same */}

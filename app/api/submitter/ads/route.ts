@@ -17,6 +17,7 @@ interface AdDocument {
   // contentUrl: string; // REMOVED
   adFileUrl?: string; // URL of the uploaded ad file from Cloudinary
   adFilePublicId?: string; // Public ID of the ad file in Cloudinary
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Array of supporting documents
   paymentReference: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
     // const contentUrl = formData.get('contentUrl') as string | null; // REMOVED
     const paymentReference = formData.get('paymentReference') as string | null;
     const adFile = formData.get('adFile') as File | null; // RENAMED from imageFile
+    const supportingDocumentFiles = formData.getAll('supportingDocuments') as File[]; // For multiple supporting documents
     const amountInKoboString = formData.get('amountInKobo') as string | null;
     // const category = formData.get('category') as string | null; // REMOVED
 
@@ -76,6 +78,11 @@ export async function POST(request: Request) {
     console.log('  Ad File Name:', adFile?.name);
     console.log('  Ad File Type:', adFile?.type);
     console.log('  Ad File Size:', adFile?.size);
+    supportingDocumentFiles.forEach((file, index) => {
+      console.log(`  Supporting Document ${index + 1} Name:`, file.name);
+      console.log(`  Supporting Document ${index + 1} Type:`, file.type);
+      console.log(`  Supporting Document ${index + 1} Size:`, file.size);
+    });
     console.log('  Amount in Kobo String:', amountInKoboString);
     // console.log('  Category:', category); // REMOVED
 
@@ -92,25 +99,60 @@ export async function POST(request: Request) {
     }
     console.log('[API /submitter/ads] Parsed amountInKobo:', amountInKobo);
 
-    // File handling with Cloudinary
-    let cloudinaryUploadResult;
+    // --- Ad File handling with Cloudinary ---
+    let adFileUploadResult;
     try {
       const adFileBuffer = Buffer.from(await adFile.arrayBuffer());
       const originalFileName = adFile.name.substring(0, adFile.name.lastIndexOf('.')) || adFile.name;
       const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
       const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
       
-      console.log(`[API /submitter/ads] Uploading ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
-      cloudinaryUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary);
+      console.log(`[API /submitter/ads] Uploading ad file ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
+      adFileUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary);
 
-      if (!cloudinaryUploadResult || !cloudinaryUploadResult.secure_url || !cloudinaryUploadResult.public_id) {
-        console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result.');
+      if (!adFileUploadResult || !adFileUploadResult.secure_url || !adFileUploadResult.public_id) {
+        console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result for ad file.');
         return NextResponse.json({ message: 'Failed to upload ad file to Cloudinary.' }, { status: 500 });
       }
-      console.log('[API /submitter/ads] Ad file uploaded to Cloudinary:', cloudinaryUploadResult.secure_url);
+      console.log('[API /submitter/ads] Ad file uploaded to Cloudinary:', adFileUploadResult.secure_url);
     } catch (uploadError) {
-      console.error('[API /submitter/ads] Error during Cloudinary upload process:', uploadError);
+      console.error('[API /submitter/ads] Error during Cloudinary upload process for ad file:', uploadError);
       return NextResponse.json({ message: 'Error uploading ad file.', error: uploadError instanceof Error ? uploadError.message : 'Unknown upload error' }, { status: 500 });
+    }
+
+    // --- Supporting Documents handling with Cloudinary ---
+    const uploadedSupportingDocuments: Array<{ url: string; publicId: string; name: string }> = [];
+    if (supportingDocumentFiles && supportingDocumentFiles.length > 0) {
+      console.log(`[API /submitter/ads] Processing ${supportingDocumentFiles.length} supporting document(s).`);
+      for (const file of supportingDocumentFiles) {
+        try {
+          const fileBuffer = Buffer.from(await file.arrayBuffer());
+          const originalFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
+          const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
+
+          console.log(`[API /submitter/ads] Uploading supporting document ${file.name} to Cloudinary as ${uniqueFileNameForCloudinary}`);
+          const uploadResult = await uploadToCloudinary(fileBuffer, 'supporting_documents', uniqueFileNameForCloudinary);
+
+          if (uploadResult && uploadResult.secure_url && uploadResult.public_id) {
+            uploadedSupportingDocuments.push({ 
+              url: uploadResult.secure_url, 
+              publicId: uploadResult.public_id,
+              name: file.name // Store original file name for display purposes
+            });
+            console.log(`[API /submitter/ads] Supporting document ${file.name} uploaded: ${uploadResult.secure_url}`);
+          } else {
+            console.warn(`[API /submitter/ads] Failed to upload supporting document ${file.name} or missing URL/PublicID.`);
+            // Decide if this should be a critical error or if the process can continue without this specific file.
+            // For now, it logs a warning and continues.
+          }
+        } catch (docUploadError) {
+          console.error(`[API /submitter/ads] Error uploading supporting document ${file.name}:`, docUploadError);
+          // Decide if this should be a critical error. For now, logs and continues.
+        }
+      }
+    } else {
+      console.log('[API /submitter/ads] No supporting documents were uploaded.');
     }
 
     const client = await clientPromise();
@@ -122,8 +164,9 @@ export async function POST(request: Request) {
       title,
       description,
       // contentUrl, // REMOVED
-      adFileUrl: cloudinaryUploadResult.secure_url, // From Cloudinary
-      adFilePublicId: cloudinaryUploadResult.public_id, // From Cloudinary
+      adFileUrl: adFileUploadResult.secure_url, // From Cloudinary
+      adFilePublicId: adFileUploadResult.public_id, // From Cloudinary
+      supportingDocuments: uploadedSupportingDocuments.length > 0 ? uploadedSupportingDocuments : undefined,
       paymentReference,
       submitterId: session.user.id,
       submitterEmail: session.user.email || '',
@@ -139,9 +182,14 @@ export async function POST(request: Request) {
 
     if (!result.insertedId) {
       console.error('[API /submitter/ads] Failed to insert ad into database. Result:', result);
-      // TODO: Consider deleting from Cloudinary if DB insert fails.
-      // For now, log and proceed. A more robust solution would handle this.
-      // await deleteFromCloudinary(cloudinaryUploadResult.public_id, cloudinaryUploadResult.resource_type as any);
+      // TODO: Consider deleting adFile and supportingDocuments from Cloudinary if DB insert fails.
+      // This requires a more complex rollback mechanism. For now, log and proceed.
+      // if (adFileUploadResult?.public_id) {
+      //   await deleteFromCloudinary(adFileUploadResult.public_id); 
+      // }
+      // for (const doc of uploadedSupportingDocuments) {
+      //   await deleteFromCloudinary(doc.publicId);
+      // }
       return NextResponse.json({ message: 'Failed to submit ad to database' }, { status: 500 });
     }
 

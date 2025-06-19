@@ -17,6 +17,7 @@ export interface AdDocumentForListing { // This should ideally be a shared type
   submitterEmail: string;
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Ensure this is present
   reviewedAt?: Date;
   reviewerId?: string;
   assignedReviewerIds?: string[];
@@ -34,6 +35,8 @@ export interface ApprovedAdListItem {
   adFileUrl?: string; // ADDED
   adFilePublicId?: string; // ADDED
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
+  description: string; // Added description
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
 }
 
 export async function GET(request: Request) {
@@ -80,6 +83,8 @@ export async function GET(request: Request) {
         adFileUrl: ad.adFileUrl, // ADDED
         adFilePublicId: ad.adFilePublicId, // ADDED
         adFileType: fileType, // ADDED
+        description: ad.description, // Added description
+        supportingDocuments: ad.supportingDocuments, // Added
       };
     });
 

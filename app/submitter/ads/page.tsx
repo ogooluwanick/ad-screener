@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { CheckCircle, Clock, Eye, Filter, PlusCircle, Search, XCircle } from "lucide-react"
+import { CheckCircle, Clock, Download, Eye, Filter, PlusCircle, Search, XCircle } from "lucide-react" // Added Download
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,7 @@ interface Ad {
   adFileUrl?: string // RENAMED from imageUrl, mapped from adFileUrl
   adFilePublicId?: string // Added
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // Added to help render
+  supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
   submissionDate: string // Mapped from submittedAt
   status: "pending" | "approved" | "rejected"
   rejectionReason?: string
@@ -32,6 +33,21 @@ export default function SubmitterAds() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const getCloudinaryDownloadUrl = (url: string, filename?: string): string => {
+    if (!url) return '#';
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url; // Not a standard Cloudinary upload URL
+  
+    let transformation = 'fl_attachment';
+    if (filename) {
+      // Basic sanitization for the filename in the URL.
+      // Cloudinary might have specific rules for characters in `fl_attachment:filename`.
+      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 100); // Limit length
+      transformation += `:${encodeURIComponent(sanitizedFilename)}`;
+    }
+    return `${parts[0]}/upload/${transformation}/${parts[1]}`;
+  };
 
   useEffect(() => {
     const fetchAds = async () => {
@@ -65,6 +81,7 @@ export default function SubmitterAds() {
             adFileUrl: ad.adFileUrl, // RENAMED
             adFilePublicId: ad.adFilePublicId, // ADDED
             adFileType: fileType, // ADDED
+            supportingDocuments: ad.supportingDocuments, // Added
             submissionDate: ad.submittedAt,
             status: ad.status,
             rejectionReason: ad.rejectionReason,
@@ -266,6 +283,29 @@ export default function SubmitterAds() {
               <h3 className="font-semibold">Description</h3>
               <p className="text-sm text-gray-600">{selectedAd?.description}</p>
             </div>
+
+            {selectedAd?.supportingDocuments && selectedAd.supportingDocuments.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-1">Supporting Documents</h3>
+                <ul className="list-disc list-inside space-y-1 pl-4">
+                  {selectedAd.supportingDocuments.map((doc, index) => (
+                    <li key={doc.publicId || index} className="text-sm">
+                      <a 
+                        href={getCloudinaryDownloadUrl(doc.url, doc.name)}
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 hover:underline"
+                        title={`Download ${doc.name}`} // Changed title to Download
+                        download={doc.name} // Added download attribute as a fallback
+                      >
+                        {doc.name || `Document ${index + 1}`}
+                        <Download className="inline h-3 w-3 ml-1 opacity-75" /> {/* Changed icon to Download */}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* REMOVED Target URL section */}
 

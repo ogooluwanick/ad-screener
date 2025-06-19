@@ -32,15 +32,24 @@ export async function GET() {
       lastName: user.lastName || "",
       email: user.email || "",
       role: user.role || "",
-      phone: user.phone || "", 
-      company: user.company || "", 
-      location: user.location || "", 
-      bio: user.bio || "", 
-      website: user.website || "", 
+      phone: user.phone || "",
+      company: user.company || "", // For Submitter's company or Reviewer's affiliated company
+      // location: user.location || "", // Removed
+      bio: user.bio || "",
+      website: user.website || "", // Submitter's website
       joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
       profileImageUrl: user.profileImageUrl || null,
-      department: user.department || "", // Add department for reviewers
-      expertise: user.expertise || [],   // Add expertise for reviewers
+      // Submitter specific fields
+      submitterType: user.submitterType || "", // "business" or "agency"
+      registrationNumber: user.registrationNumber || "", // CAC or Agency Reg No.
+      sector: user.sector || "", // Business sector
+      officeAddress: user.officeAddress || "", // Business address
+      state: user.state || "", // Business state
+      country: user.country || "", // Business country
+      businessDescription: user.businessDescription || "", // Business description
+      // Reviewer specific fields
+      department: user.department || "", // Reviewer's internal department
+      expertise: user.expertise || [],   // Reviewer's areas of expertise (already existed)
     };
 
     return NextResponse.json(profileData, { status: 200 });
@@ -69,16 +78,25 @@ export async function PUT(req: Request) {
     const body = await req.json();
     // Destructure all potential fields including new reviewer fields
     const { 
-      firstName, 
-      lastName, 
-      phone, 
-      company, 
-      location, 
-      bio, 
-      website, 
+      firstName,
+      lastName,
+      phone,
+      company,
+      // location, // Removed
+      bio,
+      website,
       profileImageUrl,
-      department, // New field for reviewers
-      expertise   // New field for reviewers (array of strings)
+      // Submitter specific fields
+      submitterType,
+      registrationNumber,
+      sector,
+      officeAddress,
+      state,
+      country,
+      businessDescription,
+      // Reviewer specific fields
+      department, 
+      expertise
     } = body;
 
     // Basic validation (can be expanded)
@@ -98,19 +116,31 @@ export async function PUT(req: Request) {
     // Add optional fields if they are provided and not empty
     if (phone !== undefined) updateData.phone = phone;
     if (company !== undefined) updateData.company = company;
-    if (location !== undefined) updateData.location = location;
+    // if (location !== undefined) updateData.location = location; // Removed
     if (bio !== undefined) updateData.bio = bio;
     if (website !== undefined) updateData.website = website;
-    if (profileImageUrl !== undefined) { 
+    if (profileImageUrl !== undefined) {
       updateData.profileImageUrl = profileImageUrl;
     }
+
+    // Add submitter-specific fields if provided (and user is a submitter)
+    // It's good practice to check role before updating role-specific fields,
+    // but for simplicity here, we'll allow them if provided.
+    // Consider adding role checks if strict separation is needed.
+    if (submitterType !== undefined) updateData.submitterType = submitterType;
+    if (registrationNumber !== undefined) updateData.registrationNumber = registrationNumber;
+    if (sector !== undefined) updateData.sector = sector;
+    if (officeAddress !== undefined) updateData.officeAddress = officeAddress;
+    if (state !== undefined) updateData.state = state;
+    if (country !== undefined) updateData.country = country;
+    if (businessDescription !== undefined) updateData.businessDescription = businessDescription;
+    
     // Add reviewer-specific fields if provided
     if (department !== undefined) updateData.department = department;
-    if (expertise !== undefined && Array.isArray(expertise)) { // Ensure expertise is an array
+    if (expertise !== undefined && Array.isArray(expertise)) { 
       updateData.expertise = expertise;
     }
     // Note: Email updates are typically handled separately due to verification needs.
-    // If you want to allow email changes here, add validation and consider implications.
 
     const result = await usersCollection.updateOne(
       { _id: userId },
@@ -147,13 +177,22 @@ export async function PUT(req: Request) {
         role: updatedUser?.role,
         phone: updatedUser?.phone,
         company: updatedUser?.company,
-        location: updatedUser?.location,
+        // location: updatedUser?.location, // Removed
         bio: updatedUser?.bio,
         website: updatedUser?.website,
         joinDate: updatedUser?.createdAt ? new Date(updatedUser.createdAt).toISOString().split('T')[0] : "",
         profileImageUrl: updatedUser?.profileImageUrl,
-        department: updatedUser?.department, // Add this
-        expertise: updatedUser?.expertise,   // Add this
+        // Submitter specific
+        submitterType: updatedUser?.submitterType,
+        registrationNumber: updatedUser?.registrationNumber,
+        sector: updatedUser?.sector,
+        officeAddress: updatedUser?.officeAddress,
+        state: updatedUser?.state,
+        country: updatedUser?.country,
+        businessDescription: updatedUser?.businessDescription,
+        // Reviewer specific
+        department: updatedUser?.department,
+        expertise: updatedUser?.expertise,
       } },
       { status: 200 }
     );

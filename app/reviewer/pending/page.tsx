@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, CheckCircle, Eye, ExternalLink, Info, Send, ThumbsDown, ThumbsUp, XCircle } from "lucide-react"; // Added Send, ThumbsUp, ThumbsDown
+import { AlertTriangle, CheckCircle, Download, Eye, ExternalLink, Info, Send, ThumbsDown, ThumbsUp, XCircle } from "lucide-react"; // Added Download
 import { PendingAdListItem } from "@/app/api/reviewer/ads/pending/route"; // Import the interface
 import { useNotifications } from "@/hooks/use-notifications";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,18 @@ export default function PendingAdsPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const getCloudinaryDownloadUrl = (url: string, filename?: string): string => {
+    if (!url) return '#';
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    let transformation = 'fl_attachment';
+    if (filename) {
+      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 100);
+      transformation += `:${encodeURIComponent(sanitizedFilename)}`;
+    }
+    return `${parts[0]}/upload/${transformation}/${parts[1]}`;
+  };
 
   const fetchPendingAds = useCallback(async () => {
     setIsLoading(true);
@@ -306,6 +318,28 @@ export default function PendingAdsPage() {
                   </div>
                 )}
               </div>
+
+              {selectedAdForReview.supportingDocuments && selectedAdForReview.supportingDocuments.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-1">Supporting Documents:</h3>
+                  <ul className="list-disc list-inside space-y-1 pl-4">
+                    {selectedAdForReview.supportingDocuments.map((doc, index) => (
+                      <li key={index} className="text-sm">
+                        <a 
+                          href={getCloudinaryDownloadUrl(doc.url, doc.name)}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-600 hover:underline"
+                          title={`Download ${doc.name}`}
+                          download={doc.name}
+                        >
+                          {doc.name || `Document ${index + 1}`} <Download className="inline h-3 w-3 ml-1 opacity-75" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold mb-1">Submitted By:</h3>

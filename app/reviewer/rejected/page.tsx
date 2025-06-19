@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ExternalLink, Info, ListChecks, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, Info, ListChecks, Eye, RotateCcw } from "lucide-react"; // Added Download & Eye
 import Link from "next/link"; // Import Link
 import { RejectedAdListItem } from "@/app/api/reviewer/ads/rejected/route"; 
 import { useNotifications } from "@/hooks/use-notifications";
@@ -28,9 +28,22 @@ export default function RejectedAdsPage() {
   const [rejectedAds, setRejectedAds] = useState<RejectedAdListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAd, setSelectedAd] = useState<RejectedAdListItem | null>(null);
-  const [isReevaluationDialogOpen, setIsReevaluationDialogOpen] = useState(false);
-  const [reevaluationReason, setReevaluationReason] = useState("");
+  const [selectedAdForDetails, setSelectedAdForDetails] = useState<RejectedAdListItem | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  // For the re-evaluation functionality within the details modal
+  const [newRejectionReasonForReevaluation, setNewRejectionReasonForReevaluation] = useState("");
+
+  const getCloudinaryDownloadUrl = (url: string, filename?: string): string => {
+    if (!url) return '#';
+    const parts = url.split('/upload/');
+    if (parts.length !== 2) return url;
+    let transformation = 'fl_attachment';
+    if (filename) {
+      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 100);
+      transformation += `:${encodeURIComponent(sanitizedFilename)}`;
+    }
+    return `${parts[0]}/upload/${transformation}/${parts[1]}`;
+  };
 
   const fetchRejectedAds = useCallback(async () => {
     setIsLoading(true);
@@ -51,21 +64,8 @@ export default function RejectedAdsPage() {
     }
   }, []);
 
-  // Corrected: useNotifications only takes userId.
   const { refetchNotifications } = useNotifications(session?.user?.id);
-  // WebSocket messageCallbacks (and the messageCallbacks object itself) are removed as they are not used by the current useNotifications hook.
-  // If WebSocket functionality is needed, it should be implemented separately.
   
-  useEffect(() => {
-    // Placeholder for potential WebSocket integration if messageCallbacks are for that
-    // const handleDashboardRefresh = () => {
-    //   console.log('Rejected ads list refresh triggered by WebSocket.');
-    //   fetchRejectedAds();
-    // };
-    // someWebSocketService.on('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
-    // return () => someWebSocketService.off('DASHBOARD_REFRESH_REQUESTED', handleDashboardRefresh);
-  }, [fetchRejectedAds]);
-
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
       fetchRejectedAds();
@@ -78,44 +78,49 @@ export default function RejectedAdsPage() {
     }
   }, [session, sessionStatus, fetchRejectedAds]);
 
-  const handleReevaluate = (ad: RejectedAdListItem) => {
-    setSelectedAd(ad);
-    setReevaluationReason(ad.rejectionReason || "");
-    setIsReevaluationDialogOpen(true);
+  const handleOpenDetailsModal = (ad: RejectedAdListItem) => {
+    setSelectedAdForDetails(ad);
+    setNewRejectionReasonForReevaluation(ad.rejectionReason || ""); // Pre-fill with current reason for potential re-evaluation
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedAdForDetails(null);
+    setIsDetailsModalOpen(false);
+    setNewRejectionReasonForReevaluation("");
   };
 
   const handleReevaluationSubmit = async () => {
-    if (!selectedAd) return;
+    if (!selectedAdForDetails) return;
 
     try {
-      const response = await fetch(`/api/reviewer/ads/${selectedAd.id}`, {
+      const response = await fetch(`/api/reviewer/ads/${selectedAdForDetails.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          status: 'pending', // Change status back to pending
-          rejectionReason: reevaluationReason, // Update or clear rejection reason
-          // Potentially add a note that this is a re-evaluation
+          status: 'pending', 
+          rejectionReason: newRejectionReasonForReevaluation, // Use the potentially modified reason
+          reviewerId: session?.user?.id, // Ensure reviewerId is passed for the update
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update ad status");
+        throw new Error(errorData.message || "Failed to update ad status for re-evaluation");
       }
 
       toast({
         title: "Ad Sent for Re-evaluation",
-        description: `Ad "${selectedAd.title}" has been moved to the pending queue.`,
+        description: `Ad "${selectedAdForDetails.title}" has been moved to the pending queue.`,
       });
-      setIsReevaluationDialogOpen(false);
-      setSelectedAd(null);
-      fetchRejectedAds(); // Refresh the list of rejected ads
+      handleCloseDetailsModal();
+      fetchRejectedAds(); 
     } catch (error) {
       console.error("Failed to re-evaluate ad:", error);
       toast({
-        title: "Error",
+        title: "Re-evaluation Error",
         description: error instanceof Error ? error.message : "Could not re-evaluate ad.",
         variant: "destructive",
       });
@@ -209,27 +214,17 @@ export default function RejectedAdsPage() {
                       {ad.submitterEmail}
                     </TableCell>
                     <TableCell>{new Date(ad.rejectionDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{ad.rejectionReason || "N/A"}</TableCell>
+                    <TableCell className="max-w-xs truncate" title={ad.rejectionReason || undefined }>{ad.rejectionReason || "N/A"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      {ad.adFileUrl && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(ad.adFileUrl, '_blank')}
-                          title="View Ad File"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">View Ad File</span>
-                        </Button>
-                      )}
                       <Button
-                        variant="default" // Changed from ghost to default for blue color
+                        variant="default"
                         size="sm"
-                        onClick={() => handleReevaluate(ad)}
-                        title="Re-evaluate Ad"
+                        onClick={() => handleOpenDetailsModal(ad)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                        title="View Details"
                       >
-                        <RotateCcw className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Re-evaluate</span>
+                        <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Details</span>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -239,32 +234,120 @@ export default function RejectedAdsPage() {
           </CardContent>
         </Card>
       )}
-       <Dialog open={isReevaluationDialogOpen} onOpenChange={setIsReevaluationDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {/* Details Modal for Rejected Ads */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={(isOpen) => { if (!isOpen) handleCloseDetailsModal(); else setIsDetailsModalOpen(true); }}>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Re-evaluate Ad: {selectedAd?.title}</DialogTitle>
+            <DialogTitle>Ad Details: {selectedAdForDetails?.title}</DialogTitle>
             <DialogDescription>
-              Review the ad details and provide a reason if you are moving it back to the pending queue. 
-              The original rejection reason was: "{selectedAd?.rejectionReason || 'Not specified'}"
+              Reviewing details of the rejected ad. You can optionally send it back to pending for re-evaluation.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="reevaluation-reason" className="text-right">
-                New Reason (Optional)
-              </Label>
-              <Textarea
-                id="reevaluation-reason"
-                value={reevaluationReason}
-                onChange={(e) => setReevaluationReason(e.target.value)}
-                className="col-span-3"
-                placeholder="Enter reason for re-evaluation (e.g., submitter provided more info)"
-              />
+          
+          {selectedAdForDetails && (
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto !px-2"> {/* Increased max-h */}
+              <div>
+                <h3 className="font-semibold mb-1">Ad Title:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForDetails.title}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Ad Description:</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForDetails.description}</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-1">Ad File:</h3>
+                {selectedAdForDetails.adFileType === 'image' && selectedAdForDetails.adFileUrl && (
+                  <img src={selectedAdForDetails.adFileUrl} alt="Ad file" className="mt-1 border rounded-md max-w-full h-auto object-contain" />
+                )}
+                {selectedAdForDetails.adFileType === 'video' && selectedAdForDetails.adFileUrl && (
+                  <video controls src={selectedAdForDetails.adFileUrl} className="mt-1 border rounded-md max-w-full h-auto object-contain">Your browser does not support the video tag.</video>
+                )}
+                {selectedAdForDetails.adFileType === 'pdf' && selectedAdForDetails.adFileUrl && (
+                  <Button asChild variant="outline" className="mt-1">
+                    <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF <ExternalLink className="inline h-3 w-3 ml-1" /></a>
+                  </Button>
+                )}
+                {(!selectedAdForDetails.adFileType || selectedAdForDetails.adFileType === 'other') && selectedAdForDetails.adFileUrl && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Ad File <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
+                  </p>
+                )}
+                 {!selectedAdForDetails.adFileUrl && <p className="text-sm text-muted-foreground mt-1">No ad file provided.</p>}
+              </div>
+
+              {selectedAdForDetails.supportingDocuments && selectedAdForDetails.supportingDocuments.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-1">Supporting Documents:</h3>
+                  <ul className="list-disc list-inside space-y-1 pl-4">
+                    {selectedAdForDetails.supportingDocuments.map((doc, index) => (
+                      <li key={index} className="text-sm">
+                        <a 
+                          href={getCloudinaryDownloadUrl(doc.url, doc.name)}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-600 hover:underline" 
+                          title={`Download ${doc.name}`}
+                          download={doc.name}
+                        >
+                          {doc.name || `Document ${index + 1}`} <Download className="inline h-3 w-3 ml-1 opacity-75" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <hr className="my-3"/>
+              <div>
+                <h3 className="font-semibold mb-1 text-red-700">Rejection Reason:</h3>
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md whitespace-pre-wrap border border-red-200">{selectedAdForDetails.rejectionReason || "No reason provided."}</p>
+              </div>
+               <div>
+                <h3 className="font-semibold mb-1">Rejected On:</h3>
+                <p className="text-sm text-muted-foreground">{new Date(selectedAdForDetails.rejectionDate).toLocaleString()}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Submitted By:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForDetails.submitterEmail}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Submitted On:</h3>
+                <p className="text-sm text-muted-foreground">{new Date(selectedAdForDetails.submissionDate).toLocaleString()}</p>
+              </div>
+              {selectedAdForDetails.reviewerId && (
+                 <div>
+                    <h3 className="font-semibold mb-1">Rejected By (Reviewer ID):</h3>
+                    <p className="text-sm text-muted-foreground">{selectedAdForDetails.reviewerId}</p>
+                 </div>
+              )}
+              <hr className="my-3"/>
+              <div>
+                <Label htmlFor="newRejectionReason" className="font-semibold text-gray-700">New/Updated Reason for Re-evaluation (Optional):</Label>
+                <Textarea
+                  id="newRejectionReason"
+                  value={newRejectionReasonForReevaluation}
+                  onChange={(e) => setNewRejectionReasonForReevaluation(e.target.value)}
+                  className="mt-1"
+                  placeholder="If sending back to pending, you can update the reason here or leave it as is."
+                  rows={3}
+                />
+                 <p className="text-xs text-gray-500 mt-1">This reason will be saved if you send the ad for re-evaluation.</p>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsReevaluationDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" onClick={handleReevaluationSubmit}>Send to Pending</Button>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+             <Button 
+                variant="outline" 
+                onClick={handleReevaluationSubmit}
+                disabled={!selectedAdForDetails}
+                className="border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" /> Send to Pending
+              </Button>
+            <DialogClose asChild>
+              <Button variant="default">Close</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

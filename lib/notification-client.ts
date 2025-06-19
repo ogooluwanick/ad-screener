@@ -11,7 +11,9 @@ interface UserNotificationData {
 
 export async function sendNotificationToUser(userId: string, messageData: UserNotificationData) {
   // Calls the new Next.js API route for creating notifications
-  const endpoint = '/api/notifications/create'; 
+  const relativeEndpoint = '/api/notifications/create';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL}` : 'http://localhost:3000';
+  const endpoint = `${baseUrl}${relativeEndpoint}`;
   console.log(`[NotificationClient] Attempting to send notification to user ${userId} via ${endpoint}:`, messageData);
   try {
     // The /api/notifications/create route expects userId and messageData fields (title, message, level, etc.) at the top level of the body
