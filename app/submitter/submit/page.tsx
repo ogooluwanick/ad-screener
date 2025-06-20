@@ -385,93 +385,85 @@ export default function SubmitAd() {
           <CardDescription>Fill in your ad details and upload any supporting documents.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="adDetails">Ad Details</TabsTrigger>
-              <TabsTrigger value="supportingDocs">Supporting Documents (Optional)</TabsTrigger>
-            </TabsList>
             <form id="ad-submission-form" onSubmit={handleSubmitForm} className="space-y-6 pt-4">
-              <TabsContent value="adDetails" className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
-                  <Input id="title" name="title" placeholder="Enter ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
-                  {errors.title && <p className="text-sm text-red-600">{errors.title}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea id="description" name="description" placeholder="Describe your advertisement" rows={4} value={formData.description} onChange={handleChange} className={errors.description ? "border-red-500" : ""} />
-                  {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adFile">Ad File *</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    {adFilePreview ? (
-                      <div className="space-y-4">
-                        <img src={adFilePreview} alt="Ad File Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
-                        <Button type="button" variant="outline" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Remove Ad File</Button>
-                      </div>
-                    ) : adFile ? (
-                      <div className="space-y-2">
-                        <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                        <p className="text-sm text-gray-600">Selected file: {adFile.name} ({ (adFile.size / (1024*1024)).toFixed(2)} MB)</p>
-                        <p className="text-xs text-gray-500">Preview not available for this file type.</p>
-                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Change File</Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                        <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
-                        <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p>
-                      </div>
-                    )}
-                    <Input id="adFile" type="file" accept="image/*,video/*,application/pdf" onChange={handleAdFileChange} className="hidden" />
-                  </div>
-                  {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="supportingDocs" className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <div>
-                      <Label htmlFor="supportingDocumentsInput" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to select files</Label>
-                      <p className="text-sm text-gray-500">or drag and drop</p>
+              <div className="space-y-2">
+                <Label htmlFor="title">Title *</Label>
+                <Input id="title" name="title" placeholder="Enter ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
+                {errors.title && <p className="text-sm text-red-600">{errors.title}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea id="description" name="description" placeholder="Describe your advertisement" rows={4} value={formData.description} onChange={handleChange} className={errors.description ? "border-red-500" : ""} />
+                {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adFile">Ad File *</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  {adFilePreview ? (
+                    <div className="space-y-4">
+                      <img src={adFilePreview} alt="Ad File Preview" className="max-w-full h-48 object-contain mx-auto rounded" />
+                      <Button type="button" variant="outline" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Remove Ad File</Button>
                     </div>
-                    <p className="text-xs text-gray-400">PDFs, Docs, Images, etc.</p>
-                    <Input 
-                      id="supportingDocumentsInput" 
-                      type="file" 
-                      multiple 
-                      onChange={handleSupportingDocumentsChange} 
-                      className="hidden" 
-                      accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.txt" // Common document types
-                    />
-                  </div>
-                  {errors.supportingDocuments && <p className="text-sm text-red-600 mt-1">{errors.supportingDocuments}</p>}
+                  ) : adFile ? (
+                    <div className="space-y-2">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                      <p className="text-sm text-gray-600">Selected file: {adFile.name} ({ (adFile.size / (1024*1024)).toFixed(2)} MB)</p>
+                      <p className="text-xs text-gray-500">Preview not available for this file type.</p>
+                      <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setAdFile(null); setAdFilePreview(null); const input = document.getElementById('adFile') as HTMLInputElement; if(input) input.value = ''; }}>Change File</Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                      <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
+                      <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p>
+                    </div>
+                  )}
+                  <Input id="adFile" type="file" accept="image/*,video/*,application/pdf" onChange={handleAdFileChange} className="hidden" />
                 </div>
+                {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>}
+              </div>
 
-                {supportingDocuments.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Selected Supporting Documents:</h4>
-                    <ul className="space-y-2">
-                      {supportingDocuments.map((file, index) => (
-                        <li key={index} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
-                          <div className="text-sm">
-                            <p className="font-medium truncate max-w-xs">{file.name}</p>
-                            <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                          </div>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => removeSupportingDocument(index)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
+            <hr />
+            
+              <div className="space-y-2">
+                <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <div>
+                    <Label htmlFor="supportingDocumentsInput" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to select files</Label>
+                    <p className="text-sm text-gray-500">or drag and drop</p>
                   </div>
-                )}
-              </TabsContent>
+                  <p className="text-xs text-gray-400">PDFs, Docs, Images, etc.</p>
+                  <Input 
+                    id="supportingDocumentsInput" 
+                    type="file" 
+                    multiple 
+                    onChange={handleSupportingDocumentsChange} 
+                    className="hidden" 
+                    accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.txt" // Common document types
+                  />
+                </div>
+                {errors.supportingDocuments && <p className="text-sm text-red-600 mt-1">{errors.supportingDocuments}</p>}
+              </div>
 
+              {supportingDocuments.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium">Selected Supporting Documents:</h4>
+                  <ul className="space-y-2">
+                    {supportingDocuments.map((file, index) => (
+                      <li key={index} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                        <div className="text-sm">
+                          <p className="font-medium truncate max-w-xs">{file.name}</p>
+                          <p className="text-xs text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeSupportingDocument(index)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {/* Affirmation Checkboxes - common to both tabs, placed outside TabsContent but inside form */}
               <div className="space-y-4 pt-4 border-t border-gray-200">
                 <h3 className="text-md font-semibold">Affirmations</h3>
@@ -513,7 +505,6 @@ export default function SubmitAd() {
                 </div>
               </div>
             </form>
-          </Tabs>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>

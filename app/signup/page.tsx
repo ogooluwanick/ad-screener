@@ -216,7 +216,7 @@ export default function SignupPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={submitterType} onValueChange={setSubmitterType} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
                 <TabsTrigger value="business">Business</TabsTrigger>
                 <TabsTrigger value="agency">Agency</TabsTrigger>
               </TabsList>

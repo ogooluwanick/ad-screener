@@ -9,10 +9,10 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto p-2 sm:p-4 flex justify-between items-center">
           <div className="flex items-center">
-            <Shield className="h-8 w-8 text-blue-600 mr-2" />
-            <h1 className="text-2xl font-bold text-gray-900">AdScreener</h1>
+            <Shield className="h-5 sm:h-8 w-5 sm:w-8 text-blue-600 mr-2" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AdScreener</h1>
           </div>
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">
@@ -28,12 +28,12 @@ export default function Home() {
               Pricing
             </a> */}
           </nav>
-          <div className="space-x-4">
+          <div className="space-x-2 sm:space-x-4">
             <Link href="/login">
-              <Button variant="outline">Log In</Button>
+              <Button variant="outline" className="text-sm sm:text-base">Log In</Button>
             </Link>
             <Link href="/signup">
-              <Button className="bg-blue-600 hover:bg-blue-700">Get Started</Button>
+              <Button className="text-sm sm:text-base bg-blue-600 hover:bg-blue-700">Get Started</Button>
             </Link>
           </div>
         </div>
