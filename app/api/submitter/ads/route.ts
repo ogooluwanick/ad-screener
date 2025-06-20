@@ -27,6 +27,9 @@ interface AdDocument {
   assignedReviewerIds: string[];
   // category?: string; // REMOVED
   compliance?: ComplianceData; // Added for compliance checklist
+  mediaType?: string; // Added for dynamic pricing
+  vettingSpeed?: string; // Added for dynamic pricing
+  totalFeeNgn?: number; // Added for dynamic pricing
 }
 
 // Structure for the compliance checklist data
@@ -90,6 +93,12 @@ export async function POST(request: Request) {
     const amountInKoboString = formData.get('amountInKobo') as string | null;
     // const category = formData.get('category') as string | null; // REMOVED
 
+    // New fields for dynamic pricing
+    const mediaType = formData.get('mediaType') as string | null;
+    const vettingSpeed = formData.get('vettingSpeed') as string | null;
+    const totalFeeNgnString = formData.get('totalFeeNgn') as string | null;
+
+
     console.log('[API /submitter/ads] Raw form data values:');
     console.log('  Title:', title);
     console.log('  Description:', description ? description.substring(0, 50) + '...' : 'N/A');
@@ -105,19 +114,28 @@ export async function POST(request: Request) {
     });
     console.log('  Amount in Kobo String:', amountInKoboString);
     // console.log('  Category:', category); // REMOVED
+    console.log('  Media Type:', mediaType);
+    console.log('  Vetting Speed:', vettingSpeed);
+    console.log('  Total Fee NGN String:', totalFeeNgnString);
 
 
-    if (!title || !description || !paymentReference || !adFile || !amountInKoboString) {
-      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'Ref:', !!paymentReference, 'AdFile:', !!adFile, 'AmountStr:', !!amountInKoboString);
-      return NextResponse.json({ message: 'Missing required fields: title, description, paymentReference, adFile, or amountInKobo.' }, { status: 400 });
+    if (!title || !description || !paymentReference || !adFile || !amountInKoboString || !mediaType || !vettingSpeed || !totalFeeNgnString) {
+      console.error('[API /submitter/ads] Missing required fields. Title:', !!title, 'Desc:', !!description, 'Ref:', !!paymentReference, 'AdFile:', !!adFile, 'AmountStr:', !!amountInKoboString, 'MediaType:', !!mediaType, 'VettingSpeed:', !!vettingSpeed, 'TotalFeeNgnStr:', !!totalFeeNgnString);
+      return NextResponse.json({ message: 'Missing required fields: title, description, paymentReference, adFile, amountInKobo, mediaType, vettingSpeed, or totalFeeNgn.' }, { status: 400 });
     }
 
     const amountInKobo = parseInt(amountInKoboString, 10);
+    const totalFeeNgn = parseFloat(totalFeeNgnString);
     if (isNaN(amountInKobo) || amountInKobo <= 0) {
       console.error('[API /submitter/ads] Invalid amountInKobo:', amountInKoboString);
       return NextResponse.json({ message: 'Invalid amountInKobo provided.' }, { status: 400 });
     }
+    if (isNaN(totalFeeNgn) || totalFeeNgn < 0) { // Fee can be 0 if it's free, but not negative
+      console.error('[API /submitter/ads] Invalid totalFeeNgn:', totalFeeNgnString);
+      return NextResponse.json({ message: 'Invalid totalFeeNgn provided.' }, { status: 400 });
+    }
     console.log('[API /submitter/ads] Parsed amountInKobo:', amountInKobo);
+    console.log('[API /submitter/ads] Parsed totalFeeNgn:', totalFeeNgn);
 
     // --- Ad File handling with Cloudinary ---
     let adFileUploadResult;
@@ -205,6 +223,9 @@ export async function POST(request: Request) {
       submittedAt: new Date(),
       assignedReviewerIds: [],
       // category: category, // REMOVED
+      mediaType: mediaType,
+      vettingSpeed: vettingSpeed,
+      totalFeeNgn: totalFeeNgn,
     };
     console.log('[API /submitter/ads] Prepared ad data for insertion:', JSON.stringify(newAdData));
 

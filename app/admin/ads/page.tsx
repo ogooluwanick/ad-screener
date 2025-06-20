@@ -11,8 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Eye, Download, ExternalLink, FileText, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox"; // Added for multi-select
+import { AlertTriangle, Edit, Eye, Download, ExternalLink, FileText, Clock, CheckCircle, XCircle, Search } from "lucide-react"; // Added Search
 import { toast } from "@/hooks/use-toast";
+
+interface User {
+  _id: string;
+  email: string;
+  role: string;
+  name?: string; // Optional: if available and useful
+}
 
 interface Ad {
   _id: string;
@@ -24,7 +32,7 @@ interface Ad {
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: string;
   reviewedAt?: string;
-  reviewerId?: string;
+  reviewerId?: string; // This might become deprecated or represent the first/primary reviewer
   rejectionReason?: string;
   assignedReviewerIds?: string[];
   adFileType?: string;
@@ -34,6 +42,9 @@ interface Ad {
     url: string;
   }>;
   compliance?: any;
+  mediaType?: string;
+  vettingSpeed?: string;
+  totalFeeNgn?: number;
 }
 
 interface EditAdData {
@@ -41,12 +52,16 @@ interface EditAdData {
   description: string;
   status: string;
   rejectionReason: string;
-  reviewerId: string;
+  // reviewerId: string; // Will be replaced by assignedReviewerIds
+  assignedReviewerIds: string[];
 }
 
 const AdminAdsPage = () => {
   const { data: session, status: sessionStatus } = useSession();
   const [ads, setAds] = useState<Ad[]>([]);
+  const [allReviewers, setAllReviewers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState(""); // For reviewer search
+  const [filteredReviewers, setFilteredReviewers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
@@ -57,21 +72,42 @@ const AdminAdsPage = () => {
     description: "",
     status: "",
     rejectionReason: "",
-    reviewerId: "",
+    // reviewerId: "",
+    assignedReviewerIds: [],
   });
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const usersData: User[] = await response.json();
+      const reviewers = usersData.filter((user: User) => user.role === 'reviewer' || user.role === 'admin' || user.role === 'superadmin'); // Admins can also review
+      setAllReviewers(reviewers);
+      setFilteredReviewers(reviewers); // Initialize filtered list
+    } catch (err: unknown) {
+      console.error("Failed to fetch users:", err);
+      toast({
+        title: "Error",
+        description: "Could not load reviewers list.",
+        variant: "destructive",
+      });
+    }
+  }, []);
 
   const fetchAds = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/ads');
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData: { message?: string } = await response.json();
         throw new Error(errorData.message || `Error: ${response.status}`);
       }
-      const data = await response.json();
+      const data: Ad[] = await response.json();
       setAds(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch ads:", err);
       setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
@@ -82,6 +118,7 @@ const AdminAdsPage = () => {
   useEffect(() => {
     if (sessionStatus === "authenticated" && (session?.user?.role === 'admin' || session?.user?.role === 'superadmin')) {
       fetchAds();
+      fetchUsers(); // Fetch users/reviewers
     } else if (sessionStatus === "unauthenticated") {
       setError("Access Denied. Please log in as an admin.");
       setLoading(false);
@@ -89,7 +126,7 @@ const AdminAdsPage = () => {
       setError("Access Denied. You do not have permission to view this page.");
       setLoading(false);
     }
-  }, [session, sessionStatus, fetchAds]);
+  }, [session, sessionStatus, fetchAds, fetchUsers]); // Added fetchUsers
 
   const handleEditAd = (ad: Ad) => {
     setSelectedAd(ad);
@@ -98,8 +135,11 @@ const AdminAdsPage = () => {
       description: ad.description,
       status: ad.status,
       rejectionReason: ad.rejectionReason || "",
-      reviewerId: ad.reviewerId || "",
+      // reviewerId: ad.reviewerId || "", // Keep for now if needed for backward compatibility or single reviewer display
+      assignedReviewerIds: ad.assignedReviewerIds || [],
     });
+    setSearchTerm(""); // Reset search term for reviewers
+    setFilteredReviewers(allReviewers); // Reset filtered reviewers
     setIsEditModalOpen(true);
   };
 
@@ -113,11 +153,13 @@ const AdminAdsPage = () => {
     setIsEditModalOpen(false);
     setEditData({
       title: "",
-      description: "",
-      status: "",
-      rejectionReason: "",
-      reviewerId: "",
-    });
+    description: "",
+    status: "",
+    rejectionReason: "",
+    // reviewerId: "",
+    assignedReviewerIds: [],
+  });
+  setSearchTerm("");
   };
 
   const handleCloseDetailsModal = () => {
@@ -271,17 +313,27 @@ const AdminAdsPage = () => {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Submitter</TableHead>
+                  <TableHead>Media Type</TableHead>
+                  <TableHead>Vetting Speed</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
-                  <TableHead>Reviewed</TableHead>
+                  {/* <TableHead>Reviewed</TableHead> // Combined with status or details */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ads.map((ad) => (
                   <TableRow key={ad._id}>
-                    <TableCell className="font-medium">{ad.title}</TableCell>
+                    <TableCell className="font-medium truncate max-w-xs" title={ad.title}>{ad.title}</TableCell>
                     <TableCell>{ad.submitterEmail}</TableCell>
+                    <TableCell className="capitalize">{ad.mediaType || 'N/A'}</TableCell>
+                    <TableCell className="capitalize">
+                      {ad.vettingSpeed === 'normal' ? 'Normal' : 
+                       ad.vettingSpeed === '16hr' ? '16hr Accel.' :
+                       ad.vettingSpeed === '8hr' ? '8hr Accel.' :
+                       ad.vettingSpeed === '4hr' ? '4hr Accel.' :
+                       ad.vettingSpeed || 'N/A'}
+                    </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(ad.status)}`}>
                         {getStatusIcon(ad.status)}
@@ -289,9 +341,9 @@ const AdminAdsPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>{new Date(ad.submittedAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       {ad.reviewedAt ? new Date(ad.reviewedAt).toLocaleDateString() : "Not reviewed"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right space-x-2">
                       <Button 
                         variant="outline" 
@@ -331,7 +383,7 @@ const AdminAdsPage = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto !px-2">
             <div className="space-y-2">
               <Label htmlFor="title">Ad Title</Label>
               <Input
@@ -367,7 +419,66 @@ const AdminAdsPage = () => {
               </Select>
             </div>
             
+            {/* New Reviewer Assignment Section */}
             <div className="space-y-2">
+              <Label htmlFor="assignReviewers">Assign Reviewer(s)</Label>
+              <div className="relative">
+                <Input
+                  id="reviewerSearch"
+                  type="text"
+                  placeholder="Search reviewers by email or name..."
+                  value={searchTerm}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSearchTerm(e.target.value);
+                    const term = e.target.value.toLowerCase();
+                    setFilteredReviewers(
+                      allReviewers.filter(
+                        (r: User) =>
+                          r.email.toLowerCase().includes(term) ||
+                          (r.name && r.name.toLowerCase().includes(term))
+                      )
+                    );
+                  }}
+                  className="pl-8"
+                />
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
+                {filteredReviewers.length > 0 ? (
+                  filteredReviewers.map((reviewer: User) => (
+                    <div key={reviewer._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`reviewer-${reviewer._id}`}
+                        checked={editData.assignedReviewerIds.includes(reviewer._id)}
+                        onCheckedChange={(checked: boolean | 'indeterminate') => {
+                          setEditData((prev: EditAdData) => {
+                            const newAssignedReviewerIds = checked === true
+                              ? [...prev.assignedReviewerIds, reviewer._id]
+                              : prev.assignedReviewerIds.filter((id) => id !== reviewer._id);
+                            return { ...prev, assignedReviewerIds: newAssignedReviewerIds };
+                          });
+                        }}
+                      />
+                      <Label htmlFor={`reviewer-${reviewer._id}`} className="font-normal">
+                        {reviewer.name || reviewer.email} ({reviewer.email})
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center">No reviewers found matching your search.</p>
+                )}
+                 {allReviewers.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center">No reviewers available.</p>
+                )}
+              </div>
+              {editData.assignedReviewerIds.length > 0 && (
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">Selected:</span> {editData.assignedReviewerIds.length} reviewer(s)
+                </div>
+              )}
+            </div>
+            
+            {/* <div className="space-y-2"> // Old Reviewer ID field, replaced by above
               <Label htmlFor="reviewerId">Reviewer ID</Label>
               <Input
                 id="reviewerId"
@@ -375,7 +486,7 @@ const AdminAdsPage = () => {
                 onChange={(e) => setEditData({ ...editData, reviewerId: e.target.value })}
                 placeholder="Reviewer ID (optional)"
               />
-            </div>
+            </div> */}
             
             {editData.status === "rejected" && (
               <div className="space-y-2">
@@ -422,6 +533,32 @@ const AdminAdsPage = () => {
                 <h3 className="font-semibold mb-1">Ad Description:</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAd.description}</p>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-1">Media Type:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">{selectedAd.mediaType || "N/A"}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Vetting Speed:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {selectedAd.vettingSpeed === 'normal' ? 'Normal' : 
+                     selectedAd.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
+                     selectedAd.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
+                     selectedAd.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
+                     selectedAd.vettingSpeed || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedAd.totalFeeNgn !== undefined && selectedAd.totalFeeNgn !== null && (
+                 <div>
+                    <h3 className="font-semibold mb-1">Total Fee Paid:</h3>
+                    <p className="text-sm text-muted-foreground">
+                      ₦{selectedAd.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+              )}
               
               <div>
                 <h3 className="font-semibold mb-1">Ad File:</h3>
@@ -497,12 +634,23 @@ const AdminAdsPage = () => {
                 </div>
               )}
               {selectedAd.reviewerId && (
-                <div>
-                  <h3 className="font-semibold mb-1">Reviewed By (ID):</h3>
-                  <p className="text-sm text-muted-foreground">{selectedAd.reviewerId}</p>
-                </div>
-              )}
-              {selectedAd.rejectionReason && (
+              <div>
+                <h3 className="font-semibold mb-1">Reviewed By (Legacy ID):</h3>
+                <p className="text-sm text-muted-foreground">{selectedAd.reviewerId || "N/A"}</p>
+              </div>
+            )}
+            {selectedAd.assignedReviewerIds && selectedAd.assignedReviewerIds.length > 0 && (
+               <div>
+                 <h3 className="font-semibold mb-1">Assigned Reviewer(s):</h3>
+                 <ul className="list-disc list-inside pl-4">
+                   {selectedAd.assignedReviewerIds.map(id => {
+                     const reviewer = allReviewers.find(r => r._id === id);
+                     return <li key={id} className="text-sm text-muted-foreground">{reviewer ? `${reviewer.name || reviewer.email} (${reviewer.email})` : `ID: ${id}`}</li>;
+                   })}
+                 </ul>
+               </div>
+            )}
+            {selectedAd.rejectionReason && (
                 <div>
                   <h3 className="font-semibold mb-1">Rejection Reason:</h3>
                   <p className="text-sm text-muted-foreground">{selectedAd.rejectionReason}</p>
@@ -521,4 +669,4 @@ const AdminAdsPage = () => {
   );
 };
 
-export default AdminAdsPage; 
+export default AdminAdsPage;

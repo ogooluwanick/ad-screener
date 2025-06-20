@@ -233,7 +233,8 @@ export default function PendingAdsPage() {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Submitter</TableHead>
-                  <TableHead className="hidden md:table-cell">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell">Media Type</TableHead>
+                  <TableHead className="hidden lg:table-cell">Vetting Speed</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -241,14 +242,17 @@ export default function PendingAdsPage() {
               <TableBody>
                 {pendingAds.map((ad) => (
                   <TableRow key={ad.id}>
-                    <TableCell className="font-medium">{ad.title}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[200px] sm:max-w-xs" title={ad.title}>{ad.title}</TableCell>
                     <TableCell>
-                      {/* Link to profile removed, displaying name/email as text */}
                       {ad.submitterName || ad.submitterEmail}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {/* Link to profile removed, displaying email as text */}
-                      {ad.submitterEmail}
+                    <TableCell className="hidden lg:table-cell capitalize">{ad.mediaType || 'N/A'}</TableCell>
+                    <TableCell className="hidden lg:table-cell capitalize">
+                      {ad.vettingSpeed === 'normal' ? 'Normal' : 
+                       ad.vettingSpeed === '16hr' ? '16hr Accel.' :
+                       ad.vettingSpeed === '8hr' ? '8hr Accel.' :
+                       ad.vettingSpeed === '4hr' ? '4hr Accel.' :
+                       ad.vettingSpeed || 'N/A'}
                     </TableCell>
                     <TableCell>{new Date(ad.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
@@ -293,6 +297,32 @@ export default function PendingAdsPage() {
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForReview.description}</p>
               </div>
               {/* REMOVED Target URL display */}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-1">Media Type:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">{selectedAdForReview.mediaType || "N/A"}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Vetting Speed:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {selectedAdForReview.vettingSpeed === 'normal' ? 'Normal' : 
+                     selectedAdForReview.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
+                     selectedAdForReview.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
+                     selectedAdForReview.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
+                     selectedAdForReview.vettingSpeed || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedAdForReview.totalFeeNgn !== undefined && selectedAdForReview.totalFeeNgn !== null && (
+                 <div>
+                    <h3 className="font-semibold mb-1">Total Fee Paid by Submitter:</h3>
+                    <p className="text-sm text-muted-foreground">
+                      ₦{selectedAdForReview.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+              )}
               
               <div>
                 <h3 className="font-semibold mb-1">Ad File:</h3>

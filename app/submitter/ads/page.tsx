@@ -26,6 +26,9 @@ interface Ad {
   status: "pending" | "approved" | "rejected"
   rejectionReason?: string
   compliance?: ComplianceFormData // Added for compliance checklist
+  mediaType?: string;
+  vettingSpeed?: string;
+  totalFeeNgn?: number;
 }
 
 // Forward declaration for ComplianceFormData if not imported directly
@@ -106,6 +109,9 @@ export default function SubmitterAds() {
             status: ad.status,
             rejectionReason: ad.rejectionReason,
             compliance: ad.compliance, // Added
+            mediaType: ad.mediaType,
+            vettingSpeed: ad.vettingSpeed,
+            totalFeeNgn: ad.totalFeeNgn,
           };
         });
         setAds(formattedAds)
@@ -204,6 +210,8 @@ export default function SubmitterAds() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead className="hidden lg:table-cell">Media Type</TableHead>
+                  <TableHead className="hidden lg:table-cell">Vetting Speed</TableHead>
                   <TableHead className="hidden md:table-cell">Submission Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -213,7 +221,9 @@ export default function SubmitterAds() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={`skeleton-${index}`}>
-                      <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-2/5" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                       <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
@@ -221,14 +231,22 @@ export default function SubmitterAds() {
                   ))
                 ) : filteredAds.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       No ads found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredAds.map((ad) => (
                     <TableRow key={ad._id}>
-                      <TableCell className="font-medium">{ad.title}</TableCell>
+                      <TableCell className="font-medium truncate max-w-[150px] sm:max-w-xs" title={ad.title}>{ad.title}</TableCell>
+                      <TableCell className="hidden lg:table-cell capitalize">{ad.mediaType || 'N/A'}</TableCell>
+                      <TableCell className="hidden lg:table-cell capitalize">
+                        {ad.vettingSpeed === 'normal' ? 'Normal' : 
+                         ad.vettingSpeed === '16hr' ? '16hr Accel.' :
+                         ad.vettingSpeed === '8hr' ? '8hr Accel.' :
+                         ad.vettingSpeed === '4hr' ? '4hr Accel.' :
+                         ad.vettingSpeed || 'N/A'}
+                      </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {new Date(ad.submissionDate).toLocaleDateString()}
                       </TableCell>
@@ -304,6 +322,32 @@ export default function SubmitterAds() {
               <h3 className="font-semibold">Description</h3>
               <p className="text-sm text-gray-600">{selectedAd?.description}</p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-1">Media Type:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">{selectedAd?.mediaType || "N/A"}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Vetting Speed:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {selectedAd?.vettingSpeed === 'normal' ? 'Normal' : 
+                     selectedAd?.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
+                     selectedAd?.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
+                     selectedAd?.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
+                     selectedAd?.vettingSpeed || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+            {selectedAd?.totalFeeNgn !== undefined && selectedAd?.totalFeeNgn !== null && (
+                <div>
+                  <h3 className="font-semibold mb-1">Total Fee Paid:</h3>
+                  <p className="text-sm text-muted-foreground">
+                    ₦{selectedAd.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+            )}
 
             {selectedAd?.supportingDocuments && selectedAd.supportingDocuments.length > 0 && (
               <div>

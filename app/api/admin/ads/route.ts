@@ -24,6 +24,9 @@ interface AdDocument {
     url: string;
   }>;
   compliance?: any;
+  mediaType?: string;
+  vettingSpeed?: string;
+  totalFeeNgn?: number;
 }
 
 export async function GET(request: Request) {
@@ -62,6 +65,9 @@ export async function GET(request: Request) {
       adFileUrl: ad.adFileUrl,
       supportingDocuments: ad.supportingDocuments,
       compliance: ad.compliance,
+      mediaType: ad.mediaType,
+      vettingSpeed: ad.vettingSpeed,
+      totalFeeNgn: ad.totalFeeNgn,
     }));
 
     return NextResponse.json(ads, { status: 200 });

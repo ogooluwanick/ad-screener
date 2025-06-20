@@ -18,6 +18,9 @@ export interface AdDocumentForListing {
   status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
   supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
+  mediaType?: string; // Added
+  vettingSpeed?: string; // Added
+  totalFeeNgn?: number; // Added
   reviewedAt?: Date;
   reviewerId?: string;
   rejectionReason?: string;
@@ -37,6 +40,9 @@ export interface PendingAdListItem {
   adFileType?: 'image' | 'video' | 'pdf' | 'other'; // ADDED
   supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Added
   submitterName?: string;
+  mediaType?: string; // Added
+  vettingSpeed?: string; // Added
+  totalFeeNgn?: number; // Added
 }
 
 // Basic User interface for fetching name
@@ -111,6 +117,9 @@ export async function GET(request: Request) {
         adFilePublicId: ad.adFilePublicId, // ADDED
         adFileType: fileType, // ADDED
         supportingDocuments: ad.supportingDocuments, // Added
+        mediaType: ad.mediaType, // Added
+        vettingSpeed: ad.vettingSpeed, // Added
+        totalFeeNgn: ad.totalFeeNgn, // Added
       };
     });
 

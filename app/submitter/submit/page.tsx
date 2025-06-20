@@ -4,12 +4,13 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { AlertCircle, Upload } from "lucide-react"
+import { AlertCircle, Upload, Tv, Smartphone, CheckCircle2 } from "lucide-react" // Added Tv, Smartphone, CheckCircle2
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group" // Added for pricing options
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // No longer used directly
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox" // Added Checkbox
@@ -17,6 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" 
 import { X } from "lucide-react" // For remove button
 // import { appConfig } from "@/lib/app_config" // Will be replaced by useAdCategories
 // import { useAdCategories } from "@/hooks/use-ad-categories" // REMOVED
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select" // Added for vetting speed
 import {
   Dialog,
   DialogContent,
@@ -28,7 +36,30 @@ import { toast } from "@/hooks/use-toast"
 import Paystack from "@/components/Paystack" // This is the new PaystackButton-based component
 // import axios from "axios"; // Not strictly needed if using fetch for FormData
 
-const AD_SUBMISSION_FEE_USD = 50;
+// Pricing constants in NGN (kobo for Paystack)
+const NORMAL_VETTING_FEES = {
+  traditional: 35000, // N35k
+  digital: 20000,     // N20k
+};
+
+const ACCELERATED_FEES_ADDITIONAL = {
+  "16hr": {
+    traditional: 250000, // N250k
+    digital: 100000,     // N100k
+  },
+  "8hr": {
+    traditional: 400000, // N400k
+    digital: 150000,     // N150k
+  },
+  "4hr": {
+    traditional: 600000, // N600k
+    digital: 250000,     // N250k
+  },
+};
+
+type MediaType = "traditional" | "digital" | "";
+type VettingSpeed = "normal" | "16hr" | "8hr" | "4hr" | "";
+
 
 export default function SubmitAd() {
   const router = useRouter()
@@ -51,11 +82,14 @@ export default function SubmitAd() {
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false) // For Paystack UI interaction
   const [isSubmissionComplete, setIsSubmissionComplete] = useState(false)
 
-  const [currentNgnRate, setCurrentNgnRate] = useState<number | null>(null)
+  // Dynamic Pricing State
+  const [mediaType, setMediaType] = useState<MediaType>("")
+  const [vettingSpeed, setVettingSpeed] = useState<VettingSpeed>("normal")
   const [calculatedFeeInNgn, setCalculatedFeeInNgn] = useState<number | null>(null)
   const [calculatedFeeInKobo, setCalculatedFeeInKobo] = useState<number | null>(null)
-  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null)
-  const [isFetchingRate, setIsFetchingRate] = useState(true)
+  // const [currentNgnRate, setCurrentNgnRate] = useState<number | null>(null) // No longer needed
+  // const [exchangeRateError, setExchangeRateError] = useState<string | null>(null) // No longer needed
+  // const [isFetchingRate, setIsFetchingRate] = useState(true) // No longer needed
 
   // Affirmation states
   const [affirmation1, setAffirmation1] = useState(false)
@@ -67,50 +101,33 @@ export default function SubmitAd() {
   const MAX_SUPPORTING_DOCS = 5;
   const MAX_SUPPORTING_DOC_SIZE_MB = 2; // Max 2MB per supporting document
 
+  // Calculate fee whenever mediaType or vettingSpeed changes
   useEffect(() => {
-    const fetchRateAndSetFee = async () => {
-      setIsFetchingRate(true)
-      setExchangeRateError(null)
-      try {
-        const response = await fetch("/api/exchange-rate")
-        const data = await response.json()
-        if (!response.ok || typeof data.rate !== 'number') {
-          throw new Error(data.message || "Failed to fetch valid exchange rate.")
+    if (mediaType && vettingSpeed) { // Ensure both are selected
+      let totalFeeNgn = 0;
+      const baseFee = NORMAL_VETTING_FEES[mediaType];
+      totalFeeNgn += baseFee;
+
+      // Check if vettingSpeed is a key for accelerated fees
+      if (vettingSpeed !== "normal" && ACCELERATED_FEES_ADDITIONAL.hasOwnProperty(vettingSpeed)) {
+        // Ensure vettingSpeed is a valid key before indexing
+        // The hasOwnProperty check already ensures vettingSpeed is one of "16hr", "8hr", "4hr"
+        const validVettingSpeedKey = vettingSpeed as keyof typeof ACCELERATED_FEES_ADDITIONAL;
+        const acceleratedFeeTier = ACCELERATED_FEES_ADDITIONAL[validVettingSpeedKey];
+        
+        if (acceleratedFeeTier && acceleratedFeeTier[mediaType]) {
+          totalFeeNgn += acceleratedFeeTier[mediaType];
         }
-        const rate = data.rate
-        setCurrentNgnRate(rate)
-        const feeNgn = AD_SUBMISSION_FEE_USD * rate
-        setCalculatedFeeInNgn(feeNgn)
-        setCalculatedFeeInKobo(Math.round(feeNgn * 100))
-        if (data.source === 'fallback') {
-          toast({
-            title: "Exchange Rate Notice",
-            description: `Using fallback exchange rate: 1 USD = ${rate.toLocaleString()} NGN. ${data.message || ''}`,
-            variant: "default",
-            duration: 7000,
-          })
-        }
-      } catch (err: any) {
-        console.error("Error fetching exchange rate:", err)
-        const errorMessage = err.message || "Could not load current exchange rate."
-        setExchangeRateError(errorMessage)
-        const fallbackRateOnError = 1500; 
-        setCurrentNgnRate(fallbackRateOnError);
-        const feeNgn = AD_SUBMISSION_FEE_USD * fallbackRateOnError;
-        setCalculatedFeeInNgn(feeNgn);
-        setCalculatedFeeInKobo(Math.round(feeNgn * 100));
-        toast({
-          title: "Exchange Rate Error",
-          description: `${errorMessage} A default rate of 1 USD = ${fallbackRateOnError.toLocaleString()} NGN will be used.`,
-          variant: "destructive",
-          duration: 7000,
-        })
-      } finally {
-        setIsFetchingRate(false)
       }
+      setCalculatedFeeInNgn(totalFeeNgn);
+      setCalculatedFeeInKobo(totalFeeNgn * 100);
+    } else {
+      // Reset fees if media type is not selected
+      setCalculatedFeeInNgn(null);
+      setCalculatedFeeInKobo(null);
     }
-    fetchRateAndSetFee()
-  }, [])
+  }, [mediaType, vettingSpeed]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -202,6 +219,9 @@ export default function SubmitAd() {
     // REMOVED targetUrl validation
     // REMOVED category validation
     if (!adFile) newErrors.adFile = "Ad File is required" // RENAMED from imageFile / errors.image
+    if (!mediaType) newErrors.mediaType = "Media type is required."
+    if (!vettingSpeed) newErrors.vettingSpeed = "Vetting speed is required."
+
 
     // Affirmation validation
     if (!affirmation1) newErrors.affirmation1 = "You must affirm accuracy and compliance."
@@ -214,14 +234,23 @@ export default function SubmitAd() {
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return;
-
-    if (isFetchingRate) {
-        toast({title: "Please wait", description: "Exchange rate is currently loading.", variant: "default"});
-        return;
+    if (!validateForm()) {
+      // Scroll to the first error
+      const firstErrorKey = Object.keys(errors).find(key => errors[key]);
+      if (firstErrorKey) {
+        const errorElement = document.getElementById(firstErrorKey) || document.getElementsByName(firstErrorKey)[0];
+        errorElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      toast({title: "Validation Error", description: "Please fill in all required fields.", variant: "destructive"});
+      return;
     }
-    if (!calculatedFeeInKobo) {
-        toast({title: "Payment Error", description: "Cannot proceed: Ad fee calculation failed. Please refresh or contact support.", variant: "destructive"});
+
+    // if (isFetchingRate) { // No longer fetching rate
+    //     toast({title: "Please wait", description: "Exchange rate is currently loading.", variant: "default"});
+    //     return;
+    // }
+    if (!calculatedFeeInKobo || calculatedFeeInNgn === null) { // Check both NGN and Kobo
+        toast({title: "Pricing Error", description: "Cannot proceed: Ad fee calculation failed. Please select media type and vetting speed, or contact support.", variant: "destructive"});
         return;
     }
     setIsPaymentModalOpen(true)
@@ -255,6 +284,13 @@ export default function SubmitAd() {
       supportingDocuments.forEach(file => {
         adUploadData.append("supportingDocuments", file);
       });
+
+      // Append pricing details
+      adUploadData.append("mediaType", mediaType);
+      adUploadData.append("vettingSpeed", vettingSpeed);
+      if (calculatedFeeInNgn !== null) { // Ensure it's not null before appending
+        adUploadData.append("totalFeeNgn", calculatedFeeInNgn.toString());
+      }
       
       if (!paymentResult || typeof paymentResult.reference !== 'string') {
         console.error("[SubmitAdPage] Invalid payment reference object from Paystack:", paymentResult);
@@ -362,22 +398,21 @@ export default function SubmitAd() {
 
       <Alert className="border-blue-200 bg-blue-50">
         <AlertCircle className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Submission Fee Required</AlertTitle>
+        <AlertTitle className="text-blue-800">Submission Fee</AlertTitle>
         <AlertDescription className="text-blue-700">
-          {isFetchingRate ? "Fetching current exchange rate..." :
-            calculatedFeeInNgn ?
-            `A ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (equivalent to $${AD_SUBMISSION_FEE_USD.toFixed(2)}) submission fee is required.` :
-            `A $${AD_SUBMISSION_FEE_USD.toFixed(2)} submission fee is required. ${exchangeRateError || "Could not determine NGN equivalent."}`
+          {mediaType && calculatedFeeInNgn !== null ?
+            `The calculated submission fee is ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` :
+            "Please select Media Type and Vetting Speed to see the submission fee."
           }
         </AlertDescription>
       </Alert>
-      {exchangeRateError && !isFetchingRate && (
+      {/* {exchangeRateError && !isFetchingRate && ( // This section is no longer needed
          <Alert variant="default">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertTitle className="text-yellow-800">Exchange Rate Issue</AlertTitle>
             <AlertDescription className="text-yellow-700">{exchangeRateError} A default rate will be used for payment if possible.</AlertDescription>
         </Alert>
-      )}
+      )} */}
 
       <Card>
         <CardHeader>
@@ -422,10 +457,10 @@ export default function SubmitAd() {
                 </div>
                 {errors.adFile && <p className="text-sm text-red-600">{errors.adFile}</p>}
               </div>
-
+              
             <hr />
             
-              <div className="space-y-2">
+              <div className="space-y-2 pt-4">
                 <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -464,6 +499,87 @@ export default function SubmitAd() {
                   </ul>
                 </div>
               )}
+
+                          {/* Dynamic Pricing Options */}
+<div className="space-y-4 pt-4">
+                <h3 className="text-md font-semibold">Vetting Options</h3>
+                <div className="space-y-2">
+                  <Label>Media Type *</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button
+                      type="button"
+                      variant={mediaType === "traditional" ? "default" : "outline"}
+                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "traditional" ? "border-blue-600 ring-2 ring-blue-600" : "border-gray-300"}`}
+                      onClick={() => {
+                        setMediaType("traditional");
+                        if (errors.mediaType) setErrors(prev => ({...prev, mediaType: undefined}));
+                      }}
+                    >
+                      {mediaType === "traditional" && <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-white" />}
+                      <Tv className="h-10 w-10 mb-2 !mt-0" size={40} />
+                      <span className="text-sm font-medium">Traditional Media</span>
+                      <span className={`text-xs ${mediaType === "traditional" ? "text-white" : "text-muted-foreground"}`}>e.g., TV, Radio, Print</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={mediaType === "digital" ? "default" : "outline"}
+                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "digital" ? "border-blue-600 ring-2 ring-blue-600" : "border-gray-300"}`}
+                      onClick={() => {
+                        setMediaType("digital");
+                        if (errors.mediaType) setErrors(prev => ({...prev, mediaType: undefined}));
+                      }}
+                    >
+                      {mediaType === "digital" && <CheckCircle2 className="absolute top-2 right-2 h-5 w-5 text-white" />}
+                      <Smartphone className="h-10 w-10 mb-2 !mt-0" size={40}  />
+                      <span className="text-sm font-medium">Digital Media</span>
+                    <span className={`text-xs ${mediaType === "digital" ? "text-white" : "text-muted-foreground"}`}>e.g., Online, Social</span>
+                    </Button>
+                  </div>
+                  {errors.mediaType && <p className="text-sm text-red-600 mt-1">{errors.mediaType}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="vettingSpeed">Vetting Speed *</Label>
+                  <Select
+                    name="vettingSpeed"
+                    value={vettingSpeed}
+                    onValueChange={(value: VettingSpeed) => {
+                      setVettingSpeed(value);
+                       if (errors.vettingSpeed) setErrors(prev => ({...prev, vettingSpeed: undefined}));
+                    }}
+                  >
+                    <SelectTrigger id="vettingSpeed" className={errors.vettingSpeed ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select vetting speed" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal Vetting</SelectItem>
+                      <SelectItem value="16hr">Accelerated: Within 16 hours</SelectItem>
+                      <SelectItem value="8hr">Accelerated: Within 8 hours</SelectItem>
+                      <SelectItem value="4hr">Accelerated: Within 4 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.vettingSpeed && <p className="text-sm text-red-600">{errors.vettingSpeed}</p>}
+                </div>
+                {mediaType && vettingSpeed && calculatedFeeInNgn !== null && (
+                  <Alert variant="default" className="mt-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Calculated Fee</AlertTitle>
+                    <AlertDescription>
+                      Selected: {mediaType === "traditional" ? "Traditional" : "Digital"} Media, Vetting Speed: {
+                        vettingSpeed === "normal" ? "Normal" :
+                        vettingSpeed === "16hr" ? "16 Hours Accelerated" :
+                        vettingSpeed === "8hr" ? "8 Hours Accelerated" :
+                        "4 Hours Accelerated"
+                      }.
+                      <br />
+                      Total Fee: <strong>₦{calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            
+            <hr />
+            
               {/* Affirmation Checkboxes - common to both tabs, placed outside TabsContent but inside form */}
               <div className="space-y-4 pt-4 border-t border-gray-200">
                 <h3 className="text-md font-semibold">Affirmations</h3>
@@ -508,9 +624,20 @@ export default function SubmitAd() {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-          <Button type="submit" form="ad-submission-form" className="bg-blue-600 hover:bg-blue-700" 
-            disabled={isSubmitting || isPaymentProcessing || isFetchingRate || !calculatedFeeInKobo}>
-            {isFetchingRate ? "Loading Rate..." : (isSubmitting ? "Submitting Ad..." : (isPaymentProcessing ? "Processing Payment..." : "Pay Fee & Submit"))}
+          <Button 
+            type="submit" 
+            form="ad-submission-form" 
+            className="bg-blue-600 hover:bg-blue-700" 
+            disabled={isSubmitting || isPaymentProcessing || !calculatedFeeInKobo || !mediaType /* Disable if rate not calculated or media type not chosen */}
+          >
+            {/* {isFetchingRate ? "Loading Rate..." : // No longer fetching rate
+              (isSubmitting ? "Submitting Ad..." : 
+              (isPaymentProcessing ? "Processing Payment..." : "Pay Fee & Submit"))
+            } */}
+            {isSubmitting ? "Submitting Ad..." : 
+              (isPaymentProcessing ? "Processing Payment..." : 
+              (calculatedFeeInNgn !== null ? `Pay ₦${calculatedFeeInNgn.toLocaleString()} & Submit` : "Proceed to Payment"))
+            }
           </Button>
         </CardFooter>
       </Card>
@@ -533,9 +660,9 @@ export default function SubmitAd() {
           <DialogHeader>
             <DialogTitle>Confirm & Pay Submission Fee</DialogTitle>
             <DialogDescription>
-             {calculatedFeeInNgn ? 
-                `Review your ad details and proceed to payment. A fee of ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (USD $${AD_SUBMISSION_FEE_USD.toFixed(2)}) is required.` :
-                `Review your ad details and proceed to payment. A fee of USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} is required. ${exchangeRateError ? '(Using fallback NGN rate)' : '(NGN equivalent pending)'}`
+             {calculatedFeeInNgn !== null ? 
+                `Review your ad details and proceed to payment. The total fee is ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` :
+                "Please ensure all ad details and vetting options are selected. Fee will be displayed once calculated."
               }
             </DialogDescription>
           </DialogHeader>
@@ -552,17 +679,26 @@ export default function SubmitAd() {
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
                 <span className="font-medium text-slate-700">Total Fee:</span>
                 <span className="font-bold text-lg text-blue-600">
-                  {isFetchingRate && "Calculating..."}
-                  {!isFetchingRate && calculatedFeeInNgn && `₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  {!isFetchingRate && !calculatedFeeInNgn && exchangeRateError && `USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} (Fallback NGN may apply)`}
-                  {!isFetchingRate && !calculatedFeeInNgn && !exchangeRateError && `USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} (NGN N/A)`}
+                  {/* {isFetchingRate && "Calculating..."} // No longer fetching rate */}
+                  {calculatedFeeInNgn !== null ? `₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}
+                  {/* {!isFetchingRate && !calculatedFeeInNgn && exchangeRateError && `USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} (Fallback NGN may apply)`}
+                  {!isFetchingRate && !calculatedFeeInNgn && !exchangeRateError && `USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} (NGN N/A)`} */}
                 </span>
+              </div>
+              <div className="mt-2 text-sm text-slate-500">
+                <p><span className="font-medium">Media Type:</span> {mediaType ? (mediaType.charAt(0).toUpperCase() + mediaType.slice(1)) : "N/A"}</p>
+                <p><span className="font-medium">Vetting Speed:</span> {
+                  vettingSpeed === "normal" ? "Normal" :
+                  vettingSpeed === "16hr" ? "Accelerated (16hr)" :
+                  vettingSpeed === "8hr" ? "Accelerated (8hr)" :
+                  vettingSpeed === "4hr" ? "Accelerated (4hr)" : "N/A"
+                }</p>
               </div>
             </div>
             
-            {session?.user?.email && calculatedFeeInKobo ? (
+            {session?.user?.email && calculatedFeeInKobo !== null ? ( // Check calculatedFeeInKobo is not null
               <Paystack
-                amountInKobo={calculatedFeeInKobo}
+                amountInKobo={calculatedFeeInKobo} // This is now dynamically calculated NGN in Kobo
                 metadata={{ 
                   adTitle: formData.title, 
                   clientSubmitterId: session.user.id 
@@ -575,13 +711,12 @@ export default function SubmitAd() {
                 className="w-full"
               />
             ) : (
-              <Alert variant={(!calculatedFeeInKobo && !isFetchingRate && exchangeRateError) ? "default" : "destructive"}>
+              <Alert variant={calculatedFeeInKobo === null ? "default" : "destructive"}>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>{!session?.user?.email ? "User Email Missing" : "Payment Unavailable"}</AlertTitle>
                 <AlertDescription>
                   {!session?.user?.email ? "User email not found. Please ensure you are logged in." :
-                   isFetchingRate ? "Please wait, fetching payment details..." :
-                   !calculatedFeeInKobo ? "Could not determine payment amount in Kobo. Please refresh or contact support if this persists." :
+                   calculatedFeeInKobo === null ? "Could not determine payment amount. Please ensure media type and vetting speed are selected, or contact support if this persists." :
                    "Payment cannot be processed at this time."}
                 </AlertDescription>
               </Alert>
