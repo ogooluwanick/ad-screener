@@ -11,7 +11,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "AdScreener - Ad Submission & Review Platform",
   description: "Submit and review advertisements with ease",
-    generator: 'v0.dev'
+  icons: {
+    icon: '/logo.svg',
+  },
 }
 
 export default function RootLayout({
