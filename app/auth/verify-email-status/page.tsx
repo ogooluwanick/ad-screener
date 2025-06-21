@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button";
 
 function VerifyEmailStatusDisplay() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const status = searchParams.get("status");
   const message = searchParams.get("message");
+  const nextAction = searchParams.get("next_action");
+  const token = searchParams.get("token");
 
   const [displayStatus, setDisplayStatus] = useState<"success" | "error" | "loading">("loading");
   const [displayMessage, setDisplayMessage] = useState<string | null>(null);
@@ -27,7 +30,21 @@ function VerifyEmailStatusDisplay() {
       setDisplayStatus("error");
       setDisplayMessage("Invalid verification status or parameters.");
     }
-  }, [status, message]);
+  }, [status, message, router]);
+
+  useEffect(() => {
+    if (displayStatus === "success") {
+      const timer = setTimeout(() => {
+        if (nextAction === "set_password" && token) {
+          router.push(`/auth/set-password?token=${token}`);
+        } else {
+          router.push("/login");
+        }
+      }, 3000); // 3-second delay
+
+      return () => clearTimeout(timer); // Cleanup timer on component unmount
+    }
+  }, [displayStatus, router, nextAction, token]);
 
   const Icon = displayStatus === "success" ? CheckCircle : displayStatus === "error" ? XCircle : AlertTriangle;
   const iconColor = displayStatus === "success" ? "text-green-600" : "text-red-600";

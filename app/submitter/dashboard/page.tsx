@@ -47,18 +47,11 @@ export default function SubmitterDashboard() {
     }
   }, []);
 
-  // Setup WebSocket notifications
-  const messageCallbacks = {
-    SUBMITTER_DASHBOARD_REFRESH_REQUESTED: useCallback(() => {
-      console.log('SUBMITTER_DASHBOARD_REFRESH_REQUESTED received, refetching data.');
-      fetchDashboardData();
-    }, [fetchDashboardData]),
-  };
-
-  const userIdForNotifications = session?.user?.id;
-  const userRoleForNotifications = session?.user?.role as string | undefined;
-
-  useNotifications(userIdForNotifications, userRoleForNotifications, messageCallbacks);
+  // The useNotifications hook (from @/hooks/use-notifications) is called here.
+  // It primarily handles fetching/polling API-based notifications.
+  // The previous WebSocket message callback logic has been removed as it was
+  // incompatible with this specific hook's signature.
+  useNotifications(session?.user?.id);
 
   useEffect(() => {
     if (sessionStatus === "loading") {

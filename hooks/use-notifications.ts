@@ -5,7 +5,7 @@ import { ClientNotification } from '@/app/api/notifications/route'; // Import th
 // UINotification is the type used within this hook and exposed to components.
 export type UINotification = ClientNotification;
 
-export function useNotifications(userId: string | null | undefined) {
+export function useNotifications(userId: string | null | undefined, userRoleForNotifications: string | undefined, messageCallbacks: { DASHBOARD_REFRESH_REQUESTED: () => void; }) {
   const queryClient = useQueryClient();
 
   // Fetch notifications using React Query

@@ -52,17 +52,20 @@ export async function GET(req: NextRequest) {
       level: "success",
     });
 
-    // Redirect to set password page if emailVerified was null
-    if (user.emailVerified === null) {
-      const setPasswordUrl = new URL("/auth/set-password", req.nextUrl.origin);
-      setPasswordUrl.searchParams.set("token", token);
-      return NextResponse.redirect(setPasswordUrl);
-    }
-
-    // Redirect to a status page indicating success
     const statusUrl = new URL("/auth/verify-email-status", req.nextUrl.origin);
     statusUrl.searchParams.set("status", "success");
-    statusUrl.searchParams.set("message", "Email verified successfully! You can now log in.");
+    statusUrl.searchParams.set("message", "Email verified successfully!");
+
+    // If the user does not have a password set (e.g., account created by admin),
+    // they should be directed to set their password after verification.
+    if (!user.password) {
+      statusUrl.searchParams.set("next_action", "set_password");
+      // The token is needed for the set-password page
+      if (token) { // Ensure token exists before setting
+        statusUrl.searchParams.set("token", token);
+      }
+    }
+
     return NextResponse.redirect(statusUrl);
 
   } catch (error) {
