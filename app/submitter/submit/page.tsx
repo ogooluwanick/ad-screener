@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { AlertCircle, Upload, Tv, Smartphone, CheckCircle2 } from "lucide-react" // Added Tv, Smartphone, CheckCircle2
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { NextSeo } from 'next-seo';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -390,7 +391,9 @@ export default function SubmitAd() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <NextSeo title="Submit Ad" />
+      <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Submit New Ad</h1>
         <p className="text-gray-600">Create and submit your advertisement for review</p>
