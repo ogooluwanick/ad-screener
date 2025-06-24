@@ -461,7 +461,7 @@ export default function SubmitAd() {
             <hr />
             
               <div className="space-y-2 pt-4">
-                <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
+                <Label htmlFor="supportingDocumentsInput">Upload Supporting Documents (evidence of regulatory approvals, scripts, deck, trademark ownership, product registration, etc)(Max {MAX_SUPPORTING_DOCS} files, {MAX_SUPPORTING_DOC_SIZE_MB}MB each)</Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <div>
