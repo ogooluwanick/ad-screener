@@ -165,7 +165,7 @@ export default function SubmitterAds() {
         <h1 className="text-2xl font-bold tracking-tight">My Ads</h1>
         <div className="mt-2 sm:mt-0">
           <Link href="/submitter/submit">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-green-600 hover:bg-green-700">
               <PlusCircle className="mr-2 h-4 w-4" />
               Submit New Ad
             </Button>
@@ -308,7 +308,7 @@ export default function SubmitterAds() {
               )}
               {(!selectedAd?.adFileType || selectedAd?.adFileType === 'other') && selectedAd?.adFileUrl && (
                 <p className="text-sm text-gray-600">
-                  Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAd.adFileUrl}</a> (Preview not available)
+                  Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAd.adFileUrl}</a> (Preview not available)
                 </p>
               )}
               {!selectedAd?.adFileUrl && (
@@ -359,7 +359,7 @@ export default function SubmitterAds() {
                         href={getCloudinaryDownloadUrl(doc.url, doc.name)}
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="text-blue-600 hover:underline"
+                        className="text-green-600 hover:underline"
                         title={`Download ${doc.name}`} // Changed title to Download
                         download={doc.name} // Added download attribute as a fallback
                       >

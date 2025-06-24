@@ -9,8 +9,8 @@ export default function CheckEmailPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 bg-blue-100 rounded-full mb-4">
-            <MailCheck className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto flex items-center justify-center h-16 w-16 bg-green-100 rounded-full mb-4">
+            <MailCheck className="h-8 w-8 text-green-600" />
           </div>
           <CardTitle className="text-2xl font-bold text-slate-800">Check Your Email</CardTitle>
           <CardDescription className="text-slate-600 pt-2">
@@ -24,7 +24,7 @@ export default function CheckEmailPage() {
           <div className="mt-6">
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              className="text-green-600 hover:text-green-700 font-medium hover:underline"
             >
               Back to Login
             </Link>

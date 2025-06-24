@@ -40,7 +40,7 @@ export default function AdminLayout({
   if (status === "loading") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <Shield className="h-16 w-16 text-blue-600 animate-pulse mb-4" />
+        <Shield className="h-16 w-16 text-green-600 animate-pulse mb-4" />
         <p className="text-lg text-gray-700 dark:text-gray-300">Loading admin dashboard...</p>
       </div>
     );

@@ -11,20 +11,20 @@ export default function Home() {
       <header className="border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
         <div className="container mx-auto p-2 sm:p-4 flex justify-between items-center">
           <div className="flex items-center">
-            <Shield className="h-5 sm:h-8 w-5 sm:w-8 text-blue-600 mr-2" />
+            <Shield className="h-5 sm:h-8 w-5 sm:w-8 text-green-600 mr-2" />
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AdScreener</h1>
           </div>
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <a href="#features" className="text-gray-600 hover:text-green-600 transition-colors">
               Features
             </a>
-            <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <a href="#how-it-works" className="text-gray-600 hover:text-green-600 transition-colors">
               How it Works
             </a>
-            {/* <a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-colors">
+            {/* <a href="#testimonials" className="text-gray-600 hover:text-green-600 transition-colors">
               Testimonials
             </a>
-            <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <a href="#pricing" className="text-gray-600 hover:text-green-600 transition-colors">
               Pricing
             </a> */}
           </nav>
@@ -33,24 +33,23 @@ export default function Home() {
               <Button variant="outline" className="text-sm sm:text-base">Log In</Button>
             </Link>
             <Link href="/signup">
-              <Button className="text-sm sm:text-base bg-blue-600 hover:bg-blue-700">Get Started</Button>
+              <Button className="text-sm sm:text-base bg-green-600 hover:bg-green-700">Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-blue-50 via-white to-indigo-50 max-w-[100vw] overflow-x-hidden">
+      <section className="py-20 md:py-28 bg-gradient-to-br from-green-50 via-white to-indigo-50 max-w-[100vw] overflow-x-hidden">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
                   🚀 Trusted by 100+ Companies
                 </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
-                  Streamline Your
-                  <span className="text-blue-600"> Ad Review</span> Process
+                <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
+                  Pre-Vetted, <span className="text-green-600">ARCON-Ready Ads</span> — Honest, Ethical, <span className="text-green-600">Compliant</span>, Approved.
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed">
                   AdScreener automates advertisement submission, review, and approval workflows. Reduce review time by
@@ -60,7 +59,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/signup?role=submitter">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-4">
+                  <Button size="lg" className="bg-green-600 hover:bg-green-700 text-lg px-8 py-4">
                     Start Submitting Ads
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -71,7 +70,7 @@ export default function Home() {
                 </Button> */}
               </div>
 
-              <div className="flex items-center space-x-8 pt-4">
+              {/* <div className="flex items-center space-x-8 pt-4">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-600">No setup required</span>
@@ -80,7 +79,7 @@ export default function Home() {
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm text-gray-600">Just pure feedbacks</span>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="relative">
@@ -97,7 +96,7 @@ export default function Home() {
                   </div>
                 </div> */}
               </div>
-              <div className="absolute top-8 -right-8 w-32 h-32 bg-blue-100 rounded-full opacity-20"></div>
+              <div className="absolute top-8 -right-8 w-32 h-32 bg-green-100 rounded-full opacity-20"></div>
               <div className="absolute -bottom-8 right-8 w-24 h-24 bg-indigo-100 rounded-full opacity-30"></div>
             </div>
           </div>
@@ -109,19 +108,19 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">100+</div>
+              <div className="text-3xl md:text-4xl font-bold text-green-600">100+</div>
               <div className="text-gray-600 mt-2">Companies</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">50K+</div>
+              <div className="text-3xl md:text-4xl font-bold text-green-600">50K+</div>
               <div className="text-gray-600 mt-2">Ads Reviewed</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">80%</div>
+              <div className="text-3xl md:text-4xl font-bold text-green-600">80%</div>
               <div className="text-gray-600 mt-2">Time Saved</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-blue-600">99.9%</div>
+              <div className="text-3xl md:text-4xl font-bold text-green-600">99.9%</div>
               <div className="text-gray-600 mt-2">Uptime</div>
             </div>
           </div>
@@ -142,8 +141,8 @@ export default function Home() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-green-600" />
                 </div>
                 <CardTitle>Lightning Fast Submissions</CardTitle>
               </CardHeader>
@@ -261,7 +260,7 @@ export default function Home() {
       </section> */}
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section id="how-it-works" className="py-20 bg-gradient-to-br from-gray-50 to-green-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How AdScreener Works</h2>
@@ -274,11 +273,11 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/img_01.png"
+                  src="/m1.jpg"
                   alt="Step 1: Submit"
-                  className="rounded-2xl shadow-lg mx-auto"
+                  className="rounded-2xl shadow-lg mx-auto object-cover h-[35vh] aspect-video"
                 />
-                <div className="absolute -top-4 -left-4 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                <div className="absolute -top-4 -left-4 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
                   1
                 </div>
               </div>
@@ -292,11 +291,11 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/img_02.png"
+                  src="/m2.webp"
                   alt="Step 2: Review"
-                  className="rounded-2xl shadow-lg mx-auto"
+                  className="rounded-2xl shadow-lg mx-auto object-cover h-[35vh] aspect-video"
                 />
-                <div className="absolute -top-4 -left-4 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                <div className="absolute -top-4 -left-4 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
                   2
                 </div>
               </div>
@@ -310,11 +309,11 @@ export default function Home() {
             <div className="text-center">
               <div className="relative mb-8">
                 <img
-                  src="/img_03.png"
+                  src="/m3.png"
                   alt="Step 3: Publish"
-                  className="rounded-2xl shadow-lg mx-auto"
+                  className="rounded-2xl shadow-lg mx-auto object-cover h-[35vh] aspect-video"
                 />
-                <div className="absolute -top-4 -left-4 w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                <div className="absolute -top-4 -left-4 w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
                   3
                 </div>
               </div>
@@ -328,7 +327,7 @@ export default function Home() {
       </section>
 
       {/* Dashboard Preview Section */}
-      {/* <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* <section className="py-20 bg-gradient-to-br from-gray-50 to-green-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Powerful Dashboards for Every Role</h2>
@@ -489,15 +488,15 @@ export default function Home() {
       </section> */}
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
+      <section className="py-20 bg-green-600">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Transform Your Ad Review Process?</h2>
-          <p className="text-xl text-blue-100  max-w-2xl mx-auto">
+          <p className="text-xl text-green-100  max-w-2xl mx-auto">
             Join thousands of companies already using AdScreener to streamline their advertisement workflows.
           </p>
           {/* <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 hover:border-blue-800 text-lg px-8 py-4">
+              <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 hover:border-green-800 text-lg px-8 py-4">
                 Start Free Trial
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -505,7 +504,7 @@ export default function Home() {
             <Button
               size="lg"
               variant="outline"
-              className="border-white text-blue-600 hover:bg-blue-800 hover:text-white text-lg px-8 py-4"
+              className="border-white text-green-600 hover:bg-green-800 hover:text-white text-lg px-8 py-4"
             >
               Schedule Demo
             </Button>
@@ -514,12 +513,12 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+      <footer className="bg-gray-950 text-white py-16">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center mb-4">
-                <Shield className="h-8 w-8 text-blue-400 mr-2" />
+                <Shield className="h-8 w-8 text-green-400 mr-2" />
                 <span className="text-xl font-bold">AdScreener</span>
               </div>
               <p className="text-gray-400 mb-4">

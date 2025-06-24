@@ -148,7 +148,7 @@ export default function ReviewerSignupPage() { // Renamed component
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
         <p>Loading...</p>
       </div>
     );
@@ -156,23 +156,23 @@ export default function ReviewerSignupPage() { // Renamed component
   
   if (status === "authenticated") {
      return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
         <p>Redirecting...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center">
-            <Shield className="h-8 w-8 text-blue-600 mr-2" />
+            <Shield className="h-8 w-8 text-green-600 mr-2" />
             <span className="text-2xl font-bold text-gray-900">AdScreener</span>
           </Link>
         </div>
 
-        <Card className="border-blue-100">
+        <Card className="border-green-100">
           <CardHeader>
             <CardTitle className="text-center">Create Reviewer Account</CardTitle>
             <CardDescription className="text-center">Internal Reviewer Sign Up</CardDescription>
@@ -191,7 +191,7 @@ export default function ReviewerSignupPage() { // Renamed component
                       value={formData.firstName}
                       onChange={handleChange}
                       required
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -204,7 +204,7 @@ export default function ReviewerSignupPage() { // Renamed component
                       value={formData.lastName}
                       onChange={handleChange}
                       required
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
                 </div>
@@ -219,7 +219,7 @@ export default function ReviewerSignupPage() { // Renamed component
                     value={formData.companyName}
                     onChange={handleChange}
                     required
-                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
@@ -233,7 +233,7 @@ export default function ReviewerSignupPage() { // Renamed component
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
@@ -246,7 +246,7 @@ export default function ReviewerSignupPage() { // Renamed component
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
@@ -259,11 +259,11 @@ export default function ReviewerSignupPage() { // Renamed component
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                    className="border-green-200 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading}>
                   {isLoading ? "Creating Reviewer Account..." : "Sign Up as Reviewer"}
                 </Button>
               </div>
@@ -272,7 +272,7 @@ export default function ReviewerSignupPage() { // Renamed component
           <CardFooter className="flex justify-center">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link href="/login" className="text-green-600 hover:underline">
                 Log in
               </Link>
             </p>

@@ -56,7 +56,8 @@ export default function ApprovedAdsPage() {
   };
 
   // Corrected: useNotifications only takes userId.
-  const { refetchNotifications } = useNotifications(session?.user?.id);
+  const userRoleForNotifications = session?.user?.role; // Added
+  const { refetchNotifications } = useNotifications(session?.user?.id, userRoleForNotifications, messageCallbacks); // Corrected
   // WebSocket messageCallbacks would need separate handling if still actively used.
 
   useEffect(() => {
@@ -179,7 +180,7 @@ export default function ApprovedAdsPage() {
                         variant="default" 
                         size="sm" 
                         onClick={() => handleOpenDetailsModal(ad)}
-                        className="bg-blue-600 hover:bg-blue-700" // Consistent styling
+                        className="bg-green-600 hover:bg-green-700" // Consistent styling
                         title="View Ad Details"
                       >
                         <Eye className="h-4 w-4 mr-1 sm:mr-2" />
@@ -242,7 +243,7 @@ export default function ApprovedAdsPage() {
                 )}
                 {(!selectedAdForDetails.adFileType || selectedAdForDetails.adFileType === 'other') && selectedAdForDetails.adFileUrl && (
                   <p className="text-sm text-muted-foreground">
-                    Ad file: <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAdForDetails.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
+                    Ad file: <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAdForDetails.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
                   </p>
                 )}
                 {!selectedAdForDetails.adFileUrl && (
@@ -262,7 +263,7 @@ export default function ApprovedAdsPage() {
                           href={getCloudinaryDownloadUrl(doc.url, doc.name)}
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline"
+                          className="text-green-600 hover:underline"
                           title={`Download ${doc.name}`}
                           download={doc.name}
                         >

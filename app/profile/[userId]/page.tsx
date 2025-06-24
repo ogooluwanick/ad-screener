@@ -125,7 +125,7 @@
 //     switch (level) {
 //       case "Lead": return "bg-indigo-100 text-indigo-800";
 //       case "Senior": return "bg-purple-100 text-purple-800";
-//       case "Mid-Level": return "bg-blue-100 text-blue-800";
+//       case "Mid-Level": return "bg-green-100 text-green-800";
 //       case "Junior": return "bg-gray-100 text-gray-800";
 //       default: return "bg-gray-100 text-gray-800";
 //     }
@@ -146,7 +146,7 @@
 //     <div className="space-y-6 p-4 md:p-6">
 //       {isLoading && (
 //         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-//           <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+//           <Loader2 className="h-12 w-12 animate-spin text-green-600" />
 //           <p className="ml-4 text-lg">Loading profile...</p>
 //         </div>
 //       )}
@@ -180,7 +180,7 @@
 //       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 //         <h1 className="text-2xl font-bold tracking-tight capitalize">{profileData.firstName} {profileData.lastName}'s Profile</h1>
 //         {isOwnProfile && (
-//           <Button asChild className="bg-blue-600 hover:bg-blue-700 mt-2 sm:mt-0">
+//           <Button asChild className="bg-green-600 hover:bg-green-700 mt-2 sm:mt-0">
 //             <Link href="/profile">Edit My Profile</Link>
 //           </Button>
 //         )}
@@ -284,7 +284,7 @@
 //               <CardContent>
 //                 {isLoadingReviewerData && (
 //                   <div className="flex items-center justify-center p-8">
-//                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+//                     <Loader2 className="h-8 w-8 animate-spin text-green-600" />
 //                     <p className="ml-3 text-gray-500">Loading performance data...</p>
 //                   </div>
 //                 )}
@@ -296,8 +296,8 @@
 //                 )}
 //                 {reviewerProfileData && !isLoadingReviewerData && !reviewerDataError && (
 //                   <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-//                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-//                       <div className="text-2xl font-bold text-blue-600">{reviewerProfileData.performanceStats.totalReviews || 0}</div>
+//                     <div className="text-center p-4 bg-green-50 rounded-lg">
+//                       <div className="text-2xl font-bold text-green-600">{reviewerProfileData.performanceStats.totalReviews || 0}</div>
 //                       <div className="text-sm text-gray-600">Total Reviews</div>
 //                     </div>
 //                     <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -328,7 +328,7 @@
 //               <CardContent>
 //                 {isLoadingReviewerData && (
 //                   <div className="flex items-center justify-center p-8">
-//                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+//                     <Loader2 className="h-8 w-8 animate-spin text-green-600" />
 //                     <p className="ml-3 text-gray-500">Loading recent activities...</p>
 //                   </div>
 //                 )}
@@ -386,8 +386,8 @@
 //               )}
 //               {profileData.totalAds !== undefined && (
 //                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-//                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-//                     <div className="text-2xl font-bold text-blue-600">{profileData.totalAds || 0}</div>
+//                   <div className="text-center p-4 bg-green-50 rounded-lg">
+//                     <div className="text-2xl font-bold text-green-600">{profileData.totalAds || 0}</div>
 //                     <div className="text-sm text-gray-600">Total Ads</div>
 //                   </div>
 //                   <div className="text-center p-4 bg-green-50 rounded-lg">

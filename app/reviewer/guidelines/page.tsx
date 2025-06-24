@@ -15,10 +15,10 @@ export default function ReviewerGuidelines() {
       </div>
 
       {/* Quick Overview */}
-      <Alert className="border-blue-200 bg-blue-50">
-        <Shield className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Reviewer Responsibilities</AlertTitle>
-        <AlertDescription className="text-blue-700">
+      <Alert className="border-green-200 bg-green-50">
+        <Shield className="h-4 w-4 text-green-600" />
+        <AlertTitle className="text-green-800">Reviewer Responsibilities</AlertTitle>
+        <AlertDescription className="text-green-700">
           As a reviewer, you ensure all advertisements meet our quality standards and compliance requirements. Your
           decisions directly impact user experience and platform integrity.
         </AlertDescription>
@@ -35,8 +35,8 @@ export default function ReviewerGuidelines() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">
                 1
               </div>
               <h3 className="font-semibold mb-2">Initial Review</h3>
@@ -333,8 +333,8 @@ export default function ReviewerGuidelines() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">95%+</div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">95%+</div>
               <div className="text-sm text-gray-600">Accuracy Rate</div>
               <p className="text-xs text-gray-500 mt-1">Consistent with senior reviewer decisions</p>
             </div>

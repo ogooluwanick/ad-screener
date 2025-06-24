@@ -50,8 +50,15 @@ export default function AdminDashboard() {
   }, []);
 
   const userIdForNotifications = session?.user?.id;
+  const userRoleForNotifications = session?.user?.role; // Get role
+  const messageCallbacks = { // Define callbacks
+    DASHBOARD_REFRESH_REQUESTED: () => {
+      // console.log("Dashboard refresh requested via notification callback, refetching data...");
+      // fetchDashboardData(); // Example: refetch data if a notification indicates it's needed
+    }
+  };
 
-  useNotifications(userIdForNotifications);
+  useNotifications(userIdForNotifications, userRoleForNotifications, messageCallbacks);
 
   useEffect(() => {
     if (sessionStatus === "loading") {
@@ -372,7 +379,7 @@ export default function AdminDashboard() {
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row gap-4">
           <Link href="/admin/users">
-            <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Manage Users</Button>
+            <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">Manage Users</Button>
           </Link>
           <Link href="/reviewer">
             <Button variant="outline" className="w-full sm:w-auto">

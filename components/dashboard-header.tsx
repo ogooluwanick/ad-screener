@@ -105,13 +105,13 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
               href={dashboardLink}
               className="flex items-center"
             >
-              <Shield className="h-6 w-6 text-blue-600 mr-2" />
+              <Shield className="h-6 w-6 text-green-600 mr-2" />
               <span className="font-bold text-xl hidden sm:inline text-gray-800 dark:text-gray-100">AdScreener</span>
             </Link>
 
             <nav className="hidden md:flex ml-8 space-x-6">
               {navItems.map((item) => (
-                <Link key={item.name} href={item.href} className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
+                <Link key={item.name} href={item.href} className="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium">
                   {item.name}
                 </Link>
               ))}
@@ -127,7 +127,7 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
             >
               <Bell className="h-5 w-5" />
               {unreadNotificationCount > 0 && (
-                <span className="absolute top-0 right-0 h-4 w-4 bg-blue-600 rounded-full flex items-center justify-center text-[10px] text-white">
+                <span className="absolute top-0 right-0 h-4 w-4 bg-green-600 rounded-full flex items-center justify-center text-[10px] text-white">
                   {unreadNotificationCount}
                 </span>
               )}
@@ -176,7 +176,7 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between py-4 border-b dark:border-gray-800">
                     <div className="flex items-center">
-                      <Shield className="h-6 w-6 text-blue-600 mr-2" />
+                      <Shield className="h-6 w-6 text-green-600 mr-2" />
                       <span className="font-bold text-xl text-gray-800 dark:text-gray-100">AdScreener</span>
                     </div>
                   </div>

@@ -74,16 +74,16 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center">
-            <Shield className="h-8 w-8 text-blue-600 mr-2" />
+            <Shield className="h-8 w-8 text-green-600 mr-2" />
             <span className="text-2xl font-bold text-gray-900">AdScreener</span>
           </Link>
         </div>
 
-        <Card className="border-blue-100">
+        <Card className="border-green-100">
           <CardHeader>
             <CardTitle className="text-center">Forgot Password</CardTitle>
             <CardDescription className="text-center">
@@ -105,20 +105,20 @@ function ForgotPasswordForm() {
                       value={email}
                       onChange={handleChange}
                       required
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500 pl-10"
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500 pl-10"
                     />
                   </div>
                 </div>
 
                 {message && <p className="text-sm text-green-600 text-center">{message}</p>}
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading}>
                   {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
               </div>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col items-center space-y-2">
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+            <Link href="/login" className="text-sm text-green-600 hover:underline">
               Back to Log In
             </Link>
           </CardFooter>
@@ -131,9 +131,9 @@ function ForgotPasswordForm() {
 export default function ForgotPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
         <div className="w-full max-w-md text-center">
-          <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+          <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
           <p className="text-xl font-semibold text-gray-800">Loading AdScreener...</p>
           <p className="text-sm text-gray-600 mt-2">Please wait a moment.</p>
         </div>

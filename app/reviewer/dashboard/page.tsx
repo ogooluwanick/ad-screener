@@ -198,7 +198,7 @@ export default function ReviewerDashboard() {
         <h1 className="text-2xl font-bold tracking-tight">Reviewer Dashboard</h1>
         <div className="mt-2 sm:mt-0">
           <Link href="/reviewer/pending">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-green-600 hover:bg-green-700">
               <Clock className="mr-2 h-4 w-4" />
               Review Pending Ads
             </Button>
@@ -370,7 +370,7 @@ export default function ReviewerDashboard() {
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row gap-4">
           <Link href="/reviewer/pending">
-            <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Review Pending Ads</Button>
+            <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700">Review Pending Ads</Button>
           </Link>
           <Link href="#">
             <Button variant="outline" className="w-full sm:w-auto">

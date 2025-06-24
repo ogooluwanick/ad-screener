@@ -169,47 +169,47 @@ export default function SignupPage() {
     }
   }
 
-  if (status === "loading") return <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4"><p>Loading...</p></div>;
-  if (status === "authenticated") return <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4"><p>Redirecting...</p></div>;
+  if (status === "loading") return <div className="min-h-screen flex items-center justify-center bg-green-50 p-4"><p>Loading...</p></div>;
+  if (status === "authenticated") return <div className="min-h-screen flex items-center justify-center bg-green-50 p-4"><p>Redirecting...</p></div>;
 
   const renderCommonFields = () => (
     <>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name (Auth. Rep.)</Label>
-          <Input id="firstName" name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} required className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+          <Input id="firstName" name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} required className="border-green-200 focus:border-green-500 focus:ring-green-500" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName">Last Name (Auth. Rep.)</Label>
-          <Input id="lastName" name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} required className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+          <Input id="lastName" name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} required className="border-green-200 focus:border-green-500 focus:ring-green-500" />
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} required className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+        <Input id="email" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} required className="border-green-200 focus:border-green-500 focus:ring-green-500" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+        <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required className="border-green-200 focus:border-green-500 focus:ring-green-500" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <Input id="confirmPassword" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+        <Input id="confirmPassword" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="border-green-200 focus:border-green-500 focus:ring-green-500" />
       </div>
     </>
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
       <div className="w-full max-w-lg"> {/* Increased max-width for larger form */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center">
-            <Shield className="h-8 w-8 text-blue-600 mr-2" />
+            <Shield className="h-8 w-8 text-green-600 mr-2" />
             <span className="text-2xl font-bold text-gray-900">AdScreener</span>
           </Link>
         </div>
 
-        <Card className="border-blue-100">
+        <Card className="border-green-100">
           <CardHeader>
             <CardTitle className="text-center">Create Submitter Account</CardTitle>
             <CardDescription className="text-center">Sign up as an Agency or Business to submit ads.</CardDescription>
@@ -227,16 +227,16 @@ export default function SignupPage() {
                   <TabsContent value="business" className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="companyNameBusiness">Business Name</Label>
-                      <Input id="companyNameBusiness" name="companyName" placeholder="Your Company LLC" value={formData.companyName} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Input id="companyNameBusiness" name="companyName" placeholder="Your Company LLC" value={formData.companyName} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="registrationNumberBusiness">CAC Registration No.</Label>
-                      <Input id="registrationNumberBusiness" name="registrationNumber" placeholder="RC123456" value={formData.registrationNumber} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Input id="registrationNumberBusiness" name="registrationNumber" placeholder="RC123456" value={formData.registrationNumber} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="sector">Sector</Label>
                       <Select name="sector" onValueChange={(value) => handleSelectChange("sector", value)} value={formData.sector} required={submitterType === "business"}>
-                        <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectTrigger className="border-green-200 focus:border-green-500 focus:ring-green-500">
                           <SelectValue placeholder="Select a sector" />
                         </SelectTrigger>
                         <SelectContent>
@@ -248,36 +248,36 @@ export default function SignupPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="officeAddress">Office Address</Label>
-                      <Input id="officeAddress" name="officeAddress" placeholder="123 Main St, City" value={formData.officeAddress} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Input id="officeAddress" name="officeAddress" placeholder="123 Main St, City" value={formData.officeAddress} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                         <Label htmlFor="state">State</Label>
-                        <Input id="state" name="state" placeholder="Lagos" value={formData.state} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                        <Input id="state" name="state" placeholder="Lagos" value={formData.state} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                         </div>
                         <div className="space-y-2">
                         <Label htmlFor="country">Country</Label>
-                        <Input id="country" name="country" placeholder="Nigeria" value={formData.country} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                        <Input id="country" name="country" placeholder="Nigeria" value={formData.country} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                         </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="businessDescription">Business Description</Label>
-                      <Textarea id="businessDescription" name="businessDescription" placeholder="Briefly describe your business..." value={formData.businessDescription} onChange={handleChange} required={submitterType === "business"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Textarea id="businessDescription" name="businessDescription" placeholder="Briefly describe your business..." value={formData.businessDescription} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                   </TabsContent>
 
                   <TabsContent value="agency" className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="companyNameAgency">Agency Name</Label>
-                      <Input id="companyNameAgency" name="companyName" placeholder="Your Agency Ltd." value={formData.companyName} onChange={handleChange} required={submitterType === "agency"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Input id="companyNameAgency" name="companyName" placeholder="Your Agency Ltd." value={formData.companyName} onChange={handleChange} required={submitterType === "agency"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="registrationNumberAgency">Agency Registration Number</Label>
-                      <Input id="registrationNumberAgency" name="registrationNumber" placeholder="AGY007" value={formData.registrationNumber} onChange={handleChange} required={submitterType === "agency"} className="border-blue-200 focus:border-blue-500 focus:ring-blue-500" />
+                      <Input id="registrationNumberAgency" name="registrationNumber" placeholder="AGY007" value={formData.registrationNumber} onChange={handleChange} required={submitterType === "agency"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                   </TabsContent>
                   
-                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading}>
                     {isLoading ? "Creating Account..." : `Sign Up as ${submitterType.charAt(0).toUpperCase() + submitterType.slice(1)}`}
                   </Button>
                 </div>
@@ -287,7 +287,7 @@ export default function SignupPage() {
           <CardFooter className="flex justify-center pt-4">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link href="/login" className="text-green-600 hover:underline">
                 Log in
               </Link>
             </p>

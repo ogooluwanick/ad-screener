@@ -139,9 +139,9 @@ const AdminUsersPage = () => {
       case "superadmin":
         return "text-purple-600 bg-purple-50";
       case "reviewer":
-        return "text-blue-600 bg-blue-50";
+        return "text-green-600 bg-green-50"; // Changed to green
       case "submitter":
-        return "text-green-600 bg-green-50";
+        return "text-yellow-600 bg-yellow-50"; // submitter is often yellow/orange, keeping it distinct
       default:
         return "text-gray-600 bg-gray-50";
     }
@@ -197,7 +197,7 @@ const AdminUsersPage = () => {
             Refresh List
           </Button>
           <Link href="/admin/create-reviewer">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-green-600 hover:bg-green-700">
               <UserPlus className="mr-2 h-4 w-4" />
               Create Reviewer
             </Button>

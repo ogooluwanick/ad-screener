@@ -541,7 +541,7 @@ export default function UnifiedSettingsPage() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleSaveSettings} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
           {isSaving ? "Saving..." : "Save All Settings"}
         </Button>
       </div>

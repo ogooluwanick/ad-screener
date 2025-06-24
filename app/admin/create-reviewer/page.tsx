@@ -256,19 +256,19 @@ const CreateReviewerPage = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
             <p className="text-sm text-muted-foreground">
               The reviewer will receive an email with a verification link to set up their password.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
             <p className="text-sm text-muted-foreground">
               The account will be created with the "reviewer" role automatically.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
             <p className="text-sm text-muted-foreground">
               Reviewers can access the review dashboard to approve or reject ad submissions.
             </p>

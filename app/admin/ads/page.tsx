@@ -358,7 +358,7 @@ const AdminAdsPage = () => {
                         variant="default" 
                         size="sm" 
                         onClick={() => handleEditAd(ad)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-green-600 hover:bg-green-700"
                         title="Edit Ad"
                       >
                         <Edit className="h-4 w-4 mr-1 sm:mr-2" />
@@ -587,7 +587,7 @@ const AdminAdsPage = () => {
                 )}
                 {(!selectedAd.adFileType || selectedAd.adFileType === 'other') && selectedAd.adFileUrl && (
                   <p className="text-sm text-muted-foreground">
-                    Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAd.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
+                    Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAd.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
                   </p>
                 )}
                 {!selectedAd.adFileUrl && (
@@ -607,7 +607,7 @@ const AdminAdsPage = () => {
                           href={getCloudinaryDownloadUrl(doc.url, doc.name)}
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline"
+                          className="text-green-600 hover:underline"
                           title={`Download ${doc.name}`}
                           download={doc.name}
                         >

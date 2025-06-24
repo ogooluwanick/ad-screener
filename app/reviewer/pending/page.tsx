@@ -65,7 +65,9 @@ export default function PendingAdsPage() {
   };
 
   // Corrected: useNotifications only takes userId. WebSocket callbacks need separate handling if still used.
-  const { refetchNotifications } = useNotifications(session?.user?.id); 
+  const userRoleForNotifications = session?.user?.role; 
+  // const { refetchNotifications } = useNotifications(session?.user?.id); // Original line was removed in previous step
+  const { refetchNotifications } = useNotifications(session?.user?.id, userRoleForNotifications, messageCallbacks); 
   // If DASHBOARD_REFRESH_REQUESTED is still a valid WebSocket event you want to listen to,
   // you would need a separate WebSocket listener setup that calls fetchPendingAds.
   // For now, I'm assuming the primary notification mechanism is through polling or manual refresh.
@@ -261,7 +263,7 @@ export default function PendingAdsPage() {
                         variant="default" 
                         size="sm" 
                         onClick={() => handleOpenReviewModal(ad)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-green-600 hover:bg-green-700"
                         title="Review Ad Details"
                       >
                         <Eye className="h-4 w-4 mr-1 sm:mr-2" />
@@ -351,7 +353,7 @@ export default function PendingAdsPage() {
                 )}
                 {(!selectedAdForReview.adFileType || selectedAdForReview.adFileType === 'other') && selectedAdForReview.adFileUrl && (
                   <p className="text-sm text-muted-foreground">
-                    Ad file: <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selectedAdForReview.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available for this type)
+                    Ad file: <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAdForReview.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available for this type)
                   </p>
                 )}
                 {!selectedAdForReview.adFileUrl && (
@@ -371,7 +373,7 @@ export default function PendingAdsPage() {
                           href={getCloudinaryDownloadUrl(doc.url, doc.name)}
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline"
+                          className="text-green-600 hover:underline"
                           title={`Download ${doc.name}`}
                           download={doc.name}
                         >

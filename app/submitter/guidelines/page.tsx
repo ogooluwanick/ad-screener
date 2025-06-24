@@ -15,10 +15,10 @@ export default function SubmitterGuidelines() {
       </div>
 
       {/* Quick Overview */}
-      <Alert className="border-blue-200 bg-blue-50">
-        <AlertTriangle className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Important Notice</AlertTitle>
-        <AlertDescription className="text-blue-700">
+      <Alert className="border-green-200 bg-green-50">
+        <AlertTriangle className="h-4 w-4 text-green-600" />
+        <AlertTitle className="text-green-800">Important Notice</AlertTitle>
+        <AlertDescription className="text-green-700">
           All advertisements must comply with our guidelines to be approved. Violations may result in rejection or
           account suspension.
         </AlertDescription>
@@ -248,9 +248,9 @@ export default function SubmitterGuidelines() {
           <CardDescription>Information about submission fees and pricing claims</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">Submission Fee</h3>
-            <p className="text-sm text-blue-700">
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-green-800 mb-2">Submission Fee</h3>
+            <p className="text-sm text-green-700">
               A $50.00 submission fee is required for each ad submission. This fee covers the review process and
               platform maintenance.
             </p>
@@ -295,8 +295,8 @@ export default function SubmitterGuidelines() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">
                 1
               </div>
               <h3 className="font-semibold mb-2">Submission</h3>

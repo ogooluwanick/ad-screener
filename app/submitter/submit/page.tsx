@@ -17,8 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox" // Added Checkbox
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" // Added Tabs
 import { X } from "lucide-react" // For remove button
-// import { appConfig } from "@/lib/app_config" // Will be replaced by useAdCategories
-// import { useAdCategories } from "@/hooks/use-ad-categories" // REMOVED
+
 import {
   Select,
   SelectContent,
@@ -399,10 +398,10 @@ export default function SubmitAd() {
         <p className="text-gray-600">Create and submit your advertisement for review</p>
       </div>
 
-      <Alert className="border-blue-200 bg-blue-50">
-        <AlertCircle className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800">Submission Fee</AlertTitle>
-        <AlertDescription className="text-blue-700">
+      <Alert className="border-green-200 bg-green-50">
+        <AlertCircle className="h-4 w-4 text-green-600" />
+        <AlertTitle className="text-green-800">Submission Fee</AlertTitle>
+        <AlertDescription className="text-green-700">
           {mediaType && calculatedFeeInNgn !== null ?
             `The calculated submission fee is ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` :
             "Please select Media Type and Vetting Speed to see the submission fee."
@@ -452,7 +451,7 @@ export default function SubmitAd() {
                   ) : (
                     <div className="space-y-2">
                       <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                      <div><Label htmlFor="adFile" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
+                      <div><Label htmlFor="adFile" className="cursor-pointer text-green-600 hover:text-green-700">Click to upload</Label><p className="text-sm text-gray-500">or drag and drop</p></div>
                       <p className="text-xs text-gray-400">Images, Videos, PDFs. Max 4MB.</p>
                     </div>
                   )}
@@ -468,7 +467,7 @@ export default function SubmitAd() {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <div>
-                    <Label htmlFor="supportingDocumentsInput" className="cursor-pointer text-blue-600 hover:text-blue-700">Click to select files</Label>
+                    <Label htmlFor="supportingDocumentsInput" className="cursor-pointer text-green-600 hover:text-green-700">Click to select files</Label>
                     <p className="text-sm text-gray-500">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-400">PDFs, Docs, Images, etc.</p>
@@ -512,7 +511,7 @@ export default function SubmitAd() {
                     <Button
                       type="button"
                       variant={mediaType === "traditional" ? "default" : "outline"}
-                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "traditional" ? "border-blue-600 ring-2 ring-blue-600" : "border-gray-300"}`}
+                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "traditional" ? "border-green-600 ring-2 ring-green-600" : "border-gray-300"}`}
                       onClick={() => {
                         setMediaType("traditional");
                         if (errors.mediaType) setErrors(prev => ({...prev, mediaType: undefined}));
@@ -526,7 +525,7 @@ export default function SubmitAd() {
                     <Button
                       type="button"
                       variant={mediaType === "digital" ? "default" : "outline"}
-                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "digital" ? "border-blue-600 ring-2 ring-blue-600" : "border-gray-300"}`}
+                      className={`h-auto p-4 border-2 rounded-lg flex flex-col items-center justify-center space-y-2 relative ${mediaType === "digital" ? "border-green-600 ring-2 ring-green-600" : "border-gray-300"}`}
                       onClick={() => {
                         setMediaType("digital");
                         if (errors.mediaType) setErrors(prev => ({...prev, mediaType: undefined}));
@@ -630,7 +629,7 @@ export default function SubmitAd() {
           <Button 
             type="submit" 
             form="ad-submission-form" 
-            className="bg-blue-600 hover:bg-blue-700" 
+            className="bg-green-600 hover:bg-green-700" 
             disabled={isSubmitting || isPaymentProcessing || !calculatedFeeInKobo || !mediaType /* Disable if rate not calculated or media type not chosen */}
           >
             {/* {isFetchingRate ? "Loading Rate..." : // No longer fetching rate
@@ -681,7 +680,7 @@ export default function SubmitAd() {
               </ul>
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200">
                 <span className="font-medium text-slate-700">Total Fee:</span>
-                <span className="font-bold text-lg text-blue-600">
+                <span className="font-bold text-lg text-green-600">
                   {/* {isFetchingRate && "Calculating..."} // No longer fetching rate */}
                   {calculatedFeeInNgn !== null ? `₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "N/A"}
                   {/* {!isFetchingRate && !calculatedFeeInNgn && exchangeRateError && `USD $${AD_SUBMISSION_FEE_USD.toFixed(2)} (Fallback NGN may apply)`}
@@ -737,5 +736,6 @@ export default function SubmitAd() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   )
 }

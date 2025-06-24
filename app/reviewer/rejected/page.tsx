@@ -62,7 +62,14 @@ export default function RejectedAdsPage() {
     }
   }, []);
 
-  const { refetchNotifications } = useNotifications(session?.user?.id);
+  const userRoleForNotifications = session?.user?.role;
+  const messageCallbacks = {
+    DASHBOARD_REFRESH_REQUESTED: () => {
+      // console.log("Dashboard refresh requested via notification callback, refetching data...");
+      // fetchRejectedAds(); // Example
+    }
+  };
+  const { refetchNotifications } = useNotifications(session?.user?.id, userRoleForNotifications, messageCallbacks);
   
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
@@ -218,7 +225,7 @@ export default function RejectedAdsPage() {
                         variant="default"
                         size="sm"
                         onClick={() => handleOpenDetailsModal(ad)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-green-600 hover:bg-green-700"
                         title="View Details"
                       >
                         <Eye className="h-4 w-4 mr-1 sm:mr-2" />
@@ -268,7 +275,7 @@ export default function RejectedAdsPage() {
                 )}
                 {(!selectedAdForDetails.adFileType || selectedAdForDetails.adFileType === 'other') && selectedAdForDetails.adFileUrl && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Ad File <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
+                    <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">View Ad File <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
                   </p>
                 )}
                  {!selectedAdForDetails.adFileUrl && <p className="text-sm text-muted-foreground mt-1">No ad file provided.</p>}
@@ -284,7 +291,7 @@ export default function RejectedAdsPage() {
                           href={getCloudinaryDownloadUrl(doc.url, doc.name)}
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline" 
+                          className="text-green-600 hover:underline" 
                           title={`Download ${doc.name}`}
                           download={doc.name}
                         >

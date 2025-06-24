@@ -73,7 +73,7 @@ export default function NotificationPanel({
     <div ref={panelRef} className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white dark:bg-gray-900 shadow-lg z-50 flex flex-col border-l border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
         <div className="flex items-center">
-          <Bell className="h-5 w-5 text-blue-600 mr-2" />
+          <Bell className="h-5 w-5 text-green-600 mr-2" />
           <h2 className="font-semibold text-lg text-gray-800 dark:text-gray-100">
             Notifications {unreadNotificationCount > 0 && <span className="text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 ml-2">{unreadNotificationCount}</span>}
           </h2>
@@ -135,7 +135,7 @@ export default function NotificationPanel({
                 notification.level === 'success' ? 'text-green-500' :
                 notification.level === 'error' ? 'text-red-500' :
                 notification.level === 'warning' ? 'text-yellow-500' :
-                'text-blue-500';
+                'text-green-500';
 
               // Notifications from the server will always have an _id
               const notificationKey = notification._id; 
@@ -144,7 +144,7 @@ export default function NotificationPanel({
               const content = (
                 <div
                   className={`p-4 group ${
-                    notification.isRead ? "opacity-70 hover:bg-gray-50 dark:hover:bg-gray-800" : "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50"
+                    notification.isRead ? "opacity-70 hover:bg-gray-50 dark:hover:bg-gray-800" : "bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/50"
                   }`}
                   onClick={() => {
                     if (!notification.isRead && notificationIdForMarkRead) {

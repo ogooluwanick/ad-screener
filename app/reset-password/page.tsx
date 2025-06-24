@@ -118,7 +118,7 @@ function ResetPasswordForm() {
 
   if (!token && !error) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
             <div className="w-full max-w-md text-center">
                 <p className="text-lg text-gray-700">Verifying token...</p>
             </div>
@@ -128,13 +128,13 @@ function ResetPasswordForm() {
   
   if (error && !successMessage) { // Only show error if no success message (i.e. token error)
     return (
-        <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
             <div className="w-full max-w-md text-center">
                 <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-red-700">Reset Link Invalid or Expired</p>
                 <p className="text-sm text-gray-600 mt-2">{error}</p>
                 <Link href="/forgot-password">
-                    <Button variant="link" className="mt-4 text-blue-600">Request a new link</Button>
+                    <Button variant="link" className="mt-4 text-green-600">Request a new link</Button>
                 </Link>
             </div>
         </div>
@@ -143,16 +143,16 @@ function ResetPasswordForm() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center">
-            <Shield className="h-8 w-8 text-blue-600 mr-2" />
+            <Shield className="h-8 w-8 text-green-600 mr-2" />
             <span className="text-2xl font-bold text-gray-900">AdScreener</span>
           </Link>
         </div>
 
-        <Card className="border-blue-100">
+        <Card className="border-green-100">
           <CardHeader>
             <CardTitle className="text-center">Reset Your Password</CardTitle>
             <CardDescription className="text-center">
@@ -164,7 +164,7 @@ function ResetPasswordForm() {
               <div className="text-center space-y-3">
                 <KeyRound className="h-12 w-12 text-green-500 mx-auto" />
                 <p className="text-green-600">{successMessage}</p>
-                <Button onClick={() => router.push('/login')} className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => router.push('/login')} className="w-full bg-green-600 hover:bg-green-700">
                   Go to Log In
                 </Button>
               </div>
@@ -181,7 +181,7 @@ function ResetPasswordForm() {
                       value={formData.password}
                       onChange={handleChange}
                       required
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -194,12 +194,12 @@ function ResetPasswordForm() {
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       required
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="border-green-200 focus:border-green-500 focus:ring-green-500"
                     />
                   </div>
 
                   {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading || !token}>
+                  <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading || !token}>
                     {isLoading ? "Resetting Password..." : "Reset Password"}
                   </Button>
                 </div>
@@ -208,7 +208,7 @@ function ResetPasswordForm() {
           </CardContent>
           {!successMessage && (
             <CardFooter className="flex justify-center">
-                <Link href="/login" className="text-sm text-blue-600 hover:underline">
+                <Link href="/login" className="text-sm text-green-600 hover:underline">
                 Back to Log In
                 </Link>
             </CardFooter>
@@ -224,9 +224,9 @@ export default function ResetPasswordPage() {
   return (
     // Suspense is crucial for useSearchParams to work correctly during SSR/initial load
     <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
             <div className="w-full max-w-md text-center">
-                <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-gray-800">Loading Page...</p>
             </div>
         </div>

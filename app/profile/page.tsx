@@ -380,7 +380,7 @@ export default function UnifiedProfilePage() {
     switch (level) {
       case "Lead": return "bg-indigo-100 text-indigo-800"; // Changed Lead color for better distinction
       case "Senior": return "bg-purple-100 text-purple-800";
-      case "Mid-Level": return "bg-blue-100 text-blue-800"; // Added Mid-Level
+      case "Mid-Level": return "bg-green-100 text-green-800"; // Added Mid-Level
       case "Junior": return "bg-gray-100 text-gray-800"; // Explicitly Junior
       default: return "bg-gray-100 text-gray-800"; // Fallback
     }
@@ -389,7 +389,7 @@ export default function UnifiedProfilePage() {
   if (isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin text-green-600" />
         <p className="ml-4 text-lg">Loading profile...</p>
       </div>
     );
@@ -425,11 +425,11 @@ export default function UnifiedProfilePage() {
         <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
         <div className="mt-2 sm:mt-0">
           {!isEditing ? (
-            <Button onClick={() => setIsEditing(true)} className="bg-blue-600 hover:bg-blue-700">Edit Profile</Button>
+            <Button onClick={() => setIsEditing(true)} className="bg-green-600 hover:bg-green-700">Edit Profile</Button>
           ) : (
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleCancelEdit} disabled={isUpdatingProfile || isUploadingImage}>Cancel</Button>
-              <Button onClick={handleSave} disabled={isUpdatingProfile || isUploadingImage} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleSave} disabled={isUpdatingProfile || isUploadingImage} className="bg-green-600 hover:bg-green-700">
                 {isUpdatingProfile ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 
                  isUploadingImage ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</> : 
                  "Save Changes"}
@@ -624,11 +624,11 @@ export default function UnifiedProfilePage() {
                 <CardDescription>Your reviewing statistics and performance metrics.</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingReviewerProfileData && ( /* ... loading UI ... */ <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="ml-3">Loading...</p></div>)}
+                {isLoadingReviewerProfileData && ( /* ... loading UI ... */ <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-green-600" /><p className="ml-3">Loading...</p></div>)}
                 {reviewerProfileDataError && ( /* ... error UI ... */ <div className="text-red-500 p-4">Error: {reviewerProfileDataError.message}</div>)}
                 {!isLoadingReviewerProfileData && !reviewerProfileDataError && reviewerProfileApiData && (
                   <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg"><div className="text-2xl font-bold text-blue-600">{displayTotalReviews}</div><div className="text-sm text-gray-600">Total Reviews</div></div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{displayTotalReviews}</div><div className="text-sm text-gray-600">Total Reviews</div></div>
                     <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{displayApprovedReviews}</div><div className="text-sm text-gray-600">Approved</div></div>
                     <div className="text-center p-4 bg-red-50 rounded-lg"><div className="text-2xl font-bold text-red-600">{displayRejectedReviews}</div><div className="text-sm text-gray-600">Rejected</div></div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg"><div className="text-2xl font-bold text-purple-600">{displayAvgReviewTime}</div><div className="text-sm text-gray-600">Avg Review Time</div></div>
@@ -643,7 +643,7 @@ export default function UnifiedProfilePage() {
                 <CardDescription>Your latest review activities.</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingReviewerProfileData && ( /* ... loading UI ... */ <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="ml-3">Loading...</p></div>)}
+                {isLoadingReviewerProfileData && ( /* ... loading UI ... */ <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-green-600" /><p className="ml-3">Loading...</p></div>)}
                 {reviewerProfileDataError && ( /* ... error UI ... */ <div className="text-red-500 p-4">Error: {reviewerProfileDataError.message}</div>)}
                 {!isLoadingReviewerProfileData && !reviewerProfileDataError && displayRecentActivities && displayRecentActivities.length > 0 && (
                   <div className="space-y-4">
@@ -677,11 +677,11 @@ export default function UnifiedProfilePage() {
               <CardDescription>Overview of your ad submissions.</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingSubmitterStats && ( <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="ml-3">Loading...</p></div>)}
+              {isLoadingSubmitterStats && ( <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-green-600" /><p className="ml-3">Loading...</p></div>)}
               {submitterStatsError && (<div className="text-red-500 p-4">Error: {submitterStatsError.message}</div>)}
               {!isLoadingSubmitterStats && !submitterStatsError && submitterStats && (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg"><div className="text-2xl font-bold text-blue-600">{displayTotalAds}</div><div className="text-sm text-gray-600">Total Ads</div></div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{displayTotalAds}</div><div className="text-sm text-gray-600">Total Ads</div></div>
                   <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{displayApprovedAds}</div><div className="text-sm text-gray-600">Approved Ads</div></div>
                   <div className="text-center p-4 bg-amber-50 rounded-lg"><div className="text-2xl font-bold text-amber-600">{displayPendingAds}</div><div className="text-sm text-gray-600">Pending Ads</div></div>
                   <div className="text-center p-4 bg-red-50 rounded-lg"><div className="text-2xl font-bold text-red-600">{displayRejectedAds}</div><div className="text-sm text-gray-600">Rejected Ads</div></div>

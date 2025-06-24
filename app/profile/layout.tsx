@@ -44,7 +44,7 @@ export default function ProfileLayout({
     // Show a loading state while session is loading or if role is missing temporarily
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <Loader2 className="h-16 w-16 text-blue-600 animate-spin mb-4" />
+        <Loader2 className="h-16 w-16 text-green-600 animate-spin mb-4" />
         <p className="text-lg text-gray-700 dark:text-gray-300">Loading profile...</p>
       </div>
     );
@@ -64,7 +64,7 @@ export default function ProfileLayout({
   // or other unexpected states.
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <Shield className="h-16 w-16 text-blue-600 mb-4" />
+      <Shield className="h-16 w-16 text-green-600 mb-4" />
       <p className="text-lg text-gray-700 dark:text-gray-300">Preparing your space...</p>
     </div>
   );

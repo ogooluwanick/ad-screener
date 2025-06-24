@@ -96,7 +96,7 @@ function VerifyEmailStatusDisplay() {
         {displayStatus === "error" && (
              <CardFooter className="flex flex-col items-center justify-center pt-4 border-t">
                 <p className="text-xs text-slate-500">Trouble verifying? You can also try:</p>
-                <Link href="/signup" className="text-xs text-blue-600 hover:underline mt-1">
+                <Link href="/signup" className="text-xs text-green-600 hover:underline mt-1">
                     Register again
                 </Link>
              </CardFooter>
