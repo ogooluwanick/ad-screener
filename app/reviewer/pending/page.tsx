@@ -87,12 +87,12 @@ export default function PendingAdsPage() {
 
 
   useEffect(() => {
-    if (sessionStatus === "authenticated" && session?.user?.role === 'reviewer') {
+    if (sessionStatus === "authenticated" && (session?.user?.role === 'reviewer' || session?.user?.role === 'super_admin')) {
       fetchPendingAds();
     } else if (sessionStatus === "unauthenticated") {
-      setError("Access Denied. Please log in as a reviewer.");
+      setError("Access Denied. Please log in.");
       setIsLoading(false);
-    } else if (sessionStatus === "authenticated" && session?.user?.role !== 'reviewer') {
+    } else if (sessionStatus === "authenticated" && session?.user?.role !== 'reviewer' && session?.user?.role !== 'super_admin') {
       setError("Access Denied. You do not have permission to view this page.");
       setIsLoading(false);
     }

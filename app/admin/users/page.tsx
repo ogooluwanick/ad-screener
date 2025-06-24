@@ -10,8 +10,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Edit, UserPlus, Users, Eye, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface User {
   _id: string;
@@ -22,6 +40,13 @@ interface User {
   emailVerified: boolean | null;
   createdAt: string;
   updatedAt: string;
+  submitterType?: string;
+  letterOfAuthorityUrl?: string | null;
+  companyName?: string;
+  registrationNumber?: string; // Added
+  cacDocumentUrl?: string | null; // Assuming this might exist or be needed
+  meansOfIdUrl?: string | null; // Assuming this might exist or be needed
+  proofOfAddressUrl?: string | null; // Assuming this might exist or be needed
 }
 
 interface EditUserData {
@@ -44,6 +69,11 @@ const AdminUsersPage = () => {
     role: "",
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedUserForView, setSelectedUserForView] = useState<User | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -129,6 +159,62 @@ const AdminUsersPage = () => {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleOpenViewModal = (user: User) => {
+    setSelectedUserForView(user);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setSelectedUserForView(null);
+    setIsViewModalOpen(false);
+  };
+
+  const handleOpenDeleteConfirm = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleCloseDeleteConfirm = () => {
+    setUserToDelete(null);
+    setIsDeleteConfirmOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/users`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: userToDelete._id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete user");
+      }
+
+      toast({
+        title: "User Deleted",
+        description: `${userToDelete.firstName} ${userToDelete.lastName} has been deleted.`,
+      });
+      fetchUsers(); // Refresh list
+      handleCloseDeleteConfirm();
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      toast({
+        title: "Deletion Failed",
+        description: error instanceof Error ? error.message : "Could not delete user.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -255,16 +341,34 @@ const AdminUsersPage = () => {
                     <TableCell>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEditUser(user)}
-                        title="Edit User"
-                      >
-                        <Edit className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Edit</span>
-                      </Button>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleOpenViewModal(user)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleOpenDeleteConfirm(user)}
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -330,6 +434,40 @@ const AdminUsersPage = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Display Letter of Authority if Agency Submitter */}
+            {selectedUser?.submitterType === 'agency' && selectedUser?.letterOfAuthorityUrl && (
+              <div className="space-y-2">
+                <Label htmlFor="letterOfAuthority">Letter of Authority</Label>
+                <div className="mt-1">
+                  <Link
+                    href={selectedUser.letterOfAuthorityUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-green-600 hover:text-green-700 underline break-all"
+                    title={selectedUser.letterOfAuthorityUrl}
+                  >
+                    View Document
+                  </Link>
+                </div>
+              </div>
+            )}
+            {selectedUser?.submitterType === 'agency' && !selectedUser?.letterOfAuthorityUrl && (
+                <div className="space-y-2">
+                  <Label htmlFor="letterOfAuthority">Letter of Authority</Label>
+                  <p className="text-sm text-gray-500">Not uploaded.</p>
+                </div>
+            )}
+             {/* Display Company Name if Submitter */}
+             {selectedUser?.role === 'submitter' && selectedUser?.companyName && (
+              <div className="space-y-2">
+                <Label>
+                  {selectedUser.submitterType === 'agency' ? 'Agency Name' : 'Business Name'}
+                </Label>
+                <p className="text-sm text-gray-700">{selectedUser.companyName}</p>
+              </div>
+            )}
+
           </div>
           
           <DialogFooter>
@@ -342,6 +480,105 @@ const AdminUsersPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View User Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={(isOpen: boolean) => { if (!isOpen) handleCloseViewModal(); else setIsViewModalOpen(true); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>View User: {selectedUserForView?.firstName} {selectedUserForView?.lastName}</DialogTitle>
+            <DialogDescription>
+              Detailed information for the selected user.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUserForView && (
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div><Label>First Name</Label><p className="text-sm text-gray-700">{selectedUserForView.firstName}</p></div>
+                <div><Label>Last Name</Label><p className="text-sm text-gray-700">{selectedUserForView.lastName}</p></div>
+                <div className="col-span-2"><Label>Email</Label><p className="text-sm text-gray-700">{selectedUserForView.email}</p></div>
+                <div><Label>Role</Label><p className="text-sm text-gray-700">{selectedUserForView.role}</p></div>
+                <div>
+                  <Label>Email Verified</Label>
+                  <p className={`text-sm ${selectedUserForView.emailVerified ? "text-green-600" : "text-red-600"}`}>
+                    {selectedUserForView.emailVerified ? "Yes" : "No"}
+                  </p>
+                </div>
+                <div><Label>Joined On</Label><p className="text-sm text-gray-700">{new Date(selectedUserForView.createdAt).toLocaleString()}</p></div>
+                <div><Label>Last Updated</Label><p className="text-sm text-gray-700">{new Date(selectedUserForView.updatedAt).toLocaleString()}</p></div>
+                
+                {selectedUserForView.role === 'submitter' && (
+                  <>
+                    <div>
+                      <Label>Submitter Type</Label>
+                      <p className="text-sm text-gray-700">{selectedUserForView.submitterType || "Not provided"}</p>
+                    </div>
+                    <div>
+                      <Label>{selectedUserForView.submitterType === 'agency' ? 'Agency Name' : 'Business Name'}</Label>
+                      <p className="text-sm text-gray-700">{selectedUserForView.companyName || "Not provided"}</p>
+                    </div>
+                    <div>
+                      <Label>Registration Number</Label>
+                      <p className="text-sm text-gray-700">{selectedUserForView.registrationNumber || "Not provided"}</p>
+                    </div>
+                     <div>
+                      <Label>CAC Document</Label>
+                      {selectedUserForView.cacDocumentUrl ? (
+                        <Link href={selectedUserForView.cacDocumentUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:text-green-700 underline break-all">View Document</Link>
+                      ) : <p className="text-sm text-gray-500">Not uploaded</p>}
+                    </div>
+                    <div>
+                      <Label>Means of ID</Label>
+                      {selectedUserForView.meansOfIdUrl ? (
+                        <Link href={selectedUserForView.meansOfIdUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:text-green-700 underline break-all">View Document</Link>
+                      ) : <p className="text-sm text-gray-500">Not uploaded</p>}
+                    </div>
+                     <div>
+                      <Label>Proof of Address</Label>
+                      {selectedUserForView.proofOfAddressUrl ? (
+                        <Link href={selectedUserForView.proofOfAddressUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:text-green-700 underline break-all">View Document</Link>
+                      ) : <p className="text-sm text-gray-500">Not uploaded</p>}
+                    </div>
+                    {selectedUserForView.submitterType === 'agency' && (
+                       <div>
+                        <Label>Letter of Authority</Label>
+                        {selectedUserForView.letterOfAuthorityUrl ? (
+                          <Link href={selectedUserForView.letterOfAuthorityUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:text-green-700 underline break-all">View Document</Link>
+                        ) : <p className="text-sm text-gray-500">Not uploaded</p>}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user 
+              <span className="font-semibold"> {userToDelete?.firstName} {userToDelete?.lastName}</span> and remove their data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseDeleteConfirm} disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+              {isDeleting ? "Deleting..." : "Yes, delete user"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };

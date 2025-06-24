@@ -12,8 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox"; // Added for multi-select
-import { AlertTriangle, Edit, Eye, Download, ExternalLink, FileText, Clock, CheckCircle, XCircle, Search } from "lucide-react"; // Added Search
+import { AlertTriangle, Edit, Eye, Download, ExternalLink, FileText, Clock, CheckCircle, XCircle, Search, ThumbsUp, ThumbsDown, Info as InfoIcon, MoreHorizontal, FileCheck } from "lucide-react"; // Added Search, ThumbsUp, ThumbsDown, InfoIcon, MoreHorizontal, FileCheck
 import { toast } from "@/hooks/use-toast";
+import ComplianceForm, { ComplianceFormData } from "@/components/compliance-form"; // Added ComplianceForm
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+// We'll use the existing Ad interface and adapt it if necessary, rather than importing PendingAdListItem directly for now.
 
 interface User {
   _id: string;
@@ -58,24 +68,36 @@ interface EditAdData {
 
 const AdminAdsPage = () => {
   const { data: session, status: sessionStatus } = useSession();
-  const [ads, setAds] = useState<Ad[]>([]);
+  const [ads, setAds] = useState<Ad[]>([]); // This will hold all ads
   const [allReviewers, setAllReviewers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState(""); // For reviewer search
+  const [searchTerm, setSearchTerm] = useState(""); // For reviewer search in edit modal
   const [filteredReviewers, setFilteredReviewers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  
+  // State for Edit Ad Modal
+  const [selectedAdForEdit, setSelectedAdForEdit] = useState<Ad | null>(null); // Renamed from selectedAd
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [editData, setEditData] = useState<EditAdData>({
     title: "",
     description: "",
     status: "",
     rejectionReason: "",
-    // reviewerId: "",
     assignedReviewerIds: [],
   });
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // State for View Details Modal
+  const [selectedAdForDetails, setSelectedAdForDetails] = useState<Ad | null>(null); // New state for details modal
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // State for Review Ad Modal (copied from reviewer/pending page)
+  const [selectedAdForReview, setSelectedAdForReview] = useState<Ad | null>(null); // Use Ad type
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [rejectionReasonForReview, setRejectionReasonForReview] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [complianceData, setComplianceData] = useState<ComplianceFormData | null>(null);
+  // const [showComplianceFormStep, setShowComplianceFormStep] = useState(true); // May not be needed if modal structure is simpler
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -126,49 +148,60 @@ const AdminAdsPage = () => {
       setError("Access Denied. You do not have permission to view this page.");
       setLoading(false);
     }
-  }, [session, sessionStatus, fetchAds, fetchUsers]); // Added fetchUsers
+  }, [session, sessionStatus, fetchAds, fetchUsers]); 
 
-  const handleEditAd = (ad: Ad) => {
-    setSelectedAd(ad);
+  // Edit Ad Modal Functions
+  const handleEditAd = (ad: Ad) => { 
+    setSelectedAdForEdit(ad);
     setEditData({
       title: ad.title,
       description: ad.description,
       status: ad.status,
       rejectionReason: ad.rejectionReason || "",
-      // reviewerId: ad.reviewerId || "", // Keep for now if needed for backward compatibility or single reviewer display
       assignedReviewerIds: ad.assignedReviewerIds || [],
     });
-    setSearchTerm(""); // Reset search term for reviewers
-    setFilteredReviewers(allReviewers); // Reset filtered reviewers
+    setSearchTerm(""); 
+    setFilteredReviewers(allReviewers); 
     setIsEditModalOpen(true);
   };
 
-  const handleViewDetails = (ad: Ad) => {
-    setSelectedAd(ad);
+  const handleCloseEditModal = () => {
+    setSelectedAdForEdit(null);
+    setIsEditModalOpen(false);
+    setEditData({ title: "", description: "", status: "", rejectionReason: "", assignedReviewerIds: [] });
+    setSearchTerm("");
+  };
+
+  // View Details Modal Functions
+  const handleViewDetails = (ad: Ad) => { 
+    setSelectedAdForDetails(ad);
     setIsDetailsModalOpen(true);
   };
 
-  const handleCloseEditModal = () => {
-    setSelectedAd(null);
-    setIsEditModalOpen(false);
-    setEditData({
-      title: "",
-    description: "",
-    status: "",
-    rejectionReason: "",
-    // reviewerId: "",
-    assignedReviewerIds: [],
-  });
-  setSearchTerm("");
+  const handleCloseDetailsModal = () => {
+    setSelectedAdForDetails(null);
+    setIsDetailsModalOpen(false);
+  };
+  
+  // Review Ad Modal Functions (adapted from reviewer/pending)
+  const handleOpenReviewModal = (ad: Ad) => {
+    setSelectedAdForReview(ad);
+    setRejectionReasonForReview(""); 
+    setComplianceData(null); 
+    // setShowComplianceFormStep(true); 
+    setIsReviewModalOpen(true);
   };
 
-  const handleCloseDetailsModal = () => {
-    setSelectedAd(null);
-    setIsDetailsModalOpen(false);
+  const handleCloseReviewModal = () => {
+    setSelectedAdForReview(null);
+    setIsReviewModalOpen(false);
+    setRejectionReasonForReview("");
+    setComplianceData(null);
+    // setShowComplianceFormStep(true);
   };
 
   const handleUpdateAd = async () => {
-    if (!selectedAd) return;
+    if (!selectedAdForEdit) return; // Updated to selectedAdForEdit
 
     setIsUpdating(true);
     try {
@@ -178,7 +211,7 @@ const AdminAdsPage = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          adId: selectedAd._id,
+          adId: selectedAdForEdit._id, // Updated to selectedAdForEdit
           ...editData,
         }),
       });
@@ -204,6 +237,62 @@ const AdminAdsPage = () => {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Submit Review Function (adapted from reviewer/pending)
+  const submitReview = async (adId: string, reviewStatus: 'approved' | 'rejected', reason?: string) => {
+    if (!session?.user?.id) {
+      toast({ title: "Error", description: "You must be logged in to review ads.", variant: "destructive" });
+      return;
+    }
+    if (reviewStatus === 'rejected' && !reason?.trim()) {
+      toast({ title: "Validation Error", description: "Rejection reason is required.", variant: "destructive" });
+      return;
+    }
+    if (!complianceData) {
+      toast({ title: "Validation Error", description: "Compliance form must be submitted.", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const endpoint = reviewStatus === 'approved' ? `/api/reviewer/ads/approved` : `/api/reviewer/ads/rejected`;
+      const body: any = {
+        adId,
+        complianceData,
+      };
+      if (reviewStatus === 'rejected') {
+        body.rejectionReason = reason;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to submit review: ${response.statusText}`);
+      }
+
+      toast({
+        title: "Review Submitted",
+        description: `Ad has been ${reviewStatus}.`,
+        variant: "default",
+      });
+      fetchAds(); // Refresh the main ads list
+      handleCloseReviewModal();
+    } catch (err) {
+      console.error("Failed to submit review:", err);
+      toast({
+        title: "Review Submission Failed",
+        description: err instanceof Error ? err.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -344,26 +433,35 @@ const AdminAdsPage = () => {
                     {/* <TableCell>
                       {ad.reviewedAt ? new Date(ad.reviewedAt).toLocaleDateString() : "Not reviewed"}
                     </TableCell> */}
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleViewDetails(ad)}
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">View</span>
-                      </Button>
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        onClick={() => handleEditAd(ad)}
-                        className="bg-green-600 hover:bg-green-700"
-                        title="Edit Ad"
-                      >
-                        <Edit className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Edit</span>
-                      </Button>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleViewDetails(ad)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditAd(ad)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Ad
+                          </DropdownMenuItem>
+                          {ad.status === 'pending' && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleOpenReviewModal(ad)}>
+                                <FileCheck className="mr-2 h-4 w-4" /> {/* Changed icon to FileCheck for review */}
+                                Review Ad
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -377,7 +475,7 @@ const AdminAdsPage = () => {
       <Dialog open={isEditModalOpen} onOpenChange={(isOpen: boolean) => { if (!isOpen) handleCloseEditModal(); else setIsEditModalOpen(true); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Ad: {selectedAd?.title}</DialogTitle>
+            <DialogTitle>Edit Ad: {selectedAdForEdit?.title}</DialogTitle>
             <DialogDescription>
               Update ad information and review status. Changes will be applied immediately.
             </DialogDescription>
@@ -517,91 +615,91 @@ const AdminAdsPage = () => {
       <Dialog open={isDetailsModalOpen} onOpenChange={(isOpen: boolean) => { if (!isOpen) handleCloseDetailsModal(); else setIsDetailsModalOpen(true); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Ad Details: {selectedAd?.title}</DialogTitle>
+            <DialogTitle>Ad Details: {selectedAdForDetails?.title}</DialogTitle>
             <DialogDescription>
               Complete information about the ad submission.
             </DialogDescription>
           </DialogHeader>
           
-          {selectedAd && (
+          {selectedAdForDetails && (
             <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto !px-2">
               <div>
                 <h3 className="font-semibold mb-1">Ad Title:</h3>
-                <p className="text-sm text-muted-foreground">{selectedAd.title}</p>
+                <p className="text-sm text-muted-foreground">{selectedAdForDetails.title}</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Ad Description:</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAd.description}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForDetails.description}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-semibold mb-1">Media Type:</h3>
-                  <p className="text-sm text-muted-foreground capitalize">{selectedAd.mediaType || "N/A"}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{selectedAdForDetails.mediaType || "N/A"}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Vetting Speed:</h3>
                   <p className="text-sm text-muted-foreground capitalize">
-                    {selectedAd.vettingSpeed === 'normal' ? 'Normal' : 
-                     selectedAd.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
-                     selectedAd.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
-                     selectedAd.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
-                     selectedAd.vettingSpeed || 'N/A'}
+                    {selectedAdForDetails.vettingSpeed === 'normal' ? 'Normal' : 
+                     selectedAdForDetails.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
+                     selectedAdForDetails.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
+                     selectedAdForDetails.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
+                     selectedAdForDetails.vettingSpeed || 'N/A'}
                   </p>
                 </div>
               </div>
 
-              {selectedAd.totalFeeNgn !== undefined && selectedAd.totalFeeNgn !== null && (
+              {selectedAdForDetails.totalFeeNgn !== undefined && selectedAdForDetails.totalFeeNgn !== null && (
                  <div>
                     <h3 className="font-semibold mb-1">Total Fee Paid:</h3>
                     <p className="text-sm text-muted-foreground">
-                      ₦{selectedAd.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₦{selectedAdForDetails.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
               )}
               
               <div>
                 <h3 className="font-semibold mb-1">Ad File:</h3>
-                {selectedAd.adFileType === 'image' && selectedAd.adFileUrl && (
+                {selectedAdForDetails.adFileType === 'image' && selectedAdForDetails.adFileUrl && (
                   <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
                     <img 
-                      src={selectedAd.adFileUrl} 
-                      alt={`Ad file for ${selectedAd.title}`} 
+                      src={selectedAdForDetails.adFileUrl} 
+                      alt={`Ad file for ${selectedAdForDetails.title}`} 
                       className="w-full h-auto object-contain" 
                     />
                   </div>
                 )}
-                {selectedAd.adFileType === 'video' && selectedAd.adFileUrl && (
+                {selectedAdForDetails.adFileType === 'video' && selectedAdForDetails.adFileUrl && (
                   <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
-                    <video controls src={selectedAd.adFileUrl} className="w-full h-auto object-contain">
+                    <video controls src={selectedAdForDetails.adFileUrl} className="w-full h-auto object-contain">
                       Your browser does not support the video tag.
                     </video>
                   </div>
                 )}
-                {selectedAd.adFileType === 'pdf' && selectedAd.adFileUrl && (
+                {selectedAdForDetails.adFileType === 'pdf' && selectedAdForDetails.adFileUrl && (
                   <div className="my-2">
                       <Button asChild variant="outline">
-                        <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF <ExternalLink className="inline h-3 w-3 ml-1" /></a>
+                        <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF <ExternalLink className="inline h-3 w-3 ml-1" /></a>
                       </Button>
                   </div>
                 )}
-                {(!selectedAd.adFileType || selectedAd.adFileType === 'other') && selectedAd.adFileUrl && (
+                {(!selectedAdForDetails.adFileType || selectedAdForDetails.adFileType === 'other') && selectedAdForDetails.adFileUrl && (
                   <p className="text-sm text-muted-foreground">
-                    Ad file: <a href={selectedAd.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAd.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
+                    Ad file: <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAdForDetails.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
                   </p>
                 )}
-                {!selectedAd.adFileUrl && (
+                {!selectedAdForDetails.adFileUrl && (
                    <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
                     <p className="text-sm text-gray-500">No ad file provided.</p>
                   </div>
                 )}
               </div>
 
-              {selectedAd.supportingDocuments && selectedAd.supportingDocuments.length > 0 && (
+              {selectedAdForDetails.supportingDocuments && selectedAdForDetails.supportingDocuments.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-1">Supporting Documents:</h3>
                   <ul className="list-disc list-inside space-y-1 pl-4">
-                    {selectedAd.supportingDocuments.map((doc, index) => (
+                    {selectedAdForDetails.supportingDocuments.map((doc: { url: string; name: string }, index: number) => (
                       <li key={index} className="text-sm">
                         <a 
                           href={getCloudinaryDownloadUrl(doc.url, doc.name)}
@@ -621,39 +719,39 @@ const AdminAdsPage = () => {
 
               <div>
                 <h3 className="font-semibold mb-1">Submitted By:</h3>
-                <p className="text-sm text-muted-foreground">{selectedAd.submitterEmail}</p>
+                <p className="text-sm text-muted-foreground">{selectedAdForDetails.submitterEmail}</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Submitted On:</h3>
-                <p className="text-sm text-muted-foreground">{new Date(selectedAd.submittedAt).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">{new Date(selectedAdForDetails.submittedAt).toLocaleString()}</p>
               </div>
-              {selectedAd.reviewedAt && (
+              {selectedAdForDetails.reviewedAt && (
                 <div>
                   <h3 className="font-semibold mb-1">Reviewed On:</h3>
-                  <p className="text-sm text-muted-foreground">{new Date(selectedAd.reviewedAt).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">{new Date(selectedAdForDetails.reviewedAt).toLocaleString()}</p>
                 </div>
               )}
-              {selectedAd.reviewerId && (
+              {selectedAdForDetails.reviewerId && (
               <div>
                 <h3 className="font-semibold mb-1">Reviewed By (Legacy ID):</h3>
-                <p className="text-sm text-muted-foreground">{selectedAd.reviewerId || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">{selectedAdForDetails.reviewerId || "N/A"}</p>
               </div>
             )}
-            {selectedAd.assignedReviewerIds && selectedAd.assignedReviewerIds.length > 0 && (
+            {selectedAdForDetails.assignedReviewerIds && selectedAdForDetails.assignedReviewerIds.length > 0 && (
                <div>
                  <h3 className="font-semibold mb-1">Assigned Reviewer(s):</h3>
                  <ul className="list-disc list-inside pl-4">
-                   {selectedAd.assignedReviewerIds.map(id => {
+                   {selectedAdForDetails.assignedReviewerIds.map((id: string) => {
                      const reviewer = allReviewers.find(r => r._id === id);
                      return <li key={id} className="text-sm text-muted-foreground">{reviewer ? `${reviewer.name || reviewer.email} (${reviewer.email})` : `ID: ${id}`}</li>;
                    })}
                  </ul>
                </div>
             )}
-            {selectedAd.rejectionReason && (
+            {selectedAdForDetails.rejectionReason && (
                 <div>
                   <h3 className="font-semibold mb-1">Rejection Reason:</h3>
-                  <p className="text-sm text-muted-foreground">{selectedAd.rejectionReason}</p>
+                  <p className="text-sm text-muted-foreground">{selectedAdForDetails.rejectionReason}</p>
                 </div>
               )}
             </div>
@@ -662,6 +760,175 @@ const AdminAdsPage = () => {
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Modal */}
+      <Dialog open={isReviewModalOpen} onOpenChange={(isOpen: boolean) => { if (!isOpen) handleCloseReviewModal(); else setIsReviewModalOpen(true); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review Ad: {selectedAdForReview?.title}</DialogTitle>
+            <DialogDescription>
+              Carefully review the ad details and content before making a decision.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAdForReview && (
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto !px-2"> {/* Increased max-h slightly */}
+              <div>
+                <h3 className="font-semibold mb-1">Ad Title:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForReview.title}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Ad Description:</h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedAdForReview.description}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-1">Media Type:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">{selectedAdForReview.mediaType || "N/A"}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Vetting Speed:</h3>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {selectedAdForReview.vettingSpeed === 'normal' ? 'Normal' : 
+                     selectedAdForReview.vettingSpeed === '16hr' ? 'Accelerated (16 hours)' :
+                     selectedAdForReview.vettingSpeed === '8hr' ? 'Accelerated (8 hours)' :
+                     selectedAdForReview.vettingSpeed === '4hr' ? 'Accelerated (4 hours)' :
+                     selectedAdForReview.vettingSpeed || 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedAdForReview.totalFeeNgn !== undefined && selectedAdForReview.totalFeeNgn !== null && (
+                 <div>
+                    <h3 className="font-semibold mb-1">Total Fee Paid by Submitter:</h3>
+                    <p className="text-sm text-muted-foreground">
+                      ₦{selectedAdForReview.totalFeeNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+              )}
+              
+              <div>
+                <h3 className="font-semibold mb-1">Ad File:</h3>
+                {selectedAdForReview.adFileType === 'image' && selectedAdForReview.adFileUrl && (
+                  <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
+                    <img 
+                      src={selectedAdForReview.adFileUrl} 
+                      alt={`Ad file for ${selectedAdForReview.title}`} 
+                      className="w-full h-auto object-contain" 
+                    />
+                  </div>
+                )}
+                {selectedAdForReview.adFileType === 'video' && selectedAdForReview.adFileUrl && (
+                  <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto">
+                    <video controls src={selectedAdForReview.adFileUrl} className="w-full h-auto object-contain">
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+                {selectedAdForReview.adFileType === 'pdf' && selectedAdForReview.adFileUrl && (
+                  <div className="my-2">
+                      <Button asChild variant="outline">
+                        <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer">View PDF <ExternalLink className="inline h-3 w-3 ml-1" /></a>
+                      </Button>
+                  </div>
+                )}
+                {(!selectedAdForReview.adFileType || selectedAdForReview.adFileType === 'other') && selectedAdForReview.adFileUrl && (
+                  <p className="text-sm text-muted-foreground">
+                    Ad file: <a href={selectedAdForReview.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">{selectedAdForReview.adFileUrl} <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available for this type)
+                  </p>
+                )}
+                {!selectedAdForReview.adFileUrl && (
+                   <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
+                    <p className="text-sm text-gray-500">No ad file provided.</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedAdForReview.supportingDocuments && selectedAdForReview.supportingDocuments.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-1">Supporting Documents:</h3>
+                  <ul className="list-disc list-inside space-y-1 pl-4">
+                    {selectedAdForReview.supportingDocuments.map((doc, index) => (
+                      <li key={index} className="text-sm">
+                        <a 
+                          href={getCloudinaryDownloadUrl(doc.url, doc.name)}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-green-600 hover:underline"
+                          title={`Download ${doc.name}`}
+                          download={doc.name}
+                        >
+                          {doc.name || `Document ${index + 1}`} <Download className="inline h-3 w-3 ml-1 opacity-75" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-semibold mb-1">Submitted By:</h3>
+                <p className="text-sm text-muted-foreground">{selectedAdForReview.submitterEmail}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Submitted On:</h3>
+                <p className="text-sm text-muted-foreground">{new Date(selectedAdForReview.submittedAt).toLocaleString()}</p>
+              </div>
+
+              <hr className="my-4" />
+
+              {/* Compliance Form Integration */}
+              <div className="my-4 p-4 border rounded-md bg-slate-50">
+                <h3 className="text-lg font-semibold mb-3">Step 1: Complete Compliance Checklist</h3>
+                <ComplianceForm
+                  onSubmit={(data) => {
+                    setComplianceData(data);
+                    toast({ title: "Compliance Form Saved", description: "You can now proceed to approve or reject.", variant: "default" });
+                  }}
+                  isSubmitting={isSubmittingReview}
+                />
+              </div>
+              
+              <hr className="my-4" />
+
+              <div className={`${complianceData ? '' : 'opacity-50 pointer-events-none'}`}>
+                <h3 className="text-lg font-semibold mb-3">Step 2: Approve or Reject Ad</h3>
+                {!complianceData && <p className="text-sm text-orange-600 mb-2"><InfoIcon size={14} className="inline mr-1" />Please complete and submit the compliance checklist above to enable these actions.</p>}
+                <Label htmlFor="rejectionReasonForReview" className="font-semibold">Rejection Reason (Required if rejecting):</Label>
+                <Textarea
+                  id="rejectionReasonForReview"
+                  placeholder="Provide a clear reason if rejecting the ad..."
+                  value={rejectionReasonForReview}
+                  onChange={(e) => setRejectionReasonForReview(e.target.value)}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isSubmittingReview} onClick={handleCloseReviewModal}>Cancel</Button>
+            </DialogClose>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedAdForReview && submitReview(selectedAdForReview._id, 'rejected', rejectionReasonForReview)}
+              disabled={isSubmittingReview || !complianceData || (!!selectedAdForReview && !rejectionReasonForReview.trim())}
+            >
+              <ThumbsDown className="mr-2 h-4 w-4" /> Reject Ad
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => selectedAdForReview && submitReview(selectedAdForReview._id, 'approved')}
+              disabled={isSubmittingReview || !complianceData}
+            >
+              <ThumbsUp className="mr-2 h-4 w-4" /> Approve Ad
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

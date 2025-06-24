@@ -4,8 +4,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { sendNotificationToUser } from "@/lib/notification-client"; // Added for notifications
+import { deleteFromCloudinary } from "@/lib/cloudinary_utils"; // For deleting old LoA
 
-export async function GET() {
+export async function GET() { // Added export async function GET() here
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user || !session.user.id) {
@@ -50,6 +51,9 @@ export async function GET() {
       // Reviewer specific fields
       department: user.department || "", // Reviewer's internal department
       expertise: user.expertise || [],   // Reviewer's areas of expertise (already existed)
+      // Agency specific
+      letterOfAuthorityUrl: user.letterOfAuthorityUrl || null,
+      letterOfAuthorityPublicId: user.letterOfAuthorityPublicId || null,
     };
 
     return NextResponse.json(profileData, { status: 200 });
@@ -96,7 +100,11 @@ export async function PUT(req: Request) {
       businessDescription,
       // Reviewer specific fields
       department, 
-      expertise
+      expertise,
+      // Letter of Authority fields
+      newLetterOfAuthorityUrl,
+      newLetterOfAuthorityPublicId,
+      currentLetterOfAuthorityPublicId // This is the one from profileData before new upload
     } = body;
 
     // Basic validation (can be expanded)
@@ -141,6 +149,61 @@ export async function PUT(req: Request) {
       updateData.expertise = expertise;
     }
     // Note: Email updates are typically handled separately due to verification needs.
+
+    // Fetch current user data to check existing LoA and submitterType
+    const currentUser = await usersCollection.findOne({ _id: userId });
+    if (!currentUser) {
+      return NextResponse.json({ message: "User not found for update check" }, { status: 404 });
+    }
+
+    const oldLoAPublicId = currentUser.letterOfAuthorityPublicId;
+    const oldSubmitterType = currentUser.submitterType;
+
+    if (newLetterOfAuthorityUrl && newLetterOfAuthorityPublicId) {
+      // New LoA was uploaded
+      if (oldLoAPublicId) {
+        try {
+          await deleteFromCloudinary(oldLoAPublicId, 'raw'); // Assuming 'raw' or 'auto' was used for LoA
+          console.log(`Successfully deleted old Letter of Authority: ${oldLoAPublicId}`);
+        } catch (deleteError) {
+          console.error(`Failed to delete old Letter of Authority ${oldLoAPublicId}:`, deleteError);
+          // Decide if this is a critical error. For now, log and continue.
+        }
+      }
+      updateData.letterOfAuthorityUrl = newLetterOfAuthorityUrl;
+      updateData.letterOfAuthorityPublicId = newLetterOfAuthorityPublicId;
+    } else if (submitterType && submitterType !== 'agency' && oldSubmitterType === 'agency' && oldLoAPublicId) {
+      // User changed from Agency to Business/other, and had an LoA
+      try {
+        await deleteFromCloudinary(oldLoAPublicId, 'raw');
+        console.log(`Successfully deleted Letter of Authority due to submitter type change: ${oldLoAPublicId}`);
+      } catch (deleteError) {
+        console.error(`Failed to delete Letter of Authority ${oldLoAPublicId} on type change:`, deleteError);
+      }
+      updateData.letterOfAuthorityUrl = null;
+      updateData.letterOfAuthorityPublicId = null;
+    } else if (submitterType && submitterType === 'agency' && !newLetterOfAuthorityUrl && currentLetterOfAuthorityPublicId === null && oldLoAPublicId) {
+      // This case handles if the user is an agency, didn't upload a new LoA, but somehow the frontend indicates current is null (e.g. user wants to remove it without replacing)
+      // And there was an old one. This might be an explicit "remove" action not yet implemented on frontend.
+      // For now, if new URL is not provided, we keep the old one unless type changes.
+      // If an explicit "remove" button is added, it should send specific flags.
+    }
+
+
+    // If submitterType is not 'agency', ensure LoA fields are nulled, unless a new one is being set (which implies type is agency)
+    if (updateData.submitterType && updateData.submitterType !== 'agency' && !(newLetterOfAuthorityUrl && newLetterOfAuthorityPublicId)) {
+        if (currentUser.letterOfAuthorityPublicId) { // Check if there was one to delete
+             try {
+                await deleteFromCloudinary(currentUser.letterOfAuthorityPublicId, 'raw');
+                console.log(`Successfully deleted Letter of Authority as user is no longer agency: ${currentUser.letterOfAuthorityPublicId}`);
+            } catch (deleteError) {
+                console.error(`Failed to delete old Letter of Authority ${currentUser.letterOfAuthorityPublicId} when changing from agency:`, deleteError);
+            }
+        }
+        updateData.letterOfAuthorityUrl = null;
+        updateData.letterOfAuthorityPublicId = null;
+    }
+
 
     const result = await usersCollection.updateOne(
       { _id: userId },
@@ -193,6 +256,9 @@ export async function PUT(req: Request) {
         // Reviewer specific
         department: updatedUser?.department,
         expertise: updatedUser?.expertise,
+        // Agency specific
+        letterOfAuthorityUrl: updatedUser?.letterOfAuthorityUrl,
+        letterOfAuthorityPublicId: updatedUser?.letterOfAuthorityPublicId,
       } },
       { status: 200 }
     );

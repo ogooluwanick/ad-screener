@@ -625,9 +625,9 @@ export default function Home() {
               <a href="#" className="text-gray-400 hover:text-white text-sm">
                 Terms of Service
               </a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm">
+              {/* <a href="#" className="text-gray-400 hover:text-white text-sm">
                 Cookie Policy
-              </a>
+              </a> */}
             </div>
           </div>
         </div>

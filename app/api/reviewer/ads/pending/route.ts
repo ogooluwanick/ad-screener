@@ -56,7 +56,7 @@ interface UserDocument {
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id || session.user.role !== 'reviewer') {
+  if (!session || !session.user || !session.user.id || (session.user.role !== 'reviewer' && session.user.role !== 'super_admin')) {
     return NextResponse.json({ message: 'Unauthorized or invalid role' }, { status: 401 });
   }
 
@@ -65,17 +65,24 @@ export async function GET(request: Request) {
     const db = client.db();
     const adsCollection = db.collection<AdDocumentForListing>('ads');
     const usersCollection = db.collection<UserDocument>('users'); // Added users collection
-    const currentReviewerId = session.user.id;
+    
+    let pendingQuery: any;
 
-    // Fetch pending ads: ads assigned to current reviewer OR ads with no assignment
-    const pendingQuery = {
-      status: 'pending' as 'pending',
-      $or: [
-        { assignedReviewerIds: currentReviewerId },
-        { assignedReviewerIds: { $exists: false } },
-        { assignedReviewerIds: { $size: 0 } }
-      ]
-    };
+    if (session.user.role === 'super_admin') {
+      pendingQuery = {
+        status: 'pending' as 'pending',
+      };
+    } else { // For 'reviewer'
+      const currentReviewerId = session.user.id;
+      pendingQuery = {
+        status: 'pending' as 'pending',
+        $or: [
+          { assignedReviewerIds: currentReviewerId },
+          { assignedReviewerIds: { $exists: false } },
+          { assignedReviewerIds: { $size: 0 } }
+        ]
+      };
+    }
 
     const pendingAdsCursor = adsCollection
       .find(pendingQuery)

@@ -50,6 +50,8 @@ export default function SignupPage() {
     state: "",
     country: "",
     businessDescription: "",
+    // Specific to Agency
+    letterOfAuthority: null as File | null,
   })
 
   const [isLoading, setIsLoading] = useState(false)
@@ -68,8 +70,13 @@ export default function SignupPage() {
   }, [session, status, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target;
+    if (type === "file") {
+      const file = (e.target as HTMLInputElement).files?.[0] || null;
+      setFormData((prev) => ({ ...prev, [name]: file }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -105,35 +112,50 @@ export default function SignupPage() {
         setIsLoading(false); return;
     }
 
-    const payload: any = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-      submitterType: submitterType,
-      companyName: formData.companyName,
-      registrationNumber: formData.registrationNumber,
-    };
+    const apiPayload = new FormData();
+    apiPayload.append("firstName", formData.firstName);
+    apiPayload.append("lastName", formData.lastName);
+    apiPayload.append("email", formData.email);
+    apiPayload.append("password", formData.password);
+    apiPayload.append("role", formData.role);
+    apiPayload.append("submitterType", submitterType);
+    apiPayload.append("companyName", formData.companyName);
+    apiPayload.append("registrationNumber", formData.registrationNumber);
+
 
     if (submitterType === "business") {
       if (!formData.sector || !formData.officeAddress || !formData.state || !formData.country || !formData.businessDescription) {
         toast({ title: "Error", description: "All business details are required for Business account type.", variant: "destructive" })
         setIsLoading(false); return;
       }
-      payload.sector = formData.sector;
-      payload.officeAddress = formData.officeAddress;
-      payload.state = formData.state;
-      payload.country = formData.country;
-      payload.businessDescription = formData.businessDescription;
+      apiPayload.append("sector", formData.sector);
+      apiPayload.append("officeAddress", formData.officeAddress);
+      apiPayload.append("state", formData.state);
+      apiPayload.append("country", formData.country);
+      apiPayload.append("businessDescription", formData.businessDescription);
+    } else if (submitterType === "agency") {
+      if (!formData.letterOfAuthority) {
+        toast({ title: "Error", description: "Letter of Authority is required for Agency account type.", variant: "destructive" });
+        setIsLoading(false); return;
+      }
+      // Validate file type and size (optional but recommended)
+      const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png"];
+      if (!allowedTypes.includes(formData.letterOfAuthority.type)) {
+        toast({ title: "Error", description: "Invalid file type for Letter of Authority. Please upload PDF, DOC, DOCX, JPG, or PNG.", variant: "destructive" });
+        setIsLoading(false); return;
+      }
+      if (formData.letterOfAuthority.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ title: "Error", description: "Letter of Authority file size exceeds 5MB.", variant: "destructive" });
+        setIsLoading(false); return;
+      }
+      apiPayload.append("letterOfAuthority", formData.letterOfAuthority);
     }
-
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        // headers: { "Content-Type": "application/json" }, // Remove for FormData
+        body: apiPayload, // Use FormData object
       })
 
       const data = await res.json()
@@ -247,7 +269,7 @@ export default function SignupPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="officeAddress">Office Address</Label>
+                      <Label htmlFor="officeAddress">Office Address</Label>vail
                       <Input id="officeAddress" name="officeAddress" placeholder="123 Main St, City" value={formData.officeAddress} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -270,6 +292,10 @@ export default function SignupPage() {
                     <div className="space-y-2">
                       <Label htmlFor="companyNameAgency">Agency Name</Label>
                       <Input id="companyNameAgency" name="companyName" placeholder="Your Agency Ltd." value={formData.companyName} onChange={handleChange} required={submitterType === "agency"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="letterOfAuthority">Letter of Authority (PDF, DOCX, JPG, PNG)</Label>
+                      <Input id="letterOfAuthority" name="letterOfAuthority" type="file" onChange={handleChange} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required={submitterType === "agency"} className="border-green-200 focus:border-green-500 focus:ring-green-500 file:mr-4 file:py-0.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="registrationNumberAgency">Agency Registration Number</Label>

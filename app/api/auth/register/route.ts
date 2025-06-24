@@ -5,26 +5,37 @@ import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email"; // Changed to sendVerificationEmail
 import { sendNotificationToUser } from "@/lib/notification-client";
+import { uploadToCloudinary } from "@/lib/cloudinary_utils"; // Import Cloudinary uploader
+import { Readable } from "stream"; // For converting file to buffer
+
+// Helper function to convert a File (from FormData) to Buffer
+async function fileToBuffer(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
 
 export async function POST(req: NextRequest) {
   try {
-    // Adding a comment to test the replace_in_file tool
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      password, 
-      role, 
-      companyName, // Used for Business Name (Agency/Business)
-      // New fields for submitter (agency/business)
-      submitterType, 
-      registrationNumber, // For Agency Reg No or Business CAC No
-      sector,
-      officeAddress,
-      state,
-      country,
-      businessDescription 
-    } = await req.json();
+    const formData = await req.formData();
+
+    const firstName = formData.get("firstName") as string | null;
+    const lastName = formData.get("lastName") as string | null;
+    const email = formData.get("email") as string | null;
+    const password = formData.get("password") as string | null;
+    const role = formData.get("role") as string | null;
+    const companyName = formData.get("companyName") as string | null;
+    const submitterType = formData.get("submitterType") as string | null;
+    const registrationNumber = formData.get("registrationNumber") as string | null;
+    
+    // Business specific fields
+    const sector = formData.get("sector") as string | null;
+    const officeAddress = formData.get("officeAddress") as string | null;
+    const state = formData.get("state") as string | null;
+    const country = formData.get("country") as string | null;
+    const businessDescription = formData.get("businessDescription") as string | null;
+
+    // Agency specific file
+    const letterOfAuthorityFile = formData.get("letterOfAuthority") as File | null;
 
     if (!firstName || !lastName || !email || !password || !role) {
       return NextResponse.json(
@@ -89,17 +100,41 @@ export async function POST(req: NextRequest) {
       companyName: companyName || null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      letterOfAuthorityUrl: null as string | null, // Initialize with explicit type
+      letterOfAuthorityPublicId: null as string | null, // Initialize with explicit type
       // Add new submitter fields if role is submitter
       ...(role === 'submitter' && {
         submitterType: submitterType || null,
         registrationNumber: registrationNumber || null,
-        sector: sector || null,
-        officeAddress: officeAddress || null,
-        state: state || null,
-        country: country || null,
-        businessDescription: businessDescription || null,
+        sector: sector || null, // For business
+        officeAddress: officeAddress || null, // For business
+        state: state || null, // For business
+        country: country || null, // For business
+        businessDescription: businessDescription || null, // For business
       }),
     };
+
+    if (role === 'submitter' && submitterType === 'agency' && letterOfAuthorityFile) {
+      try {
+        const fileBuffer = await fileToBuffer(letterOfAuthorityFile);
+        // Sanitize filename if needed, or use a generated one
+        const fileName = `${newUser._id}-letter-of-authority-${Date.now()}`; 
+        const uploadResult = await uploadToCloudinary(fileBuffer, "letters_of_authority", fileName, 'auto');
+
+        if (uploadResult && uploadResult.secure_url) {
+          newUser.letterOfAuthorityUrl = uploadResult.secure_url;
+          newUser.letterOfAuthorityPublicId = uploadResult.public_id;
+        } else {
+          // Handle upload failure: log, but maybe proceed without it or return error
+          console.error("Cloudinary upload failed for letter of authority, but proceeding with user creation without it.");
+          // Or, to be stricter:
+          // return NextResponse.json({ message: "Failed to upload Letter of Authority." }, { status: 500 });
+        }
+      } catch (uploadError: any) {
+        console.error("Error uploading Letter of Authority:", uploadError);
+        // return NextResponse.json({ message: `Error uploading Letter of Authority: ${uploadError.message}` }, { status: 500 });
+      }
+    }
 
     const result = await usersCollection.insertOne(newUser);
 
@@ -123,11 +158,12 @@ export async function POST(req: NextRequest) {
         ...(newUser.role === 'submitter' && {
           submitterType: newUser.submitterType,
           registrationNumber: newUser.registrationNumber,
-          sector: newUser.sector,
-          officeAddress: newUser.officeAddress,
-          state: newUser.state,
-          country: newUser.country,
-          businessDescription: newUser.businessDescription,
+          sector: newUser.sector, // For business
+          officeAddress: newUser.officeAddress, // For business
+          state: newUser.state, // For business
+          country: newUser.country, // For business
+          businessDescription: newUser.businessDescription, // For business
+          letterOfAuthorityUrl: newUser.letterOfAuthorityUrl, // For agency
         }),
     };
 

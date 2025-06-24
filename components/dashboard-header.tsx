@@ -68,6 +68,11 @@ export default function DashboardHeader({ role }: DashboardHeaderProps) {
           { name: "Approved Ads", href: "/reviewer/approved" },
         ];
       case "admin":
+        return [
+          { name: "Dashboard", href: "/admin/dashboard" },
+          { name: "Users", href: "/admin/users" },
+          { name: "Ads", href: "/admin/ads" },
+        ];
       case "superadmin":
         return [
           { name: "Dashboard", href: "/admin/dashboard" },

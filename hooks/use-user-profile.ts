@@ -27,6 +27,9 @@ export interface UserProfileData {
   // Reviewer specific fields
   department?: string; // Reviewer's internal department
   expertise?: string[]; // Reviewer's areas of expertise
+  // Agency Submitter specific
+  letterOfAuthorityUrl?: string | null;
+  letterOfAuthorityPublicId?: string | null;
 }
 
 // Interface for data returned by the public profile endpoint /api/user/profile/[userId]
@@ -127,6 +130,10 @@ export interface UpdateUserProfilePayload {
   // Reviewer specific fields
   department?: string;
   expertise?: string[];
+  // Letter of Authority fields for update
+  newLetterOfAuthorityUrl?: string | null;
+  newLetterOfAuthorityPublicId?: string | null;
+  currentLetterOfAuthorityPublicId?: string | null; // To delete old one if new is uploaded or type changes
 }
 
 interface UpdateUserProfileResponse {

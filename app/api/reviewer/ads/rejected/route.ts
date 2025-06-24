@@ -66,7 +66,7 @@ export interface RejectedAdListItem {
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id || session.user.role !== 'reviewer') {
+  if (!session || !session.user || !session.user.id || (session.user.role !== 'reviewer' && session.user.role !== 'super_admin')) {
     return NextResponse.json({ message: 'Unauthorized or invalid role' }, { status: 401 });
   }
 
@@ -126,11 +126,11 @@ export async function POST(request: Request) {
   console.log('[API /reviewer/ads/rejected] POST request received');
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id || session.user.role !== 'reviewer') {
+  if (!session || !session.user || !session.user.id || (session.user.role !== 'reviewer' && session.user.role !== 'super_admin')) {
     console.log('[API /reviewer/ads/rejected] Unauthorized access attempt or invalid role.');
     return NextResponse.json({ message: 'Unauthorized or invalid role' }, { status: 401 });
   }
-  console.log('[API /reviewer/ads/rejected] Session validated for reviewer:', session.user.id);
+  console.log(`[API /reviewer/ads/rejected] Session validated for ${session.user.role}:`, session.user.id);
 
   try {
     const body = await request.json();

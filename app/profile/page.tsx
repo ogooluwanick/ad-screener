@@ -38,6 +38,8 @@ interface UnifiedProfileData extends UserProfileData {
   state?: string;
   country?: string;
   businessDescription?: string;
+  letterOfAuthorityUrl?: string | null; // Added
+  letterOfAuthorityPublicId?: string | null; // Added for deletion
 
   // Stats 
   totalAds?: number; // For submitter
@@ -122,6 +124,9 @@ export default function UnifiedProfilePage() {
   const [profileData, setProfileData] = useState<UnifiedProfileData>(initialUnifiedProfileData);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newlyUploadedImageUrl, setNewlyUploadedImageUrl] = useState<string | null>(null);
+  const [newLetterOfAuthority, setNewLetterOfAuthority] = useState<{ file: File, url?: string, publicId?: string} | null>(null);
+  const [isUploadingLoA, setIsUploadingLoA] = useState(false);
+
 
   const {
     data: fetchedProfileData,
@@ -194,10 +199,15 @@ export default function UnifiedProfilePage() {
         department: fetchedProfileData.department || initialUnifiedProfileData.department,
         expertise: fetchedProfileData.expertise || initialUnifiedProfileData.expertise,
         reviewerLevel: calculateReviewerLevel(reviewerProfileApiData?.performanceStats.totalReviews) || initialUnifiedProfileData.reviewerLevel, // Recalculate or use fetched
+        
+        // Agency specific
+        letterOfAuthorityUrl: fetchedProfileData.letterOfAuthorityUrl || initialUnifiedProfileData.letterOfAuthorityUrl,
+        letterOfAuthorityPublicId: fetchedProfileData.letterOfAuthorityPublicId || initialUnifiedProfileData.letterOfAuthorityPublicId,
       }));
       setNewlyUploadedImageUrl(null);
+      setNewLetterOfAuthority(null);
     }
-  }, [fetchedProfileData]);
+  }, [fetchedProfileData, reviewerProfileApiData]); // Added reviewerProfileApiData dependency
 
   useEffect(() => {
     if (submitterStats && profileData.role === 'submitter') {
@@ -240,6 +250,11 @@ export default function UnifiedProfilePage() {
       // location: profileData.location, // Removed
       bio: profileData.bio,
       profileImageUrl: newlyUploadedImageUrl || profileData.image,
+      // Pass LoA details if a new one was uploaded and processed
+      newLetterOfAuthorityUrl: newLetterOfAuthority?.url,
+      newLetterOfAuthorityPublicId: newLetterOfAuthority?.publicId,
+      // Pass existing public ID if no new file, for potential deletion if type changes from agency
+      currentLetterOfAuthorityPublicId: !newLetterOfAuthority && profileData.submitterType === 'agency' ? profileData.letterOfAuthorityPublicId : undefined,
     };
 
     // Common fields are already in payload
@@ -271,6 +286,7 @@ export default function UnifiedProfilePage() {
         toast({ title: "Profile Updated", description: data.message || "Your profile has been successfully updated." });
         setIsEditing(false);
         setNewlyUploadedImageUrl(null);
+        setNewLetterOfAuthority(null); // Reset LoA state
         refetchProfile(); 
       },
       onError: (error: Error) => {
@@ -282,6 +298,7 @@ export default function UnifiedProfilePage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setNewlyUploadedImageUrl(null);
+    setNewLetterOfAuthority(null); // Reset LoA state
     if (fetchedProfileData) {
       const currentTotalReviews = reviewerProfileApiData?.performanceStats.totalReviews;
       const calculatedLevel = fetchedProfileData.role === 'reviewer' 
@@ -323,9 +340,61 @@ export default function UnifiedProfilePage() {
   };
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loaInputRef = useRef<HTMLInputElement>(null); // Ref for LoA input
 
   const handleImageUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleLoAUploadClick = () => {
+    loaInputRef.current?.click();
+  };
+
+  const handleLoAFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size (e.g., PDF, DOCX, max 5MB)
+    const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Invalid File Type", description: "Please upload PDF, DOC, DOCX, JPG, or PNG.", variant: "destructive" });
+      if(event.target) event.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast({ title: "File too large", description: "Letter of Authority must be smaller than 5MB.", variant: "destructive" });
+      if(event.target) event.target.value = "";
+      return;
+    }
+
+    setNewLetterOfAuthority({ file }); // Store the file, URL will be set after upload
+    setIsUploadingLoA(true);
+
+    const formData = new FormData();
+    formData.append('letterOfAuthority', file);
+    // Potentially add userId if your API needs it for naming or folder structure, though backend can get it from session
+    // formData.append('userId', profileData._id); 
+
+    try {
+      // This API endpoint will need to be created or use an existing one that handles file uploads
+      // For now, assuming a dedicated endpoint like '/api/user/upload-letter-of-authority'
+      const response = await fetch('/api/user/upload-letter-of-authority', { method: 'POST', body: formData });
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.message || 'Letter of Authority upload failed.');
+      
+      // Update state with the URL and publicId from the backend
+      setNewLetterOfAuthority(prev => prev ? { ...prev, url: result.fileUrl, publicId: result.publicId } : null);
+      // Update profileData to reflect the newly uploaded file visually, even before saving main profile
+      setProfileData(prev => ({ ...prev, letterOfAuthorityUrl: result.fileUrl })); 
+      toast({ title: "Letter of Authority Uploaded", description: "Ready to save. Click 'Save Changes' to finalize." });
+    } catch (uploadError: any) {
+      toast({ title: "LoA Upload Failed", description: uploadError.message || "Could not upload Letter of Authority.", variant: "destructive" });
+      setNewLetterOfAuthority(null); // Clear on failure
+    } finally {
+      setIsUploadingLoA(false);
+      if(event.target) event.target.value = ""; 
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -605,13 +674,45 @@ export default function UnifiedProfilePage() {
                       <div className="space-y-2"><Label htmlFor="state">State</Label><Input id="state" value={profileData.state || ""} onChange={(e) => handleInputChange("state", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
                       <div className="space-y-2"><Label htmlFor="country">Country</Label><Input id="country" value={profileData.country || ""} onChange={(e) => handleInputChange("country", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} /></div>
                     </div>
-                    <div className="space-y-2"><Label htmlFor="businessDescription">Business Description</Label><Textarea id="businessDescription" rows={3} value={profileData.businessDescription || ""} onChange={(e) => handleInputChange("businessDescription", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder="Describe your business..." /></div>
+                    <div className="space-y-2"><Label htmlFor="businessDescription">Business Description</Label><Textarea id="businessDescription" rows={3} value={profileData.businessDescription || ""} onChange={(e) => handleInputChange("businessDescription", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage || isUploadingLoA} placeholder="Describe your business..." /></div>
                   </>
+                )}
+
+                {/* Letter of Authority for Agency */}
+                {profileData.submitterType === 'agency' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="letterOfAuthority">Letter of Authority</Label>
+                    {isEditing ? (
+                      <div>
+                        <input type="file" ref={loaInputRef} onChange={handleLoAFileChange} style={{ display: "none" }} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <Button variant="outline" onClick={handleLoAUploadClick} disabled={isUploadingLoA || isUpdatingProfile || isUploadingImage} className="mb-2">
+                          {isUploadingLoA ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading LoA...</> : "Upload New LoA"}
+                        </Button>
+                        {newLetterOfAuthority?.file && <p className="text-sm text-gray-600 mt-1">New file selected: {newLetterOfAuthority.file.name} (Pending save)</p>}
+                        {(!newLetterOfAuthority && profileData.letterOfAuthorityUrl) && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Current: <a href={profileData.letterOfAuthorityUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">View Document</a>
+                          </p>
+                        )}
+                         {(!newLetterOfAuthority && !profileData.letterOfAuthorityUrl) && (
+                            <p className="text-sm text-gray-500 mt-1">No document uploaded.</p>
+                        )}
+                      </div>
+                    ) : (
+                      profileData.letterOfAuthorityUrl ? (
+                        <a href={profileData.letterOfAuthorityUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
+                          View Document
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-500">Not uploaded.</p>
+                      )
+                    )}
+                  </div>
                 )}
               </>
             )}
             {/* Common Bio */}
-            <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" rows={4} value={profileData.bio} onChange={(e) => handleInputChange("bio", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage} placeholder={userRole === 'reviewer' ? "Tell us about your reviewing experience..." : "Tell us about yourself or your company..."} /></div>
+            <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" rows={4} value={profileData.bio} onChange={(e) => handleInputChange("bio", e.target.value)} disabled={!isEditing || isUpdatingProfile || isUploadingImage || isUploadingLoA} placeholder={userRole === 'reviewer' ? "Tell us about your reviewing experience..." : "Tell us about yourself or your company..."} /></div>
             
           </CardContent>
         </Card>
