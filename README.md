@@ -40,7 +40,7 @@ Ad Screener is a full-stack web application designed to streamline the process o
 Before you begin, ensure you have the following installed:
 
 *   [Node.js](https://nodejs.org/) (LTS version recommended)
-*   [pnpm](https://pnpm.io/installation) (or npm/yarn, though `pnpm-lock.yaml` is present)
+*   [npm] (or pnpm/yarn, though `pnpm-lock.yaml` is present)
 *   A running [MongoDB](https://www.mongodb.com/try/download/community) instance or a MongoDB Atlas account.
 
 ## 🚀 Getting Started
