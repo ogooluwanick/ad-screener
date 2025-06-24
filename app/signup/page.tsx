@@ -269,7 +269,7 @@ export default function SignupPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="officeAddress">Office Address</Label>vail
+                      <Label htmlFor="officeAddress">Office Address</Label>
                       <Input id="officeAddress" name="officeAddress" placeholder="123 Main St, City" value={formData.officeAddress} onChange={handleChange} required={submitterType === "business"} className="border-green-200 focus:border-green-500 focus:ring-green-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
