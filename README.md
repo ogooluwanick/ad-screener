@@ -1,4 +1,4 @@
-# Ad Screener (my-v0-project)
+# Ad Screener 
 
 Ad Screener is a full-stack web application designed to streamline the process of ad submission and review. Submitters can upload advertisements, and reviewers can approve or reject them based on established guidelines.
 
