@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       submitterId: ad.submitterId,
       submitterEmail: ad.submitterEmail,
       status: ad.status,
-      submittedAt: ad.submittedAt.toISOString(),
+      submittedAt: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
       reviewedAt: ad.reviewedAt?.toISOString(),
       reviewerId: ad.reviewerId,
       rejectionReason: ad.rejectionReason,
@@ -77,4 +77,4 @@ export async function GET(request: Request) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return NextResponse.json({ message: 'Failed to fetch ads', error: errorMessage }, { status: 500 });
   }
-} 
+}

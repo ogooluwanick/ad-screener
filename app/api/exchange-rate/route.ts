@@ -59,7 +59,7 @@ export async function GET() {
 
     if (cachedRateDoc && (new Date().getTime() - new Date(cachedRateDoc.lastFetchedAt).getTime() < CACHE_DURATION_MS)) {
       const responseSource = cachedRateDoc.source.startsWith('cached_') ? cachedRateDoc.source : `cached_${cachedRateDoc.source}`;
-      console.log(`Exchange Rate API: Serving rate ${cachedRateDoc.rate} from valid cache. Source: ${responseSource}, Last fetched: ${cachedRateDoc.lastFetchedAt.toISOString()}`);
+      console.log(`Exchange Rate API: Serving rate ${cachedRateDoc.rate} from valid cache. Source: ${responseSource}, Last fetched: ${cachedRateDoc.lastFetchedAt instanceof Date ? cachedRateDoc.lastFetchedAt.toISOString() : new Date(cachedRateDoc.lastFetchedAt).toISOString()}`);
       return NextResponse.json({ 
         rate: cachedRateDoc.rate, 
         source: responseSource, 

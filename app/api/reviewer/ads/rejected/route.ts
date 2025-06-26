@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       title: ad.title,
       submitterId: ad.submitterId, // Added submitterId
       submitterEmail: ad.submitterEmail,
-      submissionDate: ad.submittedAt.toISOString(),
+      submissionDate: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
       rejectionDate: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date(0).toISOString(), 
       reviewerId: ad.reviewerId,
       rejectionReason: ad.rejectionReason,

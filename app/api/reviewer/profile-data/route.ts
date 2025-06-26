@@ -164,7 +164,7 @@ export async function GET(request: Request) {
       id: ad._id.toHexString(),
       title: ad.title,
       status: ad.status as 'approved' | 'rejected', // Already filtered, so cast is safe
-      reviewedAt: ad.reviewedAt ? ad.reviewedAt.toISOString() : new Date().toISOString(), // Fallback, though reviewedAt should exist
+      reviewedAt: ad.reviewedAt ? (ad.reviewedAt instanceof Date ? ad.reviewedAt.toISOString() : new Date(ad.reviewedAt).toISOString()) : new Date().toISOString(), // Fallback, though reviewedAt should exist
     }));
 
     const profileData: ReviewerProfileData = {

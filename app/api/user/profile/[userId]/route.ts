@@ -106,7 +106,7 @@ export async function GET(
       role: user.role,
       // location: user.location, // Removed
       bio: user.bio,
-      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
+      joinDate: user.createdAt ? (user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString()).split('T')[0] : "",
       image: user.profileImageUrl,
       company: user.company,
       website: user.website,

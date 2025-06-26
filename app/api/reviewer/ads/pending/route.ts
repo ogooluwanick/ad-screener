@@ -117,7 +117,7 @@ export async function GET(request: Request) {
         submitterId: ad.submitterId,
         submitterEmail: ad.submitterEmail,
         submitterName: submitterName,
-        submissionDate: ad.submittedAt.toISOString(),
+        submissionDate: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
         description: ad.description,
         // contentUrl: ad.contentUrl, // REMOVED
         adFileUrl: ad.adFileUrl, // RENAMED

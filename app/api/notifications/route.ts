@@ -42,7 +42,7 @@ export async function GET(request: Request) {
       ...doc,
       _id: doc._id.toString(),
       userId: doc.userId.toString(), // Assuming userId in DB might be ObjectId, ensure string
-      createdAt: doc.createdAt.toISOString(),
+      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
     })) as ClientNotification[]; // Cast needed if userId is already string in DB schema
 
     return NextResponse.json(clientSafeNotifications, { status: 200 });

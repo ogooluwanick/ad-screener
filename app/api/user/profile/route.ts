@@ -38,7 +38,7 @@ export async function GET() { // Added export async function GET() here
       // location: user.location || "", // Removed
       bio: user.bio || "",
       website: user.website || "", // Submitter's website
-      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : "",
+      joinDate: user.createdAt ? (user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString()).split('T')[0] : "",
       profileImageUrl: user.profileImageUrl || null,
       // Submitter specific fields
       submitterType: user.submitterType || "", // "business" or "agency"
