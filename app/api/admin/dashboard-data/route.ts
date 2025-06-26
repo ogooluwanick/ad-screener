@@ -104,7 +104,7 @@ export async function GET(request: Request) {
     const recentAds: AdminRecentAd[] = recentAdsDocuments.map(ad => ({
       id: ad._id.toHexString(),
       title: ad.title,
-      submissionDate: ad.submittedAt.toISOString(),
+      submissionDate: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
       status: ad.status,
       rejectionReason: ad.rejectionReason,
       submitterEmail: ad.submitterEmail,
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
       role: user.role,
-      joinDate: user.createdAt.toISOString(),
+      joinDate: user.createdAt instanceof Date ? user.createdAt.toISOString() : new Date(user.createdAt).toISOString(),
       emailVerified: user.emailVerified === true,
     }));
 

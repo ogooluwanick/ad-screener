@@ -78,7 +78,7 @@ export async function GET(request: Request) {
     const recentAds: SubmitterRecentAd[] = recentAdsDocuments.map(ad => ({
       id: ad._id.toHexString(),
       title: ad.title,
-      submissionDate: ad.submittedAt.toISOString(),
+      submissionDate: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
       status: ad.status,
       rejectionReason: ad.rejectionReason,
     }));

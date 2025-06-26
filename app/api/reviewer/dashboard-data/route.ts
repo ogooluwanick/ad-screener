@@ -99,7 +99,7 @@ export async function GET(request: Request) {
       id: ad._id.toHexString(),
       title: ad.title,
       submitter: ad.submitterEmail,
-      submissionDate: ad.submittedAt.toISOString(),
+      submissionDate: ad.submittedAt instanceof Date ? ad.submittedAt.toISOString() : new Date(ad.submittedAt).toISOString(),
       status: ad.status,
     }));
 
