@@ -78,8 +78,8 @@ export async function deleteFromCloudinary(
 }
 
 /**
- * Deletes an ad file (image or video) from Cloudinary.
- * @param publicId The public ID of the ad file to delete.
+ * Deletes an Ad file (image or video) from Cloudinary.
+ * @param publicId The public ID of the Ad file to delete.
  * @returns Promise resolving to true if successful, false otherwise.
  */
 export async function deleteAdFileFromCloudinary(publicId: string): Promise<boolean> {
@@ -93,7 +93,7 @@ export async function deleteAdFileFromCloudinary(publicId: string): Promise<bool
     result = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
     return result.result === 'ok';
   } catch (error) {
-    console.error('Cloudinary ad file delete error:', error);
+    console.error('Cloudinary Ad file delete error:', error);
     return false;
   }
 }

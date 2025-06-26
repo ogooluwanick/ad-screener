@@ -176,7 +176,7 @@ export default function SubmitterAds() {
       <Card>
         <CardHeader>
           <CardTitle>Ad Submissions</CardTitle>
-          <CardDescription>Manage and track all your ad submissions</CardDescription>
+          <CardDescription>Manage and track all your Ad submissions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -313,7 +313,7 @@ export default function SubmitterAds() {
               )}
               {!selectedAd?.adFileUrl && (
                 <div className="aspect-video overflow-hidden rounded-md border bg-slate-100 flex items-center justify-center">
-                  <p className="text-sm text-gray-500">No ad file uploaded.</p>
+                  <p className="text-sm text-gray-500">No Ad file uploaded.</p>
                 </div>
               )}
             </div>
@@ -391,7 +391,7 @@ export default function SubmitterAds() {
               </div>
             )}
 
-            {/* Display Compliance Data if available and ad is not pending */}
+            {/* Display Compliance Data if available and Ad is not pending */}
             {selectedAd && (selectedAd.status === "approved" || selectedAd.status === "rejected") && selectedAd.compliance && (
               <div className="mt-4 pt-4 border-t">
                 <h3 className="text-lg font-semibold mb-2">Compliance Checklist Review</h3>

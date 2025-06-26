@@ -775,7 +775,7 @@ export default function UnifiedProfilePage() {
           <Card className="md:col-span-3">
             <CardHeader>
               <CardTitle>Account Statistics</CardTitle>
-              <CardDescription>Overview of your ad submissions.</CardDescription>
+              <CardDescription>Overview of your Ad submissions.</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingSubmitterStats && ( <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-green-600" /><p className="ml-3">Loading...</p></div>)}

@@ -258,7 +258,7 @@ export default function PendingAdsPage() {
                     </TableCell>
                     <TableCell>{new Date(ad.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
-                       {/* Button to directly open contentUrl removed, review modal will show ad file */}
+                       {/* Button to directly open contentUrl removed, review modal will show Ad file */}
                       <Button 
                         variant="default" 
                         size="sm" 
@@ -284,7 +284,7 @@ export default function PendingAdsPage() {
           <DialogHeader>
             <DialogTitle>Review Ad: {selectedAdForReview?.title}</DialogTitle>
             <DialogDescription>
-              Carefully review the ad details and content before making a decision.
+              Carefully review the Ad details and content before making a decision.
             </DialogDescription>
           </DialogHeader>
           
@@ -358,7 +358,7 @@ export default function PendingAdsPage() {
                 )}
                 {!selectedAdForReview.adFileUrl && (
                    <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
-                    <p className="text-sm text-gray-500">No ad file provided.</p>
+                    <p className="text-sm text-gray-500">No Ad file provided.</p>
                   </div>
                 )}
               </div>
@@ -422,7 +422,7 @@ export default function PendingAdsPage() {
                 <Label htmlFor="rejectionReason" className="font-semibold">Rejection Reason (Required if rejecting):</Label>
                 <Textarea
                   id="rejectionReason"
-                  placeholder="Provide a clear reason if rejecting the ad..."
+                  placeholder="Provide a clear reason if rejecting the Ad..."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="mt-1"

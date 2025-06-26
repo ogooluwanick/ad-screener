@@ -347,7 +347,7 @@
 //                             {activity.status === 'approved' ? <CheckCircle className="h-5 w-5 text-green-600 mr-3" /> : <XCircle className="h-5 w-5 text-red-600 mr-3" />}
 //                             <div>
 //                               <p className="font-medium">
-//                                 {activity.status === 'approved' ? 'Approved' : 'Rejected'} "{activity.title}" ad
+//                                 {activity.status === 'approved' ? 'Approved' : 'Rejected'} "{activity.title}" Ad
 //                               </p>
 //                               <p className="text-sm text-gray-500">
 //                                 {formatDistanceToNow(new Date(activity.reviewedAt), { addSuffix: true })}
@@ -376,7 +376,7 @@
 //           <Card className="md:col-span-3">
 //             <CardHeader>
 //               <CardTitle>Account Statistics</CardTitle>
-//               <CardDescription>Overview of ad submissions.</CardDescription>
+//               <CardDescription>Overview of Ad submissions.</CardDescription>
 //             </CardHeader>
 //             <CardContent>
 //               {(profileData.totalAds === undefined) && !error && !isLoading && ( 

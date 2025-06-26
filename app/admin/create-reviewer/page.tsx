@@ -270,7 +270,7 @@ const CreateReviewerPage = () => {
           <div className="flex items-start gap-3">
             <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
             <p className="text-sm text-muted-foreground">
-              Reviewers can access the review dashboard to approve or reject ad submissions.
+              Reviewers can access the review dashboard to approve or reject Ad submissions.
             </p>
           </div>
         </CardContent>

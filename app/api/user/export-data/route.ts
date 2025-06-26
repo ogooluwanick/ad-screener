@@ -7,14 +7,14 @@ import { sendNotificationToUser } from "@/lib/notification-client"; // Added for
 
 // Define a basic Ad interface, adjust according to your actual Ad schema
 interface Ad extends WithId<Document> {
-  // Common ad properties - adjust as needed
+  // Common Ad properties - adjust as needed
   title: string;
   description: string;
   status: string;
   submitterId?: ObjectId; // Changed from submittedBy
   reviewerId?: ObjectId;  // Changed from reviewedBy (for direct assignment)
   reviews?: { reviewerId: ObjectId; status: string; comment?: string }[]; // For multiple reviews or review history
-  // Add other ad-specific fields here
+  // Add other Ad-specific fields here
   [key: string]: any; // Allows for other properties not explicitly defined
 }
 
@@ -61,7 +61,7 @@ export async function GET() {
 
     if (user.role === "reviewer") {
       // Assuming ads collection has a field like 'reviewedBy' or similar
-      // For example, if reviews are stored in an array within the ad document:
+      // For example, if reviews are stored in an array within the Ad document:
       // adsData = await db.collection("ads").find({ "reviews.reviewerId": userId }).toArray();
       // If neither of these, a more complex query or schema understanding is needed.
       // For now, let's assume a simpler 'reviewedBy' field directly on ads for reviewers.

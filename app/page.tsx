@@ -188,7 +188,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4">
-                  Get instant updates on ad status changes. In-app notifications and email alerts keep everyone
+                  Get instant updates on Ad status changes. In-app notifications and email alerts keep everyone
                   informed.
                 </p>
                 <img
@@ -265,7 +265,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How AdScreener Works</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              A simple, three-step process that transforms your ad review workflow
+              A simple, three-step process that transforms your Ad review workflow
             </p>
           </div>
 
@@ -301,7 +301,7 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-4">Expert Review</h3>
               <p className="text-gray-600">
-                Our trained reviewers evaluate your ad against quality guidelines. Get detailed feedback and suggestions
+                Our trained reviewers evaluate your Ad against quality guidelines. Get detailed feedback and suggestions
                 for improvement.
               </p>
             </div>
@@ -342,7 +342,7 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span>Track all your ad submissions in one place</span>
+                  <span>Track all your Ad submissions in one place</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="h-5 w-5 text-green-500" />
@@ -417,7 +417,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="italic text-gray-600 mb-6">
-                  "AdScreener reduced our ad review time from days to hours. The interface is intuitive and the
+                  "AdScreener reduced our Ad review time from days to hours. The interface is intuitive and the
                   notification system keeps everyone in the loop."
                 </p>
                 <div className="flex items-center">
@@ -442,7 +442,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="italic text-gray-600 mb-6">
-                  "The analytics dashboard gives us incredible insights into our ad performance. We've improved our
+                  "The analytics dashboard gives us incredible insights into our Ad performance. We've improved our
                   approval rate by 40%."
                 </p>
                 <div className="flex items-center">

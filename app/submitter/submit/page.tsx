@@ -77,7 +77,7 @@ export default function SubmitAd() {
   const [activeTab, setActiveTab] = useState("adDetails")
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false) // For the ad data submission step
+  const [isSubmitting, setIsSubmitting] = useState(false) // For the Ad data submission step
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false) // For Paystack UI interaction
   const [isSubmissionComplete, setIsSubmissionComplete] = useState(false)
 
@@ -265,8 +265,8 @@ export default function SubmitAd() {
   const handlePaymentSuccess = async (paymentResult: { reference: string }) => {
     console.log("[SubmitAdPage] handlePaymentSuccess (Paystack callback) called. Result:", paymentResult);
     // At this point, isPaymentProcessing is likely true from onInitiate.
-    // We now set isSubmitting to true for the ad data upload phase.
-    console.log("[SubmitAdPage] Setting isSubmitting to true for ad data submission.");
+    // We now set isSubmitting to true for the Ad data upload phase.
+    console.log("[SubmitAdPage] Setting isSubmitting to true for Ad data submission.");
     setIsSubmitting(true); 
 
     try {
@@ -299,8 +299,8 @@ export default function SubmitAd() {
 
       // submitterId is handled by the backend using the session.
       if (!session?.user?.id) {
-        console.error("[SubmitAdPage] User session not found, cannot submit ad.");
-        throw new Error("User session not found, cannot submit ad.");
+        console.error("[SubmitAdPage] User session not found, cannot submit Ad.");
+        throw new Error("User session not found, cannot submit Ad.");
       }
 
       if (calculatedFeeInKobo !== null) {
@@ -310,7 +310,7 @@ export default function SubmitAd() {
         throw new Error("Fee amount was not available for submission. Please contact support.");
       }
 
-      console.log("[SubmitAdPage] Attempting to POST ad data to /api/submitter/ads. FormData prepared.");
+      console.log("[SubmitAdPage] Attempting to POST Ad data to /api/submitter/ads. FormData prepared.");
       const response = await fetch("/api/submitter/ads", {
         method: "POST",
         body: adUploadData,
@@ -322,7 +322,7 @@ export default function SubmitAd() {
         throw new Error(resultData.message || "Ad submission failed after payment.");
       }
       
-      toast({ title: "Success!", description: "Your ad has been submitted for review." });
+      toast({ title: "Success!", description: "Your Ad has been submitted for review." });
       console.log("[SubmitAdPage] Ad submission successful. Setting isSubmissionComplete to true.");
       setIsSubmissionComplete(true); 
       
@@ -336,10 +336,10 @@ export default function SubmitAd() {
       }, 2000);
 
     } catch (error: any) { 
-      console.error("[SubmitAdPage] Error during ad submission process:", error);
+      console.error("[SubmitAdPage] Error during Ad submission process:", error);
       toast({ 
         title: "Ad Submission Failed", 
-        description: `Your payment was successful, but an error occurred while submitting your ad: ${error.message}. Please contact support with your payment reference: ${paymentResult?.reference || 'N/A'}.`, 
+        description: `Your payment was successful, but an error occurred while submitting your Ad: ${error.message}. Please contact support with your payment reference: ${paymentResult?.reference || 'N/A'}.`, 
         variant: "destructive",
         duration: 10000 
       });
@@ -373,7 +373,7 @@ export default function SubmitAd() {
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle className="text-green-600">Submission Complete!</CardTitle>
-            <CardDescription>Your ad has been submitted for review</CardDescription>
+            <CardDescription>Your Ad has been submitted for review</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -381,7 +381,7 @@ export default function SubmitAd() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-sm text-gray-600">You will receive a notification once your ad has been reviewed.</p>
+            <p className="text-sm text-gray-600">You will receive a notification once your Ad has been reviewed.</p>
           </CardContent>
         </Card>
       </div>
@@ -417,13 +417,13 @@ export default function SubmitAd() {
       <Card>
         <CardHeader>
           <CardTitle>Ad Submission</CardTitle>
-          <CardDescription>Fill in your ad details and upload any supporting documents.</CardDescription>
+          <CardDescription>Fill in your Ad details and upload any supporting documents.</CardDescription>
         </CardHeader>
         <CardContent>
             <form id="ad-submission-form" onSubmit={handleSubmitForm} className="space-y-6 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
-                <Input id="title" name="title" placeholder="Enter ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
+                <Input id="title" name="title" placeholder="Enter Ad title" value={formData.title} onChange={handleChange} className={errors.title ? "border-red-500" : ""} />
                 {errors.title && <p className="text-sm text-red-600">{errors.title}</p>}
               </div>
               <div className="space-y-2">
@@ -661,8 +661,8 @@ export default function SubmitAd() {
             <DialogTitle>Confirm & Pay Submission Fee</DialogTitle>
             <DialogDescription>
              {calculatedFeeInNgn !== null ? 
-                `Review your ad details and proceed to payment. The total fee is ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` :
-                "Please ensure all ad details and vetting options are selected. Fee will be displayed once calculated."
+                `Review your Ad details and proceed to payment. The total fee is ₦${calculatedFeeInNgn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` :
+                "Please ensure all Ad details and vetting options are selected. Fee will be displayed once calculated."
               }
             </DialogDescription>
           </DialogHeader>

@@ -113,7 +113,7 @@ export default function RejectedAdsPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update ad status for re-evaluation");
+        throw new Error(errorData.message || "Failed to update Ad status for re-evaluation");
       }
 
       toast({
@@ -123,10 +123,10 @@ export default function RejectedAdsPage() {
       handleCloseDetailsModal();
       fetchRejectedAds(); 
     } catch (error) {
-      console.error("Failed to re-evaluate ad:", error);
+      console.error("Failed to re-evaluate Ad:", error);
       toast({
         title: "Re-evaluation Error",
-        description: error instanceof Error ? error.message : "Could not re-evaluate ad.",
+        description: error instanceof Error ? error.message : "Could not re-evaluate Ad.",
         variant: "destructive",
       });
     }
@@ -245,7 +245,7 @@ export default function RejectedAdsPage() {
           <DialogHeader>
             <DialogTitle>Ad Details: {selectedAdForDetails?.title}</DialogTitle>
             <DialogDescription>
-              Reviewing details of the rejected ad. You can optionally send it back to pending for re-evaluation.
+              Reviewing details of the rejected Ad. You can optionally send it back to pending for re-evaluation.
             </DialogDescription>
           </DialogHeader>
           
@@ -278,7 +278,7 @@ export default function RejectedAdsPage() {
                     <a href={selectedAdForDetails.adFileUrl} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">View Ad File <ExternalLink className="inline h-3 w-3 ml-1" /></a> (Preview not available)
                   </p>
                 )}
-                 {!selectedAdForDetails.adFileUrl && <p className="text-sm text-muted-foreground mt-1">No ad file provided.</p>}
+                 {!selectedAdForDetails.adFileUrl && <p className="text-sm text-muted-foreground mt-1">No Ad file provided.</p>}
               </div>
 
               {selectedAdForDetails.supportingDocuments && selectedAdForDetails.supportingDocuments.length > 0 && (
@@ -349,7 +349,7 @@ export default function RejectedAdsPage() {
                   placeholder="If sending back to pending, you can update the reason here or leave it as is."
                   rows={3}
                 />
-                 <p className="text-xs text-gray-500 mt-1">This reason will be saved if you send the ad for re-evaluation.</p>
+                 <p className="text-xs text-gray-500 mt-1">This reason will be saved if you send the Ad for re-evaluation.</p>
               </div>
             </div>
           )}

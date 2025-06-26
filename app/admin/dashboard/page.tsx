@@ -259,7 +259,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             ) : (
-               <p className="text-sm text-muted-foreground">No recent ad submissions.</p>
+               <p className="text-sm text-muted-foreground">No recent Ad submissions.</p>
             )}
           </CardContent>
           <CardFooter>
@@ -321,7 +321,7 @@ export default function AdminDashboard() {
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Submission Stats</CardTitle>
-            <CardDescription>Overview of ad submission status</CardDescription>
+            <CardDescription>Overview of Ad submission status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="space-y-2">
@@ -369,7 +369,7 @@ export default function AdminDashboard() {
           <div className="text-sm">
             <p className="mb-4">
               Hello <span className="capitalize">{session?.user?.firstName || 'Admin'}</span>, welcome to your AdScreener admin dashboard. Here you can manage all users, 
-              review ad submissions, and oversee the platform's operations.
+              review Ad submissions, and oversee the platform's operations.
             </p>
             <p>
               Use the dashboard above to monitor submission statistics and recent activity. You can also manage users, 

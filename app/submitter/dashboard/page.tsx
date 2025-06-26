@@ -51,7 +51,7 @@ export default function SubmitterDashboard() {
   // It primarily handles fetching/polling API-based notifications.
   // The previous WebSocket message callback logic has been removed as it was
   // incompatible with this specific hook's signature.
-  useNotifications(session?.user?.id);
+  useNotifications(session?.user?.id, "submitter", { DASHBOARD_REFRESH_REQUESTED: () => {} });
 
   useEffect(() => {
     if (sessionStatus === "loading") {
@@ -239,7 +239,7 @@ export default function SubmitterDashboard() {
                 ))}
               </div>
             ) : (
-               <p className="text-sm text-muted-foreground">No recent ad submissions.</p>
+               <p className="text-sm text-muted-foreground">No recent Ad submissions.</p>
             )}
           </CardContent>
           <CardFooter>
@@ -255,7 +255,7 @@ export default function SubmitterDashboard() {
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Submission Stats</CardTitle>
-            <CardDescription>Overview of your ad submission status</CardDescription>
+            <CardDescription>Overview of your Ad submission status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="space-y-2">
@@ -306,7 +306,7 @@ export default function SubmitterDashboard() {
               status of your submissions, and receive notifications about approval or rejection.
             </p>
             <p>
-              To get started, click the "Submit New Ad" button above. Once your ad is submitted, our reviewers will
+              To get started, click the "Submit New Ad" button above. Once your Ad is submitted, our reviewers will
               evaluate it according to our guidelines and provide feedback.
             </p>
           </div>

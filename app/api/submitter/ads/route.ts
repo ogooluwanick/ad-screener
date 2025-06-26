@@ -15,8 +15,8 @@ interface AdDocument {
   title: string;
   description: string;
   // contentUrl: string; // REMOVED
-  adFileUrl?: string; // URL of the uploaded ad file from Cloudinary
-  adFilePublicId?: string; // Public ID of the ad file in Cloudinary
+  adFileUrl?: string; // URL of the uploaded Ad file from Cloudinary
+  adFilePublicId?: string; // Public ID of the Ad file in Cloudinary
   supportingDocuments?: Array<{ url: string; publicId: string; name: string }>; // Array of supporting documents
   paymentReference: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -144,18 +144,18 @@ export async function POST(request: Request) {
       const originalFileName = adFile.name.substring(0, adFile.name.lastIndexOf('.')) || adFile.name;
           const sanitizedFileName = originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\s+/g, '-');
           const uniqueFileNameForCloudinary = `${Date.now()}-${sanitizedFileName}`;
-          // For the main ad file, 'auto' is usually fine, or determine based on adFile.type if more specific control is needed.
-          console.log(`[API /submitter/ads] Uploading ad file ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary} with resource_type: 'auto'`);
+          // For the main Ad file, 'auto' is usually fine, or determine based on adFile.type if more specific control is needed.
+          console.log(`[API /submitter/ads] Uploading Ad file ${adFile.name} to Cloudinary as ${uniqueFileNameForCloudinary} with resource_type: 'auto'`);
           adFileUploadResult = await uploadToCloudinary(adFileBuffer, 'ads_files', uniqueFileNameForCloudinary, 'auto');
 
           if (!adFileUploadResult || !adFileUploadResult.secure_url || !adFileUploadResult.public_id) {
-        console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result for ad file.');
-        return NextResponse.json({ message: 'Failed to upload ad file to Cloudinary.' }, { status: 500 });
+        console.error('[API /submitter/ads] Cloudinary upload failed or did not return expected result for Ad file.');
+        return NextResponse.json({ message: 'Failed to upload Ad file to Cloudinary.' }, { status: 500 });
       }
       console.log('[API /submitter/ads] Ad file uploaded to Cloudinary:', adFileUploadResult.secure_url);
     } catch (uploadError) {
-      console.error('[API /submitter/ads] Error during Cloudinary upload process for ad file:', uploadError);
-      return NextResponse.json({ message: 'Error uploading ad file.', error: uploadError instanceof Error ? uploadError.message : 'Unknown upload error' }, { status: 500 });
+      console.error('[API /submitter/ads] Error during Cloudinary upload process for Ad file:', uploadError);
+      return NextResponse.json({ message: 'Error uploading Ad file.', error: uploadError instanceof Error ? uploadError.message : 'Unknown upload error' }, { status: 500 });
     }
 
     // --- Supporting Documents handling with Cloudinary ---
@@ -227,13 +227,13 @@ export async function POST(request: Request) {
       vettingSpeed: vettingSpeed,
       totalFeeNgn: totalFeeNgn,
     };
-    console.log('[API /submitter/ads] Prepared ad data for insertion:', JSON.stringify(newAdData));
+    console.log('[API /submitter/ads] Prepared Ad data for insertion:', JSON.stringify(newAdData));
 
     const result = await adsCollection.insertOne(newAdData);
     console.log('[API /submitter/ads] Ad insertion result:', result);
 
     if (!result.insertedId) {
-      console.error('[API /submitter/ads] Failed to insert ad into database. Result:', result);
+      console.error('[API /submitter/ads] Failed to insert Ad into database. Result:', result);
       // TODO: Consider deleting adFile and supportingDocuments from Cloudinary if DB insert fails.
       // This requires a more complex rollback mechanism. For now, log and proceed.
       // if (adFileUploadResult?.public_id) {
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
       // for (const doc of uploadedSupportingDocuments) {
       //   await deleteFromCloudinary(doc.publicId);
       // }
-      return NextResponse.json({ message: 'Failed to submit ad to database' }, { status: 500 });
+      return NextResponse.json({ message: 'Failed to submit Ad to database' }, { status: 500 });
     }
 
     const createdAdObjectId = result.insertedId; // This is an ObjectId
@@ -264,18 +264,18 @@ export async function POST(request: Request) {
       const paymentResult = await paymentsCollection.insertOne(paymentData);
       console.log('[API /submitter/ads] Payment record insertion result:', paymentResult);
       if (!paymentResult.insertedId) {
-        console.error(`[API /submitter/ads] Failed to record payment for ad ${createdAdObjectId.toString()}, but ad was created.`);
+        console.error(`[API /submitter/ads] Failed to record payment for Ad ${createdAdObjectId.toString()}, but Ad was created.`);
       } else {
-        console.log(`[API /submitter/ads] Payment recorded successfully for ad ${createdAdObjectId.toString()} with payment ID ${paymentResult.insertedId.toString()}`);
+        console.log(`[API /submitter/ads] Payment recorded successfully for Ad ${createdAdObjectId.toString()} with payment ID ${paymentResult.insertedId.toString()}`);
       }
     } catch (paymentError) {
-      console.error(`[API /submitter/ads] Error recording payment for ad ${createdAdObjectId.toString()}:`, paymentError);
+      console.error(`[API /submitter/ads] Error recording payment for Ad ${createdAdObjectId.toString()}:`, paymentError);
       // Optionally, notify admin or add to a retry queue.
-      // The ad is already created, so we don't roll it back here for simplicity.
+      // The Ad is already created, so we don't roll it back here for simplicity.
     }
     
     const createdAdIdString = createdAdObjectId.toString();
-    console.log('[API /submitter/ads] Starting notification process for ad:', createdAdIdString);
+    console.log('[API /submitter/ads] Starting notification process for Ad:', createdAdIdString);
 
     // --- Start Notifications ---
     const submitterUserId = session.user.id;
@@ -283,58 +283,58 @@ export async function POST(request: Request) {
 
     // 1. In-App Notification to Submitter
     if (submitterUserId) {
-      console.log(`[API /submitter/ads] Attempting to send in-app notification to user ID ${submitterUserId} for ad ${createdAdIdString}`);
+      console.log(`[API /submitter/ads] Attempting to send in-app notification to user ID ${submitterUserId} for Ad ${createdAdIdString}`);
       sendNotificationToUser(submitterUserId, {
         title: 'Ad Submitted Successfully!',
-        message: `Your ad "${title}" has been submitted and is pending review. Ad ID: ${createdAdIdString}`,
+        message: `Your Ad "${title}" has been submitted and is pending review. Ad ID: ${createdAdIdString}`,
         level: 'success',
         deepLink: `/submitter/ads?adId=${createdAdIdString}` // Example deep link
       }).then(() => {
-        console.log(`[API /submitter/ads] In-app notification successfully queued for user ID ${submitterUserId} for ad ${createdAdIdString}`);
-      }).catch(err => console.error(`[API /submitter/ads] Failed to send in-app notification to user ID ${submitterUserId} for ad ${createdAdIdString}:`, err));
+        console.log(`[API /submitter/ads] In-app notification successfully queued for user ID ${submitterUserId} for Ad ${createdAdIdString}`);
+      }).catch(err => console.error(`[API /submitter/ads] Failed to send in-app notification to user ID ${submitterUserId} for Ad ${createdAdIdString}:`, err));
     } else {
-      console.warn(`[API /submitter/ads] No user ID in session to send in-app notification for ad ${createdAdIdString}`);
+      console.warn(`[API /submitter/ads] No user ID in session to send in-app notification for Ad ${createdAdIdString}`);
     }
 
     // 2. Email Notification to Submitter
     if (submitterUserEmail && title) {
-      console.log(`[API /submitter/ads] Attempting to send email confirmation to ${submitterUserEmail} for ad ${createdAdIdString}`);
+      console.log(`[API /submitter/ads] Attempting to send email confirmation to ${submitterUserEmail} for Ad ${createdAdIdString}`);
       sendEmail({
         to: submitterUserEmail,
         subject: `Ad Submission Confirmation: "${title}"`,
-        text: `Hi ${session.user.name || 'Submitter'},\n\nYour ad titled "${title}" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.\n\nYou can view your ad status in your dashboard.\n\nThank you for advertising with AdScreener!`,
+        text: `Hi ${session.user.name || 'Submitter'},\n\nYour Ad titled "${title}" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.\n\nYou can view your Ad status in your dashboard.\n\nThank you for advertising with AdScreener!`,
         htmlContent: `
           <p>Hi ${session.user.name || 'Submitter'},</p>
-          <p>Your ad titled "<strong>${title}</strong>" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.</p>
-          <p>You can view your ad status in your dashboard.</p>
+          <p>Your Ad titled "<strong>${title}</strong>" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.</p>
+          <p>You can view your Ad status in your dashboard.</p>
           <p>Thank you for advertising with AdScreener!</p>
         `
       }).then(() => {
-        console.log(`[API /submitter/ads] Email confirmation successfully sent to ${submitterUserEmail} for ad ${createdAdIdString}`);
-      }).catch(err => console.error(`[API /submitter/ads] Failed to send email confirmation to ${submitterUserEmail} for ad ${createdAdIdString}:`, err));
+        console.log(`[API /submitter/ads] Email confirmation successfully sent to ${submitterUserEmail} for Ad ${createdAdIdString}`);
+      }).catch(err => console.error(`[API /submitter/ads] Failed to send email confirmation to ${submitterUserEmail} for Ad ${createdAdIdString}:`, err));
     } else {
-      console.warn(`[API /submitter/ads] No submitter email or title available, cannot send email confirmation for ad ${createdAdIdString}`);
+      console.warn(`[API /submitter/ads] No submitter email or title available, cannot send email confirmation for Ad ${createdAdIdString}`);
     }
 
     // 3. Trigger Reviewer Dashboard Update (This is now handled by client-side polling)
-    // console.log(`[API /submitter/ads] Attempting to trigger reviewer dashboard update for ad ${createdAdIdString}`);
+    // console.log(`[API /submitter/ads] Attempting to trigger reviewer dashboard update for Ad ${createdAdIdString}`);
     // triggerReviewerDashboardUpdate()
     //   .then(() => {
-    //     console.log(`[API /submitter/ads] Reviewer dashboard update successfully triggered for ad ${createdAdIdString}`);
+    //     console.log(`[API /submitter/ads] Reviewer dashboard update successfully triggered for Ad ${createdAdIdString}`);
     //   })
-    //   .catch(err => console.error(`[API /submitter/ads] Failed to trigger reviewer dashboard update for ad ${createdAdIdString}:`, err));
+    //   .catch(err => console.error(`[API /submitter/ads] Failed to trigger reviewer dashboard update for Ad ${createdAdIdString}:`, err));
 
-    console.log('[API /submitter/ads] Successfully processed ad submission. Returning 201.');
+    console.log('[API /submitter/ads] Successfully processed Ad submission. Returning 201.');
     return NextResponse.json({ 
       message: 'Ad submission processed. Payment recorded, image uploaded. Notifications are being sent.', 
       adId: createdAdIdString, 
-      ad: { ...newAdData, _id: createdAdObjectId } // Return the created ad data with its new _id
+      ad: { ...newAdData, _id: createdAdObjectId } // Return the created Ad data with its new _id
     }, { status: 201 });
 
   } catch (error) {
     console.error('[API /submitter/ads] Critical error in POST handler:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return NextResponse.json({ message: 'Failed to submit ad', error: errorMessage }, { status: 500 });
+    return NextResponse.json({ message: 'Failed to submit Ad', error: errorMessage }, { status: 500 });
   }
 }
 

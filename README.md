@@ -1,6 +1,6 @@
 # Ad Screener 
 
-Ad Screener is a full-stack web application designed to streamline the process of ad submission and review. Submitters can upload advertisements, and reviewers can approve or reject them based on established guidelines.
+Ad Screener is a full-stack web application designed to streamline the process of Ad submission and review. Submitters can upload advertisements, and reviewers can approve or reject them based on established guidelines.
 
 ## ✨ Key Features
 
@@ -8,7 +8,7 @@ Ad Screener is a full-stack web application designed to streamline the process o
 *   **Role-Based Access Control:** Distinct dashboards and functionalities for submitters and reviewers.
 *   **Ad Submission:** Submitters can create and submit new advertisements.
 *   **Ad Review Workflow:** Reviewers can view pending ads, approve, or reject them.
-*   **Dashboard:** Overview of ad statuses, user activity, and other relevant metrics.
+*   **Dashboard:** Overview of Ad statuses, user activity, and other relevant metrics.
 *   **User Profiles & Settings:** Manage user profiles and application settings.
 *   **Notifications:** In-app notifications for important events.
 
@@ -48,7 +48,7 @@ Before you begin, ensure you have the following installed:
 1.  **Clone the repository:**
     ```bash
     git clone <your-repository-url>
-    cd ad-screener
+    cd Ad-screener
     ```
 
 2.  **Install dependencies:**
@@ -102,7 +102,7 @@ In the project directory, you can run the following commands:
 ## 🏗️ Project Structure (Simplified)
 
 ```
-ad-screener/
+Ad-screener/
 ├── app/                  # Next.js App Router: Pages, API routes, layouts
 │   ├── api/              # Backend API routes
 │   ├── (roles)/          # Route groups for different user roles (e.g., reviewer, submitter)

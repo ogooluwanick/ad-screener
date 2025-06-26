@@ -345,11 +345,11 @@ export default function UnifiedSettingsPage() {
             {userRole === "submitter" && (
               <>
                 <div className="flex items-center justify-between">
-                  <div><Label htmlFor="adApproved">Ad Approved</Label><p className="text-sm text-gray-500">When your ad gets approved</p></div>
+                  <div><Label htmlFor="adApproved">Ad Approved</Label><p className="text-sm text-gray-500">When your Ad gets approved</p></div>
                   <Switch id="adApproved" checked={notifications.adApproved} onCheckedChange={(c) => handleNotificationChange("adApproved", c)} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div><Label htmlFor="adRejected">Ad Rejected</Label><p className="text-sm text-gray-500">When your ad gets rejected</p></div>
+                  <div><Label htmlFor="adRejected">Ad Rejected</Label><p className="text-sm text-gray-500">When your Ad gets rejected</p></div>
                   <Switch id="adRejected" checked={notifications.adRejected} onCheckedChange={(c) => handleNotificationChange("adRejected", c)} />
                 </div>
                 <div className="flex items-center justify-between">

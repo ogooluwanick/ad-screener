@@ -37,7 +37,7 @@ const complianceQuestions: ComplianceQuestion[] = [
   { id: "targetAudienceAppropriate", label: "Is the target audience appropriate for the content?" },
   { id: "comparativeAdvertisingFair", label: "Is comparative advertising fair, honest, and not disparaging?" },
   { id: "disclaimersDisplayed", label: "Are mandatory disclaimers or risk warnings properly displayed (where applicable)?" },
-  { id: "unapprovedEndorsementsAbsent", label: "Does the ad include unapproved testimonials or endorsements?" },
+  { id: "unapprovedEndorsementsAbsent", label: "Does the Ad include unapproved testimonials or endorsements?" },
   { id: "statutoryApprovalsAttached", label: "Are statutory approvals from relevant sector regulators attached?" },
   { id: "sanctionHistoryReviewed", label: "Have we previously sanction history for advertiser/agency been reviewed?" },
   { id: "culturalReferencesAppropriate", label: "Is the use of language, symbols, national emblems or cultural references appropriate and respectful?" },

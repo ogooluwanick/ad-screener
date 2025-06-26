@@ -218,7 +218,7 @@ const AdminAdsPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update ad");
+        throw new Error(errorData.message || "Failed to update Ad");
       }
 
       toast({
@@ -229,10 +229,10 @@ const AdminAdsPage = () => {
       handleCloseEditModal();
       fetchAds(); // Refresh the list
     } catch (error) {
-      console.error("Failed to update ad:", error);
+      console.error("Failed to update Ad:", error);
       toast({
         title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update ad",
+        description: error instanceof Error ? error.message : "Failed to update Ad",
         variant: "destructive",
       });
     } finally {
@@ -393,7 +393,7 @@ const AdminAdsPage = () => {
           <CardHeader>
             <CardTitle>All Ads</CardTitle>
             <CardDescription>
-              Manage all submitted ads. View details or edit ad information and review status.
+              Manage all submitted ads. View details or edit Ad information and review status.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -617,7 +617,7 @@ const AdminAdsPage = () => {
           <DialogHeader>
             <DialogTitle>Ad Details: {selectedAdForDetails?.title}</DialogTitle>
             <DialogDescription>
-              Complete information about the ad submission.
+              Complete information about the Ad submission.
             </DialogDescription>
           </DialogHeader>
           
@@ -690,7 +690,7 @@ const AdminAdsPage = () => {
                 )}
                 {!selectedAdForDetails.adFileUrl && (
                    <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
-                    <p className="text-sm text-gray-500">No ad file provided.</p>
+                    <p className="text-sm text-gray-500">No Ad file provided.</p>
                   </div>
                 )}
               </div>
@@ -770,7 +770,7 @@ const AdminAdsPage = () => {
           <DialogHeader>
             <DialogTitle>Review Ad: {selectedAdForReview?.title}</DialogTitle>
             <DialogDescription>
-              Carefully review the ad details and content before making a decision.
+              Carefully review the Ad details and content before making a decision.
             </DialogDescription>
           </DialogHeader>
           
@@ -843,7 +843,7 @@ const AdminAdsPage = () => {
                 )}
                 {!selectedAdForReview.adFileUrl && (
                    <div className="mt-2 border rounded-md overflow-hidden max-w-md mx-auto bg-slate-100 flex items-center justify-center aspect-video">
-                    <p className="text-sm text-gray-500">No ad file provided.</p>
+                    <p className="text-sm text-gray-500">No Ad file provided.</p>
                   </div>
                 )}
               </div>
@@ -901,7 +901,7 @@ const AdminAdsPage = () => {
                 <Label htmlFor="rejectionReasonForReview" className="font-semibold">Rejection Reason (Required if rejecting):</Label>
                 <Textarea
                   id="rejectionReasonForReview"
-                  placeholder="Provide a clear reason if rejecting the ad..."
+                  placeholder="Provide a clear reason if rejecting the Ad..."
                   value={rejectionReasonForReview}
                   onChange={(e) => setRejectionReasonForReview(e.target.value)}
                   className="mt-1"

@@ -11,7 +11,7 @@ export default function ReviewerGuidelines() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Review Guidelines</h1>
-        <p className="text-gray-600">Comprehensive guidelines for reviewing ad submissions</p>
+        <p className="text-gray-600">Comprehensive guidelines for reviewing Ad submissions</p>
       </div>
 
       {/* Quick Overview */}
@@ -82,7 +82,7 @@ export default function ReviewerGuidelines() {
             <FileText className="h-5 w-5 mr-2" />
             Content Review Criteria
           </CardTitle>
-          <CardDescription>Standards for evaluating ad content and messaging</CardDescription>
+          <CardDescription>Standards for evaluating Ad content and messaging</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -205,7 +205,7 @@ export default function ReviewerGuidelines() {
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  Landing page matches ad content
+                  Landing page matches Ad content
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -269,7 +269,7 @@ export default function ReviewerGuidelines() {
           <div className="bg-green-50 p-4 rounded-lg">
             <h4 className="font-semibold mb-2">Example Approval Note:</h4>
             <p className="text-sm text-gray-700 italic">
-              "Great ad! The content is clear, professional, and meets all our guidelines. The image quality is
+              "Great Ad! The content is clear, professional, and meets all our guidelines. The image quality is
               excellent and the landing page provides a good user experience."
             </p>
           </div>

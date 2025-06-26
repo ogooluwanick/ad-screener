@@ -31,7 +31,7 @@ export default function SubmitterGuidelines() {
             <FileText className="h-5 w-5 mr-2" />
             Content Guidelines
           </CardTitle>
-          <CardDescription>Requirements for ad content and messaging</CardDescription>
+          <CardDescription>Requirements for Ad content and messaging</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -107,7 +107,7 @@ export default function SubmitterGuidelines() {
             <ImageIcon className="h-5 w-5 mr-2" />
             Image Requirements
           </CardTitle>
-          <CardDescription>Technical and content requirements for ad images</CardDescription>
+          <CardDescription>Technical and content requirements for Ad images</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
@@ -196,7 +196,7 @@ export default function SubmitterGuidelines() {
               </li>
               <li className="flex items-start">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                Landing pages relevant to the ad content
+                Landing pages relevant to the Ad content
               </li>
               <li className="flex items-start">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -251,7 +251,7 @@ export default function SubmitterGuidelines() {
           <div className="bg-green-50 p-4 rounded-lg">
             <h3 className="font-semibold text-green-800 mb-2">Submission Fee</h3>
             <p className="text-sm text-green-700">
-              A $50.00 submission fee is required for each ad submission. This fee covers the review process and
+              A $50.00 submission fee is required for each Ad submission. This fee covers the review process and
               platform maintenance.
             </p>
           </div>
@@ -291,7 +291,7 @@ export default function SubmitterGuidelines() {
             <Shield className="h-5 w-5 mr-2" />
             Review Process
           </CardTitle>
-          <CardDescription>What happens after you submit your ad</CardDescription>
+          <CardDescription>What happens after you submit your Ad</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
@@ -300,14 +300,14 @@ export default function SubmitterGuidelines() {
                 1
               </div>
               <h3 className="font-semibold mb-2">Submission</h3>
-              <p className="text-sm text-gray-600">Your ad is submitted and payment is processed</p>
+              <p className="text-sm text-gray-600">Your Ad is submitted and payment is processed</p>
             </div>
             <div className="text-center p-4 bg-amber-50 rounded-lg">
               <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">
                 2
               </div>
               <h3 className="font-semibold mb-2">Review</h3>
-              <p className="text-sm text-gray-600">Our team reviews your ad against guidelines (24-48 hours)</p>
+              <p className="text-sm text-gray-600">Our team reviews your Ad against guidelines (24-48 hours)</p>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mx-auto mb-2">

@@ -96,10 +96,10 @@ export async function POST(request: NextRequest) {
     // 1. Fetch details of assigned reviewers (email, name) from the 'users' collection.
     // 2. Create in-app notifications for each assigned reviewer.
     //    - Need to know the structure for creating notifications (e.g., POST to /api/notifications/create)
-    //    - Notification message: "You have been assigned to review an ad: [Ad Title]"
+    //    - Notification message: "You have been assigned to review an Ad: [Ad Title]"
     // 3. Send email notifications to each assigned reviewer.
     //    - Use lib/email.ts
-    //    - Email content: Similar to in-app notification, with a link to the ad or reviewer dashboard.
+    //    - Email content: Similar to in-app notification, with a link to the Ad or reviewer dashboard.
 
     if (assignedReviewerIds && assignedReviewerIds.length > 0) {
       try {
@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
 
           for (const reviewer of reviewersToNotify) {
             const notificationTitle = "New Ad Assignment";
-            const notificationMessage = `You have been assigned to review the ad: "${adDetails.title}". Please treat this as urgent.`;
-            // Consider making the deep link more specific if possible, e.g., directly to the ad view for reviewers
+            const notificationMessage = `You have been assigned to review the Ad: "${adDetails.title}". Please treat this as urgent.`;
+            // Consider making the deep link more specific if possible, e.g., directly to the Ad view for reviewers
             const adReviewLink = `${appUrl}/reviewer/pending?adId=${adId}`; // Adjust if reviewer page is different
 
             // 1. Create In-App Notification using the existing client
@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
               });
 
               if (notificationSent) {
-                console.log(`In-app notification request sent for ${reviewer.email} for ad ${adId} via notification-client.`);
+                console.log(`In-app notification request sent for ${reviewer.email} for Ad ${adId} via notification-client.`);
               } else {
-                console.error(`Failed to send in-app notification request for ${reviewer.email} for ad ${adId} via notification-client.`);
+                console.error(`Failed to send in-app notification request for ${reviewer.email} for Ad ${adId} via notification-client.`);
               }
             } catch (e: unknown) { 
               console.error(`Error calling sendNotificationToUser for ${reviewer.email}:`, e instanceof Error ? e.message : e);
@@ -141,12 +141,12 @@ export async function POST(request: NextRequest) {
             // 2. Send Email Notification
             try {
               const emailSubject = `Urgent: New Ad Assigned for Review - "${adDetails.title}"`;
-              const emailText = `Hello ${reviewer.name || reviewer.email.split('@')[0]},\n\nYou have been assigned to review a new ad titled "${adDetails.title}".\nPlease review it urgently.\n\nYou can view the ad here: ${adReviewLink}\n\nThank you,\nAdScreener Admin`;
+              const emailText = `Hello ${reviewer.name || reviewer.email.split('@')[0]},\n\nYou have been assigned to review a new Ad titled "${adDetails.title}".\nPlease review it urgently.\n\nYou can view the Ad here: ${adReviewLink}\n\nThank you,\nAdScreener Admin`;
               const emailHtmlContent = `
                 <p>Hello ${reviewer.name || reviewer.email.split('@')[0]},</p>
-                <p>You have been assigned to review a new ad titled "<strong>${adDetails.title}</strong>".</p>
-                <p><strong>Please review this ad urgently.</strong></p>
-                <p>You can view the ad by clicking the button below or using the link:</p>
+                <p>You have been assigned to review a new Ad titled "<strong>${adDetails.title}</strong>".</p>
+                <p><strong>Please review this Ad urgently.</strong></p>
+                <p>You can view the Ad by clicking the button below or using the link:</p>
                 <p style="text-align: center; margin: 20px 0;">
                   <a href="${adReviewLink}" style="background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">View Ad for Review</a>
                 </p>
@@ -168,15 +168,15 @@ export async function POST(request: NextRequest) {
         }
       } catch (notificationError: unknown) { // Explicitly type notificationError
         console.error('Error during notification process:', notificationError instanceof Error ? notificationError.message : notificationError);
-        // Do not let notification errors fail the main ad update response
+        // Do not let notification errors fail the main Ad update response
       }
     }
 
     return NextResponse.json({ message: 'Ad updated successfully' }, { status: 200 });
 
   } catch (error: unknown) { // Explicitly type error
-    console.error('Error updating ad:', error instanceof Error ? error.message : error);
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during ad update.';
-    return NextResponse.json({ message: 'Failed to update ad', error: errorMessage }, { status: 500 });
+    console.error('Error updating Ad:', error instanceof Error ? error.message : error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during Ad update.';
+    return NextResponse.json({ message: 'Failed to update Ad', error: errorMessage }, { status: 500 });
   }
 }

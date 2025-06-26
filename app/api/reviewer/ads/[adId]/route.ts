@@ -70,13 +70,13 @@ export async function PUT(
       return NextResponse.json({ message: `Ad is already ${adToUpdate.status} and cannot be re-reviewed through this endpoint.` }, { status: 409 }); // Conflict
     }
 
-    // Check if the ad is assigned to this reviewer or unassigned
+    // Check if the Ad is assigned to this reviewer or unassigned
     const reviewerId = session.user.id;
     const isAssignedToThisReviewer = adToUpdate.assignedReviewerIds && adToUpdate.assignedReviewerIds.includes(reviewerId);
     const isUnassigned = !adToUpdate.assignedReviewerIds || adToUpdate.assignedReviewerIds.length === 0;
 
     if (!isAssignedToThisReviewer && !isUnassigned) {
-      return NextResponse.json({ message: 'This ad is not assigned to you for review.' }, { status: 403 }); // Forbidden
+      return NextResponse.json({ message: 'This Ad is not assigned to you for review.' }, { status: 403 }); // Forbidden
     }
 
     const updateData: Partial<AdDocument> = {
@@ -118,21 +118,21 @@ export async function PUT(
 
     if (body.status === 'approved') {
       submitterNotificationTitle = 'Your Ad Has Been Approved!';
-      submitterNotificationMessage = `Congratulations! Your ad "${adTitle}" (ID: ${adId}) has been approved.`;
+      submitterNotificationMessage = `Congratulations! Your Ad "${adTitle}" (ID: ${adId}) has been approved.`;
       submitterNotificationLevel = 'success';
 
       emailSubject = `Ad Approved: "${adTitle}"`;
-      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nGood news! Your ad titled "${adTitle}" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.\n\nThank you for using AdScreener.`;
-      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>Good news! Your ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.</p><p>Thank you for using AdScreener.</p>`;
+      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nGood news! Your Ad titled "${adTitle}" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.\n\nThank you for using AdScreener.`;
+      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>Good news! Your Ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been approved and is now active or scheduled according to its settings.</p><p>Thank you for using AdScreener.</p>`;
 
     } else { // 'rejected'
       submitterNotificationTitle = 'Your Ad Has Been Rejected';
-      submitterNotificationMessage = `Unfortunately, your ad "${adTitle}" (ID: ${adId}) has been rejected. Reason: ${body.rejectionReason}`;
+      submitterNotificationMessage = `Unfortunately, your Ad "${adTitle}" (ID: ${adId}) has been rejected. Reason: ${body.rejectionReason}`;
       submitterNotificationLevel = 'error';
 
       emailSubject = `Ad Rejected: "${adTitle}"`;
-      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nWe regret to inform you that your ad titled "${adTitle}" (ID: ${adId}) has been rejected.\nReason: ${body.rejectionReason}\n\nPlease review the feedback and make necessary changes if you wish to resubmit.\n\nRegards,\nThe AdScreener Team`;
-      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>We regret to inform you that your ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been rejected.</p><p><strong>Reason:</strong> ${body.rejectionReason}</p><p>Please review the feedback and make necessary changes if you wish to resubmit.</p><p>Regards,<br/>The AdScreener Team</p>`;
+      emailText = `Hi ${adToUpdate.submitterEmail || 'Submitter'},\n\nWe regret to inform you that your Ad titled "${adTitle}" (ID: ${adId}) has been rejected.\nReason: ${body.rejectionReason}\n\nPlease review the feedback and make necessary changes if you wish to resubmit.\n\nRegards,\nThe AdScreener Team`;
+      emailHtmlContent = `<p>Hi ${adToUpdate.submitterEmail || 'Submitter'},</p><p>We regret to inform you that your Ad titled "<strong>${adTitle}</strong>" (ID: ${adId}) has been rejected.</p><p><strong>Reason:</strong> ${body.rejectionReason}</p><p>Please review the feedback and make necessary changes if you wish to resubmit.</p><p>Regards,<br/>The AdScreener Team</p>`;
     }
 
     // 1. In-App Notification to Submitter
@@ -142,10 +142,10 @@ export async function PUT(
         message: submitterNotificationMessage,
         level: submitterNotificationLevel,
         deepLink: `/submitter/ads?adId=${adId}` // Example deep link
-      }).then(() => console.log(`In-app notification sent to submitter ${submitterId} for ad ${adId} status ${body.status}`))
-        .catch(err => console.error(`Failed to send in-app notification to submitter ${submitterId} for ad ${adId}:`, err));
+      }).then(() => console.log(`In-app notification sent to submitter ${submitterId} for Ad ${adId} status ${body.status}`))
+        .catch(err => console.error(`Failed to send in-app notification to submitter ${submitterId} for Ad ${adId}:`, err));
     } else {
-      console.warn(`No submitterId found for ad ${adId}, cannot send in-app notification.`);
+      console.warn(`No submitterId found for Ad ${adId}, cannot send in-app notification.`);
     }
 
     // 2. Email Notification to Submitter
@@ -155,21 +155,21 @@ export async function PUT(
         subject: emailSubject,
         text: emailText,
         htmlContent: emailHtmlContent
-      }).then(() => console.log(`Email notification sent to submitter ${submitterEmail} for ad ${adId} status ${body.status}`))
-        .catch(err => console.error(`Failed to send email to submitter ${submitterEmail} for ad ${adId}:`, err));
+      }).then(() => console.log(`Email notification sent to submitter ${submitterEmail} for Ad ${adId} status ${body.status}`))
+        .catch(err => console.error(`Failed to send email to submitter ${submitterEmail} for Ad ${adId}:`, err));
     } else {
-      console.warn(`No submitterEmail found for ad ${adId}, cannot send email notification.`);
+      console.warn(`No submitterEmail found for Ad ${adId}, cannot send email notification.`);
     }
     
     // 3. In-App Notification to Reviewer (who performed the action)
     if (currentReviewerId) {
         sendNotificationToUser(currentReviewerId, {
             title: `Ad Review Complete: ${adTitle}`,
-            message: `You have successfully ${body.status} the ad "${adTitle}" (ID: ${adId}).`,
+            message: `You have successfully ${body.status} the Ad "${adTitle}" (ID: ${adId}).`,
             level: 'info', // Or 'success'
             // deepLink: `/reviewer/ads/${adId}` // Or to the list of reviewed ads
-        }).then(() => console.log(`In-app notification sent to reviewer ${currentReviewerId} for action on ad ${adId}`))
-          .catch(err => console.error(`Failed to send in-app notification to reviewer ${currentReviewerId} for ad ${adId}:`, err));
+        }).then(() => console.log(`In-app notification sent to reviewer ${currentReviewerId} for action on Ad ${adId}`))
+          .catch(err => console.error(`Failed to send in-app notification to reviewer ${currentReviewerId} for Ad ${adId}:`, err));
     }
 
 
@@ -186,13 +186,13 @@ export async function PUT(
     }, { status: 200 });
 
   } catch (error) {
-    console.error(`Error updating ad ${adId}:`, error);
+    console.error(`Error updating Ad ${adId}:`, error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return NextResponse.json({ message: 'Failed to update ad status', error: errorMessage }, { status: 500 });
+    return NextResponse.json({ message: 'Failed to update Ad status', error: errorMessage }, { status: 500 });
   }
 }
 
-// Placeholder for GET /api/reviewer/ads/[adId] (to get a specific ad for review)
+// Placeholder for GET /api/reviewer/ads/[adId] (to get a specific Ad for review)
 export async function GET(
   request: Request,
   { params }: { params: { adId: string } }
@@ -206,6 +206,6 @@ export async function GET(
    if (!ObjectId.isValid(adId)) {
     return NextResponse.json({ message: 'Invalid Ad ID format' }, { status: 400 });
   }
-  // TODO: Implement logic to fetch and return a specific ad by ID
+  // TODO: Implement logic to fetch and return a specific Ad by ID
   return NextResponse.json({ message: `GET /api/reviewer/ads/${adId} not yet implemented.` });
 }

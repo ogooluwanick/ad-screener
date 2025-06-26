@@ -82,9 +82,9 @@ async function seedAdCategories() {
     );
 
     if (result.upsertedCount > 0) {
-      console.log(`Successfully inserted new ad categories document with _id: ${CATEGORIES_DOCUMENT_ID}.`);
+      console.log(`Successfully inserted new Ad categories document with _id: ${CATEGORIES_DOCUMENT_ID}.`);
     } else if (result.modifiedCount > 0) {
-      console.log(`Successfully updated ad categories in document with _id: ${CATEGORIES_DOCUMENT_ID}.`);
+      console.log(`Successfully updated Ad categories in document with _id: ${CATEGORIES_DOCUMENT_ID}.`);
     } else if (result.matchedCount > 0) {
       console.log(`Ad categories document with _id: ${CATEGORIES_DOCUMENT_ID} already up-to-date.`);
     } else {

@@ -300,7 +300,7 @@ export default function ReviewerDashboard() {
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Review Statistics</CardTitle>
-            <CardDescription>Overview of ad review status</CardDescription>
+            <CardDescription>Overview of Ad review status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="space-y-2">
@@ -354,7 +354,7 @@ export default function ReviewerDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Welcome, Reviewer</CardTitle>
-          <CardDescription>Manage ad submissions and maintain quality standards</CardDescription>
+          <CardDescription>Manage Ad submissions and maintain quality standards</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm">
