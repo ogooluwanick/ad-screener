@@ -6,7 +6,8 @@ import crypto from "crypto";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email";
-import { sendNotificationToUser } from "@/lib/notification-client";
+import { createInAppNotification } from '@/lib/notificationService';
+
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -77,7 +78,8 @@ export async function POST(req: NextRequest) {
       console.log(`Verification email sent to ${newUser.email}`);
 
       if (session?.user?.id) {
-        await sendNotificationToUser(session.user.id, {
+        await createInAppNotification({
+          userId: session.user.id,
           title: "Reviewer Account Created",
           message: `A new reviewer account was created with the email ${email}.`,
           level: "success",

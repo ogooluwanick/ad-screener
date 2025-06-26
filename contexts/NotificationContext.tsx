@@ -24,22 +24,17 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const role = userProfile?.role;
 
   // useNotifications hook no longer takes role or onMessageCallbacks
-  const notificationState = useNotifications(userId); 
+  const notificationState = useNotifications(userId, role, { DASHBOARD_REFRESH_REQUESTED: () => {} });
 
   // Log the state from useNotifications as seen by the Provider
-  console.log('[NotificationProvider] notificationState from useNotifications:', notificationState);
 
   // Log the specific notifications array being used for the count
-  console.log('[NotificationProvider] notifications array for count:', notificationState.notifications);
 
   useEffect(() => {
-    console.log('[NotificationProvider EFFECT] notificationState.notifications changed (or component re-rendered with new ref):', notificationState.notifications);
   }, [notificationState.notifications]);
   
   const unreadNotificationCount = useMemo(() => {
     const count = notificationState.notifications.filter(n => !n.isRead).length;
-    // Log the calculated unread count
-    console.log('[NotificationProvider] calculated unreadNotificationCount (inside useMemo):', count);
     return count;
   }, [notificationState.notifications]);
 

@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId, MongoClient } from 'mongodb';
+import { createInAppNotification } from '@/lib/notificationService';
 import { sendEmail } from '@/lib/email'; // Import sendEmail utility
-import { sendNotificationToUser } from '@/lib/notification-client'; // Use existing client
 
 // Define a simple User interface for fetching reviewer details
 interface UserDocument {
@@ -121,21 +121,17 @@ export async function POST(request: NextRequest) {
 
             // 1. Create In-App Notification using the existing client
             try {
-              const notificationSent = await sendNotificationToUser(reviewer._id.toString(), {
+              await createInAppNotification({
+                userId: reviewer._id.toString(),
                 title: notificationTitle,
                 message: notificationMessage,
                 level: 'info',
                 deepLink: adReviewLink,
-                // 'type' is not part of UserNotificationData, it's handled by /api/notifications/create if needed
               });
 
-              if (notificationSent) {
-                console.log(`In-app notification request sent for ${reviewer.email} for Ad ${adId} via notification-client.`);
-              } else {
-                console.error(`Failed to send in-app notification request for ${reviewer.email} for Ad ${adId} via notification-client.`);
-              }
-            } catch (e: unknown) { 
-              console.error(`Error calling sendNotificationToUser for ${reviewer.email}:`, e instanceof Error ? e.message : e);
+              console.log(`In-app notification request sent for ${reviewer.email} for Ad ${adId}.`);
+            } catch (e: unknown) {
+              console.error(`Error calling createInAppNotification for ${reviewer.email}:`, e instanceof Error ? e.message : e);
             }
 
             // 2. Send Email Notification

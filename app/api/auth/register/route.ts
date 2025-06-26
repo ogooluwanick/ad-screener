@@ -4,7 +4,7 @@ import crypto from "crypto"; // For token generation
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
 import { sendVerificationEmail } from "@/lib/email"; // Changed to sendVerificationEmail
-import { sendNotificationToUser } from "@/lib/notification-client";
+import { createInAppNotification } from '@/lib/notificationService';
 import { uploadToCloudinary } from "@/lib/cloudinary_utils"; // Import Cloudinary uploader
 import { Readable } from "stream"; // For converting file to buffer
 
@@ -183,7 +183,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await sendNotificationToUser(createdUser.id, {
+    await createInAppNotification({
+      userId: createdUser.id,
       title: "Account Created",
       message: "Your account has been created successfully. Please check your email to verify your account.",
       level: "success",

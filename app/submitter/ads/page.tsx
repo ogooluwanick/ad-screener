@@ -47,6 +47,7 @@ interface ComplianceFormData {
   sanctionHistoryReviewed: "Yes" | "No" | "N/A";
   culturalReferencesAppropriate: "Yes" | "No" | "N/A";
   childrenProtected: "Yes" | "No" | "N/A";
+  sanctionsHistory: "Yes" | "No" | "N/A";
   overallComplianceNotes?: string;
   // filledAt and reviewerId might also be part of the full ComplianceData from backend
   filledAt?: string; // Or Date

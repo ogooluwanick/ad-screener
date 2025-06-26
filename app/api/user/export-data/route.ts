@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
-import { sendNotificationToUser } from "@/lib/notification-client"; // Added for notifications
+import { createInAppNotification } from '@/lib/notificationService';
 
 // Define a basic Ad interface, adjust according to your actual Ad schema
 interface Ad extends WithId<Document> {
@@ -30,7 +30,8 @@ export async function GET() {
   // Send in-app notification that the request is being processed
   // This is sent before the actual data processing begins.
   // In a true async setup, this would be more meaningful.
-  sendNotificationToUser(userIdForNotification, {
+  createInAppNotification({
+    userId: userIdForNotification,
     title: "Data Export Requested",
     message: "We've received your data export request and are processing it. You'll be notified when it's ready.",
     level: "info",

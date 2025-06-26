@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
-import { sendNotificationToUser } from '@/lib/notification-client';
-import { sendEmail } from '@/lib/email';
+import { sendAdReviewNotifications } from '@/lib/ad-notifications';
 
 // Using a similar structure to AdDocumentForListing for consistency
 export interface AdDocumentForListing { // This should ideally be a shared type
@@ -40,6 +39,7 @@ interface ComplianceData {
   sanctionHistoryReviewed: "Yes" | "No" | "N/A";
   culturalReferencesAppropriate: "Yes" | "No" | "N/A";
   childrenProtected: "Yes" | "No" | "N/A";
+  sanctionsHistory: "Yes" | "No" | "N/A";
   overallComplianceNotes?: string;
   filledAt: Date;
   reviewerId: string;
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
       "rulesCompliance", "falseClaimsFree", "claimsSubstantiated", "offensiveContentFree",
       "targetAudienceAppropriate", "comparativeAdvertisingFair", "disclaimersDisplayed",
       "unapprovedEndorsementsAbsent", "statutoryApprovalsAttached", "sanctionHistoryReviewed",
-      "culturalReferencesAppropriate", "childrenProtected"
+      "culturalReferencesAppropriate", "childrenProtected", "sanctionsHistory"
     ];
     for (const key of requiredComplianceKeys) {
       if (!(key in complianceData) || !["Yes", "No", "N/A"].includes(complianceData[key])) {
@@ -212,27 +212,16 @@ export async function POST(request: Request) {
     console.log(`[API /reviewer/ads/rejected] Ad ${adId} successfully rejected by reviewer ${session.user.id}.`);
 
     // --- Start Notifications ---
-    if (adToUpdate.submitterId) {
-      console.log(`[API /reviewer/ads/rejected] Attempting to send in-app notification to submitter ${adToUpdate.submitterId} for rejected ad ${adId}`);
-      sendNotificationToUser(adToUpdate.submitterId, {
-        title: 'Your Ad Has Been Rejected',
-        message: `Unfortunately, your ad "${adToUpdate.title}" (ID: ${adId}) has been rejected. Reason: ${rejectionReason.trim()}`,
-        level: 'error',
-        deepLink: `/submitter/ads?adId=${adId}`
-      }).then(() => console.log(`[API /reviewer/ads/rejected] In-app notification sent to submitter ${adToUpdate.submitterId}`))
-        .catch(err => console.error(`[API /reviewer/ads/rejected] Failed to send in-app notification to submitter ${adToUpdate.submitterId}:`, err));
-    }
-
-    if (adToUpdate.submitterEmail && adToUpdate.title) {
-      console.log(`[API /reviewer/ads/rejected] Attempting to send email notification to submitter ${adToUpdate.submitterEmail} for rejected ad ${adId}`);
-      sendEmail({
-        to: adToUpdate.submitterEmail,
-        subject: `Ad Rejected: "${adToUpdate.title}"`,
-        text: `Hi,\n\nYour ad titled "${adToUpdate.title}" (ID: ${adId}) has been rejected.\nReason: ${rejectionReason.trim()}\n\nPlease review the feedback and resubmit if applicable.\n\nAdScreener Team`,
-        htmlContent: `<p>Hi,</p><p>Your ad titled "<strong>${adToUpdate.title}</strong>" (ID: ${adId}) has been rejected.</p><p><strong>Reason:</strong> ${rejectionReason.trim()}</p><p>Please review the feedback and resubmit if applicable.</p><p>AdScreener Team</p>`
-      }).then(() => console.log(`[API /reviewer/ads/rejected] Email notification sent to submitter ${adToUpdate.submitterEmail}`))
-        .catch(err => console.error(`[API /reviewer/ads/rejected] Failed to send email notification to submitter ${adToUpdate.submitterEmail}:`, err));
-    }
+    await sendAdReviewNotifications({
+      adDetails: {
+        submitterId: adToUpdate.submitterId,
+        submitterEmail: adToUpdate.submitterEmail,
+        title: adToUpdate.title,
+        adId: adId,
+      },
+      status: 'rejected',
+      rejectionReason: rejectionReason.trim(),
+    });
     // --- End Notifications ---
 
     return NextResponse.json({ message: 'Ad rejected successfully', adId }, { status: 200 });

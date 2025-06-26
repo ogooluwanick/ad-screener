@@ -20,6 +20,7 @@ export interface ComplianceFormData {
   sanctionHistoryReviewed: "Yes" | "No" | "N/A";
   culturalReferencesAppropriate: "Yes" | "No" | "N/A";
   childrenProtected: "Yes" | "No" | "N/A";
+  sanctionsHistory: "Yes" | "No" | "N/A";
   overallComplianceNotes?: string;
 }
 
@@ -39,9 +40,10 @@ const complianceQuestions: ComplianceQuestion[] = [
   { id: "disclaimersDisplayed", label: "Are mandatory disclaimers or risk warnings properly displayed (where applicable)?" },
   { id: "unapprovedEndorsementsAbsent", label: "Does the Ad include unapproved testimonials or endorsements?" },
   { id: "statutoryApprovalsAttached", label: "Are statutory approvals from relevant sector regulators attached?" },
-  { id: "sanctionHistoryReviewed", label: "Have we previously sanction history for advertiser/agency been reviewed?" },
+  { id: "sanctionHistoryReviewed", label: "Have we reviewed the sanction history of the  advertiser or agency?" },
   { id: "culturalReferencesAppropriate", label: "Is the use of language, symbols, national emblems or cultural references appropriate and respectful?" },
   { id: "childrenProtected", label: "Are children appropriately protected (if children are part of the target audience)?" },
+  { id: "sanctionsHistory", label: "Does the Advertiser or Agency have a sanctions history?" },
   { id: "overallComplianceNotes", label: "Overall Compliance Notes (Optional)", isNote: true },
 ];
 

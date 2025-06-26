@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path as necessary
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { sendNotificationToUser } from "@/lib/notification-client"; // Added for notifications
 import { deleteFromCloudinary } from "@/lib/cloudinary_utils"; // For deleting old LoA
+import { createInAppNotification } from '@/lib/notificationService';
 
 export async function GET() { // Added export async function GET() here
   const session = await getServerSession(authOptions);
@@ -223,7 +223,8 @@ export async function PUT(req: Request) {
 
     // Send in-app notification
     if (session.user.id && result.modifiedCount > 0) { // Only send if something actually changed
-      sendNotificationToUser(session.user.id, {
+      await createInAppNotification({
+        userId: session.user.id,
         title: "Profile Updated",
         message: "Your profile information has been successfully updated.",
         level: "success",

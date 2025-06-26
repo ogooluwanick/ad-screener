@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendNotificationToUser } from '@/lib/notification-client'; // Removed broadcastNotification
+import { createInAppNotification } from '@/lib/notificationService';
 
 // Ensure this route is only accessible by authorized users or services
 // Add authentication and authorization checks as needed
@@ -19,7 +19,13 @@ export async function POST(request: Request) {
       if (!userId) {
         return NextResponse.json({ error: 'Missing userId for user-specific notification' }, { status: 400 });
       }
-      success = await sendNotificationToUser(userId, message);
+      const notificationResult = await createInAppNotification({
+        userId: userId,
+        title: 'System Notification', // Default title
+        message: message,
+        level: 'info', // Default level
+      });
+      success = !!notificationResult; // Convert to boolean
     } else if (type === 'broadcast') {
       // Broadcast functionality via the old client is deprecated.
       // A new implementation would be needed if broadcast is required.
@@ -43,7 +49,7 @@ export async function POST(request: Request) {
 
 // Example GET handler for testing (optional, remove in production)
 export async function GET() {
-  // You could use this to test sending to a test user via sendNotificationToUser if needed.
+  // You could use this to test sending to a test user via createInAppNotification if needed.
   // Broadcast functionality is currently not available.
   return NextResponse.json({ message: 'Notification API is active. Use POST to send notifications.' });
 }

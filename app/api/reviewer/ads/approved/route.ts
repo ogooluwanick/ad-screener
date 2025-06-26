@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from 'mongodb';
-import { sendNotificationToUser } from '@/lib/notification-client';
-import { sendEmail } from '@/lib/email';
+import { sendAdReviewNotifications } from '@/lib/ad-notifications';
 
 // Using the same AdDocumentForListing from the pending route for consistency
 export interface AdDocumentForListing { // This should ideally be a shared type
@@ -40,6 +39,7 @@ interface ComplianceData {
   sanctionHistoryReviewed: "Yes" | "No" | "N/A";
   culturalReferencesAppropriate: "Yes" | "No" | "N/A";
   childrenProtected: "Yes" | "No" | "N/A";
+  sanctionsHistory: "Yes" | "No" | "N/A";
   overallComplianceNotes?: string;
   filledAt: Date;
   reviewerId: string;
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
       "rulesCompliance", "falseClaimsFree", "claimsSubstantiated", "offensiveContentFree",
       "targetAudienceAppropriate", "comparativeAdvertisingFair", "disclaimersDisplayed",
       "unapprovedEndorsementsAbsent", "statutoryApprovalsAttached", "sanctionHistoryReviewed",
-      "culturalReferencesAppropriate", "childrenProtected"
+      "culturalReferencesAppropriate", "childrenProtected", "sanctionsHistory"
     ];
     for (const key of requiredKeys) {
       if (!(key in complianceData) || !["Yes", "No", "N/A"].includes(complianceData[key])) {
@@ -205,27 +205,15 @@ export async function POST(request: Request) {
     console.log(`[API /reviewer/ads/approved] Ad ${adId} successfully approved by reviewer ${session.user.id}.`);
 
     // --- Start Notifications ---
-    if (adToUpdate.submitterId) {
-      console.log(`[API /reviewer/ads/approved] Attempting to send in-app notification to submitter ${adToUpdate.submitterId} for approved ad ${adId}`);
-      sendNotificationToUser(adToUpdate.submitterId, {
-        title: 'Your Ad Has Been Approved!',
-        message: `Congratulations! Your ad "${adToUpdate.title}" has been approved. Ad ID: ${adId}`,
-        level: 'success',
-        deepLink: `/submitter/ads?adId=${adId}`
-      }).then(() => console.log(`[API /reviewer/ads/approved] In-app notification sent to submitter ${adToUpdate.submitterId}`))
-        .catch(err => console.error(`[API /reviewer/ads/approved] Failed to send in-app notification to submitter ${adToUpdate.submitterId}:`, err));
-    }
-
-    if (adToUpdate.submitterEmail && adToUpdate.title) {
-      console.log(`[API /reviewer/ads/approved] Attempting to send email notification to submitter ${adToUpdate.submitterEmail} for approved ad ${adId}`);
-      sendEmail({
-        to: adToUpdate.submitterEmail,
-        subject: `Ad Approved: "${adToUpdate.title}"`,
-        text: `Hi,\n\nYour ad titled "${adToUpdate.title}" (ID: ${adId}) has been approved.\n\nThank you for advertising with AdScreener!`,
-        htmlContent: `<p>Hi,</p><p>Your ad titled "<strong>${adToUpdate.title}</strong>" (ID: ${adId}) has been approved.</p><p>Thank you for advertising with AdScreener!</p>`
-      }).then(() => console.log(`[API /reviewer/ads/approved] Email notification sent to submitter ${adToUpdate.submitterEmail}`))
-        .catch(err => console.error(`[API /reviewer/ads/approved] Failed to send email notification to submitter ${adToUpdate.submitterEmail}:`, err));
-    }
+    await sendAdReviewNotifications({
+      adDetails: {
+        submitterId: adToUpdate.submitterId,
+        submitterEmail: adToUpdate.submitterEmail,
+        title: adToUpdate.title,
+        adId: adId,
+      },
+      status: 'approved',
+    });
     // --- End Notifications ---
 
     return NextResponse.json({ message: 'Ad approved successfully', adId }, { status: 200 });

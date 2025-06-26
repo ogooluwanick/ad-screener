@@ -5,7 +5,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient, ObjectId } from "mongodb";
-import { sendNotificationToUser } from "@/lib/notification-client";
+import { createInAppNotification } from '@/lib/notificationService';
+
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (session?.user?.id) {
-      await sendNotificationToUser(session.user.id, {
+      await createInAppNotification({
+        userId: session.user.id,
         title: "Admin Account Created",
         message: `A new admin account was created with the email ${email}.`,
         level: "success",

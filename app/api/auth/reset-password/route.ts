@@ -3,7 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient } from "mongodb";
-import { sendNotificationToUser } from "@/lib/notification-client";
+import { createInAppNotification } from '@/lib/notificationService';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    await sendNotificationToUser(user._id.toString(), {
+    await createInAppNotification({
+      userId: user._id.toString(),
       title: "Password Reset",
       message: "Your password has been reset successfully.",
       level: "success",

@@ -5,7 +5,7 @@ import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "@/lib/email";
-import { sendNotificationToUser } from "@/lib/notification-client";
+import { createInAppNotification } from '@/lib/notificationService';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -68,7 +68,8 @@ export async function POST(request: Request) {
 
     // 1. Send In-App Notification
     try {
-      await sendNotificationToUser(userIdString, {
+      await createInAppNotification({
+        userId: userIdString,
         title: "Password Changed",
         message: "Your password has been successfully updated.",
         level: "success",

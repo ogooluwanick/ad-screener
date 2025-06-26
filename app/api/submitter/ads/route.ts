@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import clientPromise from "@/lib/mongodb";
-import { sendNotificationToUser } from '@/lib/notification-client';
 import { sendEmail } from '@/lib/email';
+import { createInAppNotification } from '@/lib/notificationService';
 import { ObjectId } from 'mongodb'; // Import ObjectId
 import { uploadToCloudinary } from '@/lib/cloudinary_utils'; // Added for Cloudinary upload
 
@@ -46,6 +46,7 @@ interface ComplianceData {
   sanctionHistoryReviewed: "Yes" | "No" | "N/A";
   culturalReferencesAppropriate: "Yes" | "No" | "N/A";
   childrenProtected: "Yes" | "No" | "N/A";
+  sanctionsHistory: "Yes" | "No" | "N/A";
   overallComplianceNotes?: string;
   filledAt: Date;
   reviewerId: string;
@@ -284,7 +285,8 @@ export async function POST(request: Request) {
     // 1. In-App Notification to Submitter
     if (submitterUserId) {
       console.log(`[API /submitter/ads] Attempting to send in-app notification to user ID ${submitterUserId} for Ad ${createdAdIdString}`);
-      sendNotificationToUser(submitterUserId, {
+      createInAppNotification({
+        userId: submitterUserId,
         title: 'Ad Submitted Successfully!',
         message: `Your Ad "${title}" has been submitted and is pending review. Ad ID: ${createdAdIdString}`,
         level: 'success',

@@ -3,7 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
 import { MongoClient } from "mongodb";
-import { sendNotificationToUser } from "@/lib/notification-client";
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,11 +47,6 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    await sendNotificationToUser(user._id.toString(), {
-      title: "Password Set",
-      message: "Your password has been set successfully.",
-      level: "success",
-    });
 
     // It's good practice to not send back sensitive info, even if it's just an ID
     return NextResponse.json({ message: "Password has been set successfully." }, { status: 200 });
