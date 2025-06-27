@@ -304,12 +304,12 @@ export async function POST(request: Request) {
       sendEmail({
         to: submitterUserEmail,
         subject: `Ad Submission Confirmation: "${title}"`,
-        text: `Hi ${session.user.name || 'Submitter'},\n\nYour Ad titled "${title}" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.\n\nYou can view your Ad status in your dashboard.\n\nThank you for advertising with AdScreener!`,
+        text: `Hi ${session.user.name || 'Submitter'},\n\nYour Ad titled "${title}" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.\n\nYou can view your Ad status in your dashboard.\n\Thank you for complying!`,
         htmlContent: `
           <p>Hi ${session.user.name || 'Submitter'},</p>
           <p>Your Ad titled "<strong>${title}</strong>" (ID: ${createdAdIdString}) has been successfully submitted and is now pending review.</p>
           <p>You can view your Ad status in your dashboard.</p>
-          <p>Thank you for advertising with AdScreener!</p>
+          <p>Thank you for complying with AdScreener!</p>
         `
       }).then(() => {
         console.log(`[API /submitter/ads] Email confirmation successfully sent to ${submitterUserEmail} for Ad ${createdAdIdString}`);

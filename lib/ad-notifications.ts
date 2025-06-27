@@ -33,8 +33,8 @@ export async function sendAdReviewNotifications(params: NotificationParams) {
     submitterNotificationLevel = 'success';
 
     emailSubject = `Ad Approved: "${title}"`;
-    emailText = `Hi,\n\nYour ad titled "${title}" (ID: ${adId}) has been approved.\n\nThank you for advertising with AdScreener!`;
-    emailHtmlContent = `<p>Hi,</p><p>Your ad titled "<strong>${title}</strong>" (ID: ${adId}) has been approved.</p><p>Thank you for advertising with AdScreener!</p>`;
+    emailText = `Hi,\n\nYour ad titled "${title}" (ID: ${adId}) has been approved.\n\Thank you for complying!`;
+    emailHtmlContent = `<p>Hi,</p><p>Your ad titled "<strong>${title}</strong>" (ID: ${adId}) has been approved.</p><p>Thank you for complying with AdScreener!</p>`;
   } else { // 'rejected'
     submitterNotificationTitle = 'Your Ad Has Been Rejected';
     submitterNotificationMessage = `Unfortunately, your ad "${title}" (ID: ${adId}) has been rejected. Reason: ${rejectionReason}`;

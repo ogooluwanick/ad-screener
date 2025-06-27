@@ -30,10 +30,10 @@ export default function UnifiedSettingsPage() {
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     pushNotifications: true,
+    systemUpdates: true, // Common for all roles
     // Reviewer specific
     newSubmissions: true,
     urgentReviews: true,
-    systemUpdates: true, // Common, but also in reviewer
     weeklyReports: true, // Reviewer: weekly summary of review activity
     teamUpdates: false,
     // Submitter specific
@@ -45,7 +45,11 @@ export default function UnifiedSettingsPage() {
     submissionStatus: true, // from submitter API
     feedbackReceived: true, // from submitter API
     promotionalEmails: false, // from submitter API
-  })
+    // Admin specific
+    newAdminRegistrations: true,
+    reviewerActivityReports: true,
+    submitterActivityReports: true,
+  });
 
   // Reviewer Specific State
   const [reviewPreferences, setReviewPreferences] = useState({
@@ -55,7 +59,7 @@ export default function UnifiedSettingsPage() {
     reviewReminders: true,
     bulkActions: true,
     advancedFilters: true,
-  })
+  });
 
   // Submitter Specific State
   const [privacy, setPrivacy] = useState({
@@ -63,13 +67,19 @@ export default function UnifiedSettingsPage() {
     showEmail: false,
     showPhone: false,
     dataCollection: true,
-  })
+  });
   const [submitterPreferences, setSubmitterPreferences] = useState({
     defaultCampaignDuration: 30,
     autoSaveDrafts: true,
     preferredAdFormats: ["banner", "video"],
   });
 
+  // Admin Specific State
+  const [adminPreferences, setAdminPreferences] = useState({
+    dashboardLayout: "default",
+    defaultUserView: "all",
+    auditLogRetentionDays: 90,
+  });
 
   // Common Security State
   const [security, setSecurity] = useState({
@@ -78,7 +88,7 @@ export default function UnifiedSettingsPage() {
     confirmPassword: "",
     twoFactorEnabled: false, // Default, can be fetched if API supports
     sessionTimeout: "4", // Default session timeout, will be fetched
-  })
+  });
 
   useEffect(() => {
     if (status === "loading") return;
@@ -88,87 +98,112 @@ export default function UnifiedSettingsPage() {
     }
 
     const fetchSettings = async () => {
-      setIsLoading(true)
-      const apiUrl = userRole === "reviewer" ? "/api/reviewer/settings" : "/api/submitter/settings"
-      try {
-        const response = await fetch(apiUrl)
-        if (!response.ok) {
-          throw new Error("Failed to fetch settings")
-        }
-        const data = await response.json()
+      setIsLoading(true);
 
-        if (data.notifications) {
-          setNotifications(prev => ({ ...prev, ...data.notifications }))
-        }
-        if (userRole === "reviewer" && data.reviewPreferences) {
-          setReviewPreferences(data.reviewPreferences)
-        }
-        if (userRole === "submitter") {
-          if (data.privacy) {
-            setPrivacy(data.privacy)
+      let apiUrl = "";
+      if (userRole === "reviewer") {
+        apiUrl = "/api/reviewer/settings";
+      } else if (userRole === "submitter") {
+        apiUrl = "/api/submitter/settings";
+      } else if (userRole === "admin") {
+        apiUrl = "/api/admin/settings";
+      } else {
+        console.warn(`Unknown user role: ${userRole}. Using default settings state.`);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(apiUrl);
+        let data: any = {}; 
+
+        if (response.ok) {
+          data = await response.json();
+        } else {
+          if (response.status === 404) {
+            console.warn(`No settings found for ${userRole}. Using default settings.`);
+          } else {
+            throw new Error("Failed to fetch settings: " + response.statusText);
           }
-          if (data.preferences) {
-            setSubmitterPreferences(data.preferences);
-          }
         }
+        
+        // Apply fetched settings, falling back to initial state if keys are missing
+        setNotifications(prev => ({ ...prev, ...(data.notifications || {}) }));
+        
+        if (userRole === "reviewer") {
+          setReviewPreferences(prev => ({ ...prev, ...(data.reviewPreferences || {}) }));
+        } else if (userRole === "submitter") {
+          setPrivacy(prev => ({ ...prev, ...(data.privacy || {}) }));
+          setSubmitterPreferences(prev => ({ ...prev, ...(data.preferences || {}) }));
+        } else if (userRole === "admin") {
+          setAdminPreferences(prev => ({ ...prev, ...(data.adminPreferences || {}) }));
+        }
+        
         // Fetch common security settings, including sessionTimeout
-        if (data.security?.sessionTimeout) {
-            setSecurity(prev => ({...prev, sessionTimeout: data.security.sessionTimeout}));
-        } else if (userRole === "reviewer" && data.reviewPreferences?.sessionTimeout) { 
-            // Backwards compatibility for old structure if needed, though API should be primary
+        setSecurity(prev => ({...prev, sessionTimeout: data.security?.sessionTimeout || prev.sessionTimeout}));
+        // Backwards compatibility for old structure if needed, though API should be primary
+        if (userRole === "reviewer" && data.reviewPreferences?.sessionTimeout) { 
             setSecurity(prev => ({...prev, sessionTimeout: data.reviewPreferences.sessionTimeout}));
         }
 
-
       } catch (error) {
-        console.error("Error fetching settings:", error)
+        console.error("Error fetching settings:", error);
         toast({
           title: "Error",
           description: "Could not load your settings. Please try again later.",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchSettings()
-  }, [session, status, userRole, router])
+    fetchSettings();
+  }, [session, status, userRole, router]);
 
   const handleNotificationChange = (key: string, value: boolean) => {
-    setNotifications((prev) => ({ ...prev, [key]: value }))
-  }
+    setNotifications((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleReviewPreferenceChange = (key: string, value: any) => {
-    setReviewPreferences((prev) => ({ ...prev, [key]: value }))
-  }
+    setReviewPreferences((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handlePrivacyChange = (key: string, value: string | boolean) => {
-    setPrivacy((prev) => ({ ...prev, [key]: value }))
-  }
+    setPrivacy((prev) => ({ ...prev, [key]: value }));
+  };
   
-  // const handleSubmitterPreferenceChange = (key: string, value: any) => {
-  //   setSubmitterPreferences((prev) => ({ ...prev, [key]: value }));
-  // };
+  const handleAdminPreferenceChange = (key: string, value: any) => {
+    setAdminPreferences((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSecurityChange = (key: string, value: string | boolean) => {
-    setSecurity((prev) => ({ ...prev, [key]: value }))
-  }
+    setSecurity((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSaveSettings = async () => {
     if (!userRole) return;
-    setIsSaving(true)
-    const apiUrl = userRole === "reviewer" ? "/api/reviewer/settings" : "/api/submitter/settings"
+    setIsSaving(true);
+    let apiUrl = "";
     let payload: any = { 
       notifications,
       security: { sessionTimeout: security.sessionTimeout } // Include session timeout for all roles
-    }
+    };
 
     if (userRole === "reviewer") {
-      payload.reviewPreferences = reviewPreferences
+      apiUrl = "/api/reviewer/settings";
+      payload.reviewPreferences = reviewPreferences;
     } else if (userRole === "submitter") {
-      payload.privacy = privacy
+      apiUrl = "/api/submitter/settings";
+      payload.privacy = privacy;
       payload.preferences = submitterPreferences;
+    } else if (userRole === "admin") {
+      apiUrl = "/api/admin/settings";
+      payload.adminPreferences = adminPreferences;
+    } else {
+      console.error("Attempted to save settings for unknown role:", userRole);
+      setIsSaving(false);
+      return;
     }
 
     try {
@@ -176,28 +211,28 @@ export default function UnifiedSettingsPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to save settings")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save settings");
       }
 
       toast({
         title: "Settings Saved",
         description: "Your settings have been successfully updated.",
-      })
+      });
     } catch (error: any) {
-      console.error("Error saving settings:", error)
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
         description: error.message || "Could not save your settings. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleChangePassword = async () => {
     if (security.newPassword !== security.confirmPassword) {
@@ -460,6 +495,50 @@ export default function UnifiedSettingsPage() {
         </Card>
       )}
 
+      {/* Admin: Admin Preferences */}
+      {userRole === "admin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center"><Filter className="h-5 w-5 mr-2" />Admin Preferences</CardTitle>
+            <CardDescription>Customize your admin dashboard and reporting</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="dashboardLayout">Dashboard Layout</Label>
+                <Select value={adminPreferences.dashboardLayout} onValueChange={(v) => handleAdminPreferenceChange("dashboardLayout", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default Layout</SelectItem>
+                    <SelectItem value="compact">Compact Layout</SelectItem>
+                    <SelectItem value="custom">Custom Layout</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500">Choose the default layout for your admin dashboard.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="defaultUserView">Default User View</Label>
+                <Select value={adminPreferences.defaultUserView} onValueChange={(v) => handleAdminPreferenceChange("defaultUserView", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Users</SelectItem>
+                    <SelectItem value="reviewers">Reviewers Only</SelectItem>
+                    <SelectItem value="submitters">Submitters Only</SelectItem>
+                    <SelectItem value="admins">Admins Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500">Set the default view when managing users.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="auditLogRetentionDays">Audit Log Retention (Days): {adminPreferences.auditLogRetentionDays}</Label>
+                <Slider value={[adminPreferences.auditLogRetentionDays]} onValueChange={(v) => handleAdminPreferenceChange("auditLogRetentionDays", v[0])} max={365} min={30} step={30} className="w-full" />
+                <p className="text-sm text-gray-500">Number of days to retain audit logs.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Security Settings */}
       <Card>
         <CardHeader>
@@ -534,6 +613,22 @@ export default function UnifiedSettingsPage() {
                   <AlertDescription className="text-red-800"><strong>Delete Account:</strong> This action cannot be undone. All your data will be permanently removed.</AlertDescription>
                 </Alert>
                 <Button variant="destructive" onClick={handleDeleteAccount} disabled={isSaving}><Trash2 className="h-4 w-4 mr-2" />{isSaving ? "Deleting..." : "Delete Account"}</Button>
+              </>
+            )}
+            {userRole === "admin" && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div><Label htmlFor="newAdminRegistrations">New Admin Registrations</Label><p className="text-sm text-gray-500">Notify when new admin accounts are registered</p></div>
+                  <Switch id="newAdminRegistrations" checked={notifications.newAdminRegistrations} onCheckedChange={(c) => handleNotificationChange("newAdminRegistrations", c)} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div><Label htmlFor="reviewerActivityReports">Reviewer Activity Reports</Label><p className="text-sm text-gray-500">Receive daily/weekly reports on reviewer activity</p></div>
+                  <Switch id="reviewerActivityReports" checked={notifications.reviewerActivityReports} onCheckedChange={(c) => handleNotificationChange("reviewerActivityReports", c)} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div><Label htmlFor="submitterActivityReports">Submitter Activity Reports</Label><p className="text-sm text-gray-500">Receive daily/weekly reports on submitter activity</p></div>
+                  <Switch id="submitterActivityReports" checked={notifications.submitterActivityReports} onCheckedChange={(c) => handleNotificationChange("submitterActivityReports", c)} />
+                </div>
               </>
             )}
           </div>

@@ -39,7 +39,7 @@ interface AdDocument {
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id || (session.user.role !== 'admin' && session.user.role !== 'superadmin')) {
+  if (!session || !session.user || !session.user.id || (session.user.role !== 'admin' && session.user.role !== 'superadmin' && session.user.role !== 'reviewer')) {
     return NextResponse.json({ message: 'Unauthorized or invalid role' }, { status: 401 });
   }
 
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             const notificationTitle = "New Ad Assignment";
             const notificationMessage = `You have been assigned to review the Ad: "${adDetails.title}". Please treat this as urgent.`;
             // Consider making the deep link more specific if possible, e.g., directly to the Ad view for reviewers
-            const adReviewLink = `${appUrl}/reviewer/pending?adId=${adId}`; // Adjust if reviewer page is different
+            const adReviewLink = `${appUrl}reviewer/pending?adId=${adId}`; // Adjust if reviewer page is different
 
             // 1. Create In-App Notification using the existing client
             try {
