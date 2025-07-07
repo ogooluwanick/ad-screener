@@ -111,8 +111,12 @@ export async function GET(request: Request) {
         rejectedReviews++;
       }
 
-      if (ad.reviewedAt && ad.submittedAt) { // Ensure both dates exist
-        const reviewTimeMs = ad.reviewedAt.getTime() - ad.submittedAt.getTime();
+      // Ensure submittedAt and reviewedAt are Date objects before calling getTime()
+      const submittedAtDate = ad.submittedAt instanceof Date ? ad.submittedAt : new Date(ad.submittedAt);
+      const reviewedAtDate = ad.reviewedAt instanceof Date ? ad.reviewedAt : new Date(ad.reviewedAt);
+
+      if (reviewedAtDate && submittedAtDate) { // Ensure both dates exist and are valid
+        const reviewTimeMs = reviewedAtDate.getTime() - submittedAtDate.getTime();
         if (reviewTimeMs >= 0) { // Ensure non-negative duration
           totalReviewDurationMs += reviewTimeMs;
           reviewsWithDuration++;
