@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import moment from "moment";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,12 +35,13 @@ import {
 interface User {
   _id: string;
   firstName: string;
-  lastName: string;
+  lastName:string;
   email: string;
   role: string;
   emailVerified: boolean | null;
   createdAt: string;
   updatedAt: string;
+  lastOnline?: string;
   submitterType?: string;
   letterOfAuthorityUrl?: string | null;
   companyName?: string;
@@ -315,6 +317,7 @@ const AdminUsersPage = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Last Online</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -337,6 +340,9 @@ const AdminUsersPage = () => {
                       }`}>
                         {user.emailVerified ? "Verified" : "Unverified"}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {user.lastOnline ? moment(user.lastOnline).fromNow() : "Never"}
                     </TableCell>
                     <TableCell>
                       {new Date(user.createdAt).toLocaleDateString()}

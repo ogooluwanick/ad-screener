@@ -5,6 +5,7 @@ interface User {
   _id: string;
   email: string;
   role: string;
+  lastOnline?: Date;
   // Add other user properties as needed
 }
 
@@ -20,6 +21,7 @@ export async function getUsersByRole(roles: string[]): Promise<User[]> {
       _id: user._id.toString(),
       email: user.email,
       role: user.role,
+      lastOnline: user.lastOnline,
     }));
   } catch (error) {
     console.error(`Failed to fetch users by roles ${roles.join(', ')}:`, error);

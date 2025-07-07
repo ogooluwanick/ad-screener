@@ -64,6 +64,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Incorrect password");
         }
 
+        // Update lastOnline on successful login
+        await usersCollection.updateOne(
+          { _id: new ObjectId(dbUser._id) },
+          { $set: { lastOnline: new Date() } }
+        );
+
         let sessionTimeoutInHours = 4; // Default session timeout
         if (dbUser.role === "reviewer" && dbUser.reviewerSettings?.security?.sessionTimeout) {
           sessionTimeoutInHours = parseInt(dbUser.reviewerSettings.security.sessionTimeout, 10);
@@ -101,6 +107,16 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
+      // Update lastOnline on every JWT refresh (user activity)
+      if (token.id) {
+        const client: MongoClient = await clientPromise();
+        const usersCollection = client.db().collection("users");
+        await usersCollection.updateOne(
+          { _id: new ObjectId(token.id as string) },
+          { $set: { lastOnline: new Date() } }
+        );
+      }
+
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
